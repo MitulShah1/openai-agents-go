@@ -68,7 +68,9 @@ builds:
 
 archives:
   - id: examples
-    format: tar.gz
+    formats:
+      - tar.gz
+      - zip
     name_template: >-
       {{ .ProjectName }}_examples_
       {{- .Version }}_
@@ -77,9 +79,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    format_overrides:
-      - goos: windows
-        format: zip
     files:
       - README.md
       - LICENSE
@@ -90,7 +89,7 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
@@ -107,19 +106,19 @@ changelog:
       - Merge remote-tracking branch
       - Merge branch
   groups:
-    - title: 'New Features'
+    - title: '✨ New Features'
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
       order: 0
-    - title: 'Bug Fixes'
+    - title: '🐛 Bug Fixes'
       regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
-    - title: 'Performance Improvements'
+    - title: '⚡ Performance Improvements'
       regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
       order: 2
-    - title: 'Documentation'
+    - title: '📚 Documentation'
       regexp: '^.*?docs?(\([[:word:]]+\))??!?:.+$'
       order: 3
-    - title: 'Other Changes'
+    - title: '🔧 Other Changes'
       order: 999
 
 release:
@@ -130,25 +129,44 @@ release:
   prerelease: auto
   mode: replace
   header: |
-    ## OpenAI Agents Go SDK {{ .Tag }}
+    ## 🚀 OpenAI Agents Go SDK {{ .Tag }}
     
-    {{ .Date }}
+    **Release Date:** {{ .Date }}
     
-    This is a Go library for building AI agents using OpenAI's API.
+    ### 📦 What's Included
+    
+    A powerful Go SDK for building AI agents with OpenAI's API, featuring:
+    
+    - 🤖 **Agent Orchestration** - Manage complex agent workflows
+    - 🔧 **Tool Execution** - Seamless function calling integration  
+    - 📋 **Structured Outputs** - Type-safe JSON schema validation
+    - 🔄 **Agent Handoffs** - Transfer control between specialized agents
+    - 🪝 **Lifecycle Hooks** - OnBeforeRun and OnAfterRun callbacks
+    - ⚙️ **Flexible Configuration** - Fine-tune model parameters
+    - ✅ **Full Test Coverage** - Comprehensive unit tests
     
   footer: |
-    ## Installation
+    ---
+    
+    ### 📥 Installation
     
     ```bash
     go get github.com/MitulShah1/openai-agents-go@{{ .Tag }}
     ```
     
-    ## Documentation
+    ### 📖 Documentation
     
-    - [pkg.go.dev](https://pkg.go.dev/github.com/MitulShah1/openai-agents-go@{{ .Tag }})
-    - [GitHub](https://github.com/MitulShah1/openai-agents-go)
+    - 📘 [API Reference (pkg.go.dev)](https://pkg.go.dev/github.com/MitulShah1/openai-agents-go@{{ .Tag }})
+    - 💻 [GitHub Repository](https://github.com/MitulShah1/openai-agents-go)
+    - 📝 [Examples](https://github.com/MitulShah1/openai-agents-go/tree/main/examples)
+    
+    ### 🔗 Links
     
     **Full Changelog**: https://github.com/MitulShah1/openai-agents-go/compare/{{ .PreviousTag }}...{{ .Tag }}
+    
+    ---
+    
+    💙 **Thank you for using OpenAI Agents Go!**
 
 announce:
   skip: false
