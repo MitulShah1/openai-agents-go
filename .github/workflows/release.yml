@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.x'
+
+    - name: Install golangci-lint
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v5
+      with:
+        distribution: goreleaser
+        version: latest
+        args: release --clean
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update pkg.go.dev
+      run: |
+        # Extract version from tag (e.g., refs/tags/v1.0.0 -> v1.0.0)
+        VERSION=${GITHUB_REF#refs/tags/}
+        
+        # Trigger pkg.go.dev to fetch and index the new version
+        MODULE="github.com/MitulShah1/openai-agents-go"
+        
+        echo "Triggering pkg.go.dev update for ${MODULE}@${VERSION}"
+        curl -f "https://proxy.golang.org/${MODULE}/@v/${VERSION}.info" || echo "Proxy request completed"
+        curl -f "https://proxy.golang.org/${MODULE}/@v/list" || echo "List request completed"
+        
+        echo "pkg.go.dev will update within a few minutes at: https://pkg.go.dev/${MODULE}@${VERSION}"

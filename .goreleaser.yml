@@ -1,0 +1,158 @@
+# GoReleaser configuration for openai-agents-go
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    # Run tests before building
+    - go test -v ./...
+    # Run linter
+    - golangci-lint run ./...
+
+builds:
+  # Build example binaries to showcase the library
+  - id: basic-example
+    main: ./examples/01_basic
+    binary: openai-agents-basic-example
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    
+  - id: tools-example
+    main: ./examples/02_tools
+    binary: openai-agents-tools-example
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+  - id: structured-output-example
+    main: ./examples/06_structured_output
+    binary: openai-agents-structured-example
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: examples
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_examples_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+      - examples/**/*.go
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - '^build:'
+      - 'merge conflict'
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+  groups:
+    - title: 'New Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance Improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: 'Documentation'
+      regexp: '^.*?docs?(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: 'Other Changes'
+      order: 999
+
+release:
+  github:
+    owner: MitulShah1
+    name: openai-agents-go
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## OpenAI Agents Go SDK {{ .Tag }}
+    
+    {{ .Date }}
+    
+    This is a Go library for building AI agents using OpenAI's API.
+    
+  footer: |
+    ## Installation
+    
+    ```bash
+    go get github.com/MitulShah1/openai-agents-go@{{ .Tag }}
+    ```
+    
+    ## Documentation
+    
+    - [pkg.go.dev](https://pkg.go.dev/github.com/MitulShah1/openai-agents-go@{{ .Tag }})
+    - [GitHub](https://github.com/MitulShah1/openai-agents-go)
+    
+    **Full Changelog**: https://github.com/MitulShah1/openai-agents-go/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+announce:
+  skip: false
+
+# Metadata for pkg.go.dev
+metadata:
+  mod_timestamp: '{{ .CommitTimestamp }}'
