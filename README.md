@@ -1,4 +1,4 @@
-# OpenAI Agents Go SDK (Unofficial)
+# OpenAI Agents Go SDK
 
 [![CI](https://github.com/MitulShah1/openai-agents-go/workflows/CI/badge.svg)](https://github.com/MitulShah1/openai-agents-go/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MitulShah1/openai-agents-go)](https://goreportcard.com/report/github.com/MitulShah1/openai-agents-go)
@@ -52,7 +52,8 @@ go get github.com/MitulShah1/openai-agents-go@latest
 
 ## Quick Start
 
-### Hello World
+<details>
+<summary><b>Hello World</b></summary>
 
 ```go
 package main
@@ -91,7 +92,10 @@ func main() {
 }
 ```
 
-### Tools Example
+</details>
+
+<details>
+<summary><b>Tools Example</b></summary>
 
 ```go
 package main
@@ -142,7 +146,10 @@ func main() {
 }
 ```
 
-### Handoffs Example
+</details>
+
+<details>
+<summary><b>Handoffs Example</b></summary>
 
 ```go
 package main
@@ -169,7 +176,10 @@ func main() {
 }
 ```
 
-### Structured Outputs
+</details>
+
+<details>
+<summary><b>Structured Outputs</b></summary>
 
 ```go
 package main
@@ -196,6 +206,8 @@ func main() {
     json.Unmarshal([]byte(result.FinalOutput), &response)
 }
 ```
+
+</details>
 
 ---
 
@@ -234,6 +246,7 @@ cd examples/07_complex_schema && go run main.go
 ## Documentation
 
 - 📚 [API Documentation](https://pkg.go.dev/github.com/MitulShah1/openai-agents-go)
+- 🤖 [AI Assistant Guide](./AGENT.md) - For Claude, Copilot, etc.
 - 🗺️ [Development Roadmap](./ROADMAP.md)
 - 📝 [Examples Directory](./examples)
 - 🔧 [OpenAI Go SDK](https://github.com/openai/openai-go)
