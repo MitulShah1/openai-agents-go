@@ -85,7 +85,7 @@ john.smith@example.com. He enjoys hiking, photography, and cooking.`),
 	}
 
 	ctx := context.Background()
-	result, err := runner.Run(ctx, agent, messages, nil, nil)
+	result, err := runner.Run(ctx, agent, messages, nil, nil, nil, "")
 	if err != nil {
 		log.Fatalf("Error running agent: %v", err)
 	}
