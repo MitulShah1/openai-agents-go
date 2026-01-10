@@ -56,7 +56,7 @@ func main() {
 	// Example 1: Using default config
 	fmt.Println("=== Example 1: Default Config ===")
 	ctx := context.Background()
-	result, err := runner.Run(ctx, agent, messages, nil, nil)
+	result, err := runner.Run(ctx, agent, messages, nil, nil, nil, "")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
@@ -72,7 +72,7 @@ func main() {
 		Debug:       true,
 	}
 
-	result, err = runner.Run(ctx, agent, messages, nil, config)
+	result, err = runner.Run(ctx, agent, messages, nil, config, nil, "")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
@@ -85,7 +85,7 @@ func main() {
 		MaxTurns: 1, // Very low limit - will likely exceed
 	}
 
-	result, err = runner.Run(ctx, agent, messages, nil, veryLowTurns)
+	result, err = runner.Run(ctx, agent, messages, nil, veryLowTurns, nil, "")
 	if err != nil {
 		fmt.Printf("❌ Expected error: %v\n", err)
 	} else {
@@ -99,7 +99,7 @@ func main() {
 		Debug:   true,
 	}
 
-	result, err = runner.Run(ctx, agent, messages, nil, timeoutConfig)
+	result, err = runner.Run(ctx, agent, messages, nil, timeoutConfig, nil, "")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
@@ -124,7 +124,7 @@ func main() {
 			openai.UserMessage(query),
 		}
 
-		result, err := runner.Run(ctx, simpleAgent, msgs, nil, nil)
+		result, err := runner.Run(ctx, simpleAgent, msgs, nil, nil, nil, "")
 		if err != nil {
 			fmt.Printf("Error on query %d: %v\n", i+1, err)
 			continue

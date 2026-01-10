@@ -79,7 +79,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	result, err := runner.Run(ctx, agent, messages, nil, nil)
+	result, err := runner.Run(ctx, agent, messages, nil, nil, nil, "")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -102,7 +102,7 @@ func main() {
 		return fmt.Errorf("validation failed: agent not ready")
 	}
 
-	_, err = runner.Run(ctx, errorAgent, messages, nil, nil)
+	_, err = runner.Run(ctx, errorAgent, messages, nil, nil, nil, "")
 	if err != nil {
 		fmt.Printf("❌ Expected error: %v\n", err)
 	}

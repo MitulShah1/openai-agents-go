@@ -55,6 +55,11 @@ make test                         # Run tests with coverage
 ├── config.go              # Run configuration options
 ├── types.go               # Shared types (Result, Step, Usage, etc.)
 ├── errors.go              # Structured error types
+├── guardrail/             # Input/output validation framework
+│   └── builtin/          # Built-in guardrails (PII, URL, regex)
+├── session/              # Conversation persistence
+│   ├── memory.go         # In-memory session storage
+│   └── file.go           # File-based session storage
 ├── internal/
 │   └── jsonschema/        # JSON Schema builder for structured outputs
 ├── examples/              # Usage examples (numbered by complexity)
@@ -64,7 +69,10 @@ make test                         # Run tests with coverage
 │   ├── 04_lifecycle_hooks/# OnBeforeRun/OnAfterRun hooks
 │   ├── 05_config_usage/   # Run configuration
 │   ├── 06_structured_output/  # JSON schema outputs
-│   └── 07_complex_schema/ # Nested schemas
+│   ├── 07_complex_schema/ # Nested schemas
+│   ├── 08_guardrails_demo/    # Guardrails demonstration
+│   ├── 09_sessions_demo/      # Sessions demonstration
+│   └── 10_advanced_v02/       # Production chatbot (v0.2.0)
 ├── .github/workflows/     # CI/CD pipelines
 ├── AGENT.md              # This file
 ├── README.md             # User-facing documentation
@@ -314,14 +322,22 @@ When adding features:
 6. **Test edge cases**: Think about nil pointers, empty slices, context cancellation
 7. **Check examples**: Ensure examples still work after API changes
 
-## Future Roadmap
+## Current Version: v0.2.0
+
+**Completed Features:**
+- ✅ Guardrails (PII detection, URL filtering, custom regex)
+- ✅ Sessions (memory and file-based conversation persistence)
+- ✅ Structured outputs with JSON schema
+- ✅ Multi-agent workflows and handoffs
+- ✅ Tool calling and lifecycle hooks
+
+**Future Roadmap:**
 
 See [ROADMAP.md](./ROADMAP.md) for planned features:
-- 🔮 Streaming support (high priority)
-- 🔮 Tracing and debugging tools
-- 🔮 Guardrails and safety checks
-- 🔮 Memory/conversation persistence
-- 🔮 Voice agent support
+- 🔮 Database session backends (SQLite, Redis, PostgreSQL) - v0.3.0
+- 🔮 Tracing and observability - v0.3.0
+- 🔮 Streaming support - v0.4.0
+- 🔮 Voice agent support - Future
 
 ---
 
