@@ -28,7 +28,7 @@ func TestRunNoMessages(t *testing.T) {
 	agent := NewAgent("TestAgent")
 
 	ctx := context.Background()
-	result, err := runner.Run(ctx, agent, []openai.ChatCompletionMessageParamUnion{}, nil, nil)
+	result, err := runner.Run(ctx, agent, []openai.ChatCompletionMessageParamUnion{}, nil, nil, nil, "")
 
 	if !errors.Is(err, ErrNoMessages) {
 		t.Errorf("expected ErrNoMessages, got %v", err)
@@ -64,7 +64,7 @@ func TestRunTimeout(t *testing.T) {
 		openai.UserMessage("test"),
 	}
 
-	_, err := runner.Run(ctx, agent, messages, nil, nil)
+	_, err := runner.Run(ctx, agent, messages, nil, nil, nil, "")
 
 	// The error should be related to context cancellation
 	if err == nil {
@@ -136,7 +136,7 @@ func TestRunBeforeHookError(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err := runner.Run(ctx, agent, messages, nil, nil)
+	_, err := runner.Run(ctx, agent, messages, nil, nil, nil, "")
 
 	if err == nil {
 		t.Fatal("expected error from OnBeforeRun hook")
@@ -199,7 +199,7 @@ func TestRunIntegration(t *testing.T) {
 		MaxTurns: 1,
 	}
 
-	result, err := runner.Run(ctx, agent, messages, nil, config)
+	result, err := runner.Run(ctx, agent, messages, nil, config, nil, "")
 	if err != nil {
 		t.Fatalf("Run failed: %v", err)
 	}

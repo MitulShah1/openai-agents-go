@@ -10,6 +10,23 @@ import (
 	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
 )
 
+// Session interface for conversation history persistence.
+// Users should use implementations from github.com/MitulShah1/openai-agents-go/session
+type Session interface {
+	Get(ctx context.Context, sessionID string) ([]openai.ChatCompletionMessageParamUnion, error)
+	Append(ctx context.Context, sessionID string, messages []openai.ChatCompletionMessageParamUnion) error
+}
+
+// NotFoundError is returned when a session doesn't exist.
+type NotFoundError struct {
+	SessionID string
+}
+
+// Error implements the error interface.
+func (e *NotFoundError) Error() string {
+	return fmt.Sprintf("session '%s' not found", e.SessionID)
+}
+
 // Runner manages the execution of agents.
 type Runner struct {
 	Client *openai.Client
@@ -23,12 +40,15 @@ func NewRunner(client *openai.Client) *Runner {
 }
 
 // Run executes the agent loop with the given configuration.
+// If session is provided, conversation history will be automatically loaded and saved.
 func (r *Runner) Run(
 	ctx context.Context,
 	agent *Agent,
 	messages []openai.ChatCompletionMessageParamUnion,
 	contextParams ContextVariables,
 	config *RunConfig,
+	session Session,
+	sessionID string,
 ) (*Result, error) {
 	if len(messages) == 0 {
 		return nil, ErrNoMessages
@@ -55,6 +75,30 @@ func (r *Runner) Run(
 	if agent.OnBeforeRun != nil {
 		if err := agent.OnBeforeRun(ctx, agent); err != nil {
 			return nil, fmt.Errorf("OnBeforeRun hook failed: %w", err)
+		}
+	}
+
+	// Run input guardrails on the first agent (before any execution)
+	if len(agent.InputGuardrails) > 0 && len(messages) > 0 {
+		// Use string representation of messages for guardrail validation
+		userInput := fmt.Sprintf("%v", messages[len(messages)-1])
+		if err := r.runInputGuardrails(ctx, agent, userInput); err != nil {
+			return nil, err
+		}
+	}
+
+	// Load session history if session is provided
+	if session != nil && sessionID != "" {
+		sessionHistory, err := session.Get(ctx, sessionID)
+		if err != nil {
+			// If session not found, that's okay - we'll create it on save
+			// Only fail on other errors
+			if _, ok := err.(*NotFoundError); !ok {
+				return nil, fmt.Errorf("failed to load session: %w", err)
+			}
+		} else {
+			// Prepend session history to messages
+			messages = append(sessionHistory, messages...)
 		}
 	}
 
@@ -173,6 +217,20 @@ func (r *Runner) Run(
 		Usage:       usage,
 		Steps:       steps,
 		FinalOutput: finalOutput,
+	}
+
+	// Run output guardrails on the agent output
+	if len(agent.OutputGuardrails) > 0 && finalOutput != "" {
+		if err := r.runOutputGuardrails(ctx, agent, finalOutput); err != nil {
+			return result, err
+		}
+	}
+
+	// Save session history if session is provided
+	if session != nil && sessionID != "" {
+		if err := session.Append(ctx, sessionID, history); err != nil {
+			return result, fmt.Errorf("failed to save session: %w", err)
+		}
 	}
 
 	// Execute OnAfterRun hook
