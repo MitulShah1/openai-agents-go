@@ -4,6 +4,7 @@ package agents
 import (
 	"context"
 
+	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
 )
 
@@ -54,6 +55,14 @@ type Agent struct {
 
 	// OnAfterRun is called after the agent completes execution
 	OnAfterRun LifecycleFunc
+
+	// InputGuardrails validate user input before agent execution
+	// These run on the first agent in a handoff chain
+	InputGuardrails []*guardrail.Guardrail
+
+	// OutputGuardrails validate agent output after execution
+	// These run on the final agent in a handoff chain
+	OutputGuardrails []*guardrail.Guardrail
 }
 
 // NewAgent creates a new Agent with default values.

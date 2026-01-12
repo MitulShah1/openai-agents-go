@@ -3,33 +3,115 @@ package agents
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/openai/openai-go"
 
+	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/internal/runner"
+	"github.com/MitulShah1/openai-agents-go/session"
 )
 
 // Runner manages the execution of agents.
+// It handles the orchestration of OpenAI API calls, tool execution,
+// session management, and guardrail validation.
 type Runner struct {
+	// Client is the OpenAI API client used to make completion requests
 	Client *openai.Client
 }
 
-// NewRunner creates a new Runner.
+// NewRunner creates a new Runner with the given OpenAI client.
+//
+// Example:
+//
+//	client := openai.NewClient(option.WithAPIKey(os.Getenv("OPENAI_API_KEY")))
+//	runner := agents.NewRunner(client)
 func NewRunner(client *openai.Client) *Runner {
 	return &Runner{
 		Client: client,
 	}
 }
 
-// Run executes the agent loop with the given configuration.
+// Run executes the agent loop with functional options.
+//
+// This method uses functional options for optional parameters.
+// Only required parameters are positional arguments, while all
+// optional configuration is provided via option functions.
+//
+// Required parameters:
+//   - ctx: Context for cancellation and timeout control
+//   - agent: The agent to execute
+//   - messages: Initial conversation messages (must not be empty)
+//
+// Optional parameters (via options):
+//   - Config: Runtime configuration via WithConfig() (uses defaults if not provided)
+//   - Context Variables: Variables accessible to tools via WithContextVariables()
+//   - Session: Conversation persistence via WithSession()
+//
+// Example (minimal):
+//
+//	result, err := runner.Run(
+//	    ctx,
+//	    myAgent,
+//	    []openai.ChatCompletionMessageParamUnion{openai.UserMessage("Hello")},
+//	)
+//
+// Example (with session):
+//
+//	result, err := runner.Run(
+//	    ctx,
+//	    myAgent,
+//	    []openai.ChatCompletionMessageParamUnion{openai.UserMessage("Hello")},
+//	    agents.WithSession(mySession, "user_123"),
+//	)
+//
+// Example (with multiple options):
+//
+//	result, err := runner.Run(
+//	    ctx,
+//	    myAgent,
+//	    []openai.ChatCompletionMessageParamUnion{openai.UserMessage("Hello")},
+//	    agents.WithSession(mySession, "user_123"),
+//	    agents.WithConfig(&agents.RunConfig{MaxTurns: 5}),
+//	    agents.WithContextVariables(vars),
+//	)
 func (r *Runner) Run(
+	ctx context.Context,
+	agent *Agent,
+	messages []openai.ChatCompletionMessageParamUnion,
+	opts ...RunOption,
+) (*Result, error) {
+	// Apply options
+	options := &runOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	// Call the internal implementation
+	return r.execute(
+		ctx,
+		agent,
+		messages,
+		options.contextParams,
+		options.config,
+		options.sess,
+		options.sessionID,
+	)
+}
+
+// execute is the internal implementation of Run.
+func (r *Runner) execute(
 	ctx context.Context,
 	agent *Agent,
 	messages []openai.ChatCompletionMessageParamUnion,
 	contextParams ContextVariables,
 	config *RunConfig,
+	sess session.Session,
+	sessionID string,
 ) (*Result, error) {
+	// Validate input
 	if len(messages) == 0 {
 		return nil, ErrNoMessages
 	}
@@ -39,17 +121,18 @@ func (r *Runner) Run(
 		config = DefaultRunConfig()
 	}
 
-	// Apply timeout if specified
-	if config.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, config.Timeout)
-		defer cancel()
-	}
-
 	// Initialize context variables
 	if contextParams == nil {
 		contextParams = make(ContextVariables)
 	}
+
+	// Create executor with timeout configuration
+	executor := runner.NewExecutor(config.MaxTurns, config.Timeout)
+
+	// Apply timeout if specified
+	var cancel context.CancelFunc
+	ctx, cancel = executor.ApplyTimeout(ctx)
+	defer cancel()
 
 	// Execute OnBeforeRun hook
 	if agent.OnBeforeRun != nil {
@@ -58,6 +141,54 @@ func (r *Runner) Run(
 		}
 	}
 
+	// Run input guardrails
+	if err := r.executeInputGuardrails(ctx, agent, messages); err != nil {
+		return nil, err
+	}
+
+	// Load session history
+	sessionHandler := runner.NewSessionHandler(sess, sessionID)
+	var err error
+	messages, err = sessionHandler.LoadHistory(ctx, messages)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute main agent loop
+	result, err := r.executeAgentLoop(ctx, agent, messages, contextParams, config, executor)
+	if err != nil {
+		return result, err
+	}
+
+	// Run output guardrails
+	if err := r.executeOutputGuardrails(ctx, agent, result.FinalOutput); err != nil {
+		return result, err
+	}
+
+	// Save session history
+	if err := sessionHandler.SaveHistory(ctx, result.Messages); err != nil {
+		return result, err
+	}
+
+	// Execute OnAfterRun hook
+	if agent.OnAfterRun != nil {
+		if err := agent.OnAfterRun(ctx, agent); err != nil {
+			return result, fmt.Errorf("OnAfterRun hook failed: %w", err)
+		}
+	}
+
+	return result, nil
+}
+
+// executeAgentLoop runs the main agent execution loop
+func (r *Runner) executeAgentLoop(
+	ctx context.Context,
+	agent *Agent,
+	messages []openai.ChatCompletionMessageParamUnion,
+	contextParams ContextVariables,
+	config *RunConfig,
+	executor *runner.Executor,
+) (*Result, error) {
 	currentAgent := agent
 	history := make([]openai.ChatCompletionMessageParamUnion, len(messages))
 	copy(history, messages)
@@ -68,37 +199,33 @@ func (r *Runner) Run(
 	turnCount := 0
 
 	for {
-		// Check max turns
-		if config.MaxTurns > 0 && turnCount >= config.MaxTurns {
-			return nil, ErrMaxTurnsExceeded
-		}
-
-		// Check context cancellation (timeout)
-		if err := ctx.Err(); err != nil {
-			if err == context.DeadlineExceeded {
+		// Check if execution should continue
+		shouldContinue, err := executor.ShouldContinueExecution(ctx, turnCount)
+		if err != nil {
+			if strings.Contains(err.Error(), "max turns") {
+				return nil, ErrMaxTurnsExceeded
+			}
+			if strings.Contains(err.Error(), "timeout") {
 				return nil, ErrTimeout
 			}
 			return nil, err
+		}
+		if !shouldContinue {
+			break
 		}
 
 		stepStart := time.Now()
 		turnCount++
 
 		// Prepare tools
-		var tools []openai.ChatCompletionToolParam
-		toolMap := make(map[string]Tool)
-		for _, t := range currentAgent.Tools {
-			tools = append(tools, t.ToParam())
-			toolMap[t.Name] = t
-		}
+		tools, toolMap := r.prepareTools(currentAgent)
 
-		// Prepare request
+		// Prepare and execute request
 		req, err := r.prepareRequest(ctx, currentAgent, config, tools, history)
 		if err != nil {
 			return nil, err
 		}
 
-		// Call OpenAI
 		completion, err := r.Client.Chat.Completions.New(ctx, req)
 		if err != nil {
 			return nil, fmt.Errorf("LLM call failed: %w", err)
@@ -115,14 +242,8 @@ func (r *Runner) Run(
 
 		message := completion.Choices[0].Message
 
-		// Truncate tool call IDs in the assistant message if needed
-		if len(message.ToolCalls) > 0 {
-			for i := range message.ToolCalls {
-				if len(message.ToolCalls[i].ID) > 40 {
-					message.ToolCalls[i].ID = message.ToolCalls[i].ID[:40]
-				}
-			}
-		}
+		// Truncate tool call IDs
+		runner.TruncateToolCallIDs(&message)
 
 		history = append(history, message.ToParam())
 
@@ -141,8 +262,13 @@ func (r *Runner) Run(
 			break
 		}
 
-		// Handle Tool Calls
-		toolMessages, recordedToolCalls, nextAgent := r.handleToolCalls(message.ToolCalls, toolMap, contextParams, currentAgent)
+		// Handle tool calls
+		toolMessages, recordedToolCalls, nextAgent := r.handleToolCalls(
+			message.ToolCalls,
+			toolMap,
+			contextParams,
+			currentAgent,
+		)
 
 		step.ToolCalls = recordedToolCalls
 		history = append(history, toolMessages...)
@@ -153,38 +279,47 @@ func (r *Runner) Run(
 
 		step.Duration = time.Since(stepStart)
 		steps = append(steps, step)
-
-		// Continue loop
 	}
 
 	// Extract final output
-	finalOutput := ""
-	if len(history) > 0 {
-		if len(lastMessage.Content) > 0 {
-			finalOutput = lastMessage.Content
-		} else if lastMessage.Refusal != "" {
-			finalOutput = lastMessage.Refusal
-		}
-	}
+	finalOutput := extractFinalOutput(lastMessage)
 
-	result := &Result{
+	return &Result{
 		Messages:    history,
 		Agent:       currentAgent,
 		Usage:       usage,
 		Steps:       steps,
 		FinalOutput: finalOutput,
-	}
-
-	// Execute OnAfterRun hook
-	if agent.OnAfterRun != nil {
-		if err := agent.OnAfterRun(ctx, agent); err != nil {
-			return result, fmt.Errorf("OnAfterRun hook failed: %w", err)
-		}
-	}
-
-	return result, nil
+	}, nil
 }
 
+// prepareTools builds the tool map and parameter list
+func (r *Runner) prepareTools(agent *Agent) ([]openai.ChatCompletionToolParam, runner.ToolMap) {
+	tools := make([]openai.ChatCompletionToolParam, 0, len(agent.Tools))
+	toolMap := make(runner.ToolMap, len(agent.Tools))
+
+	for i := range agent.Tools {
+		t := agent.Tools[i]
+		tools = append(tools, t.ToParam())
+		// Create an adapter to bridge Tool.Execute to ToolExecutor.Execute
+		toolMap[t.Name] = &toolAdapter{tool: &t}
+	}
+
+	return tools, toolMap
+}
+
+// toolAdapter adapts a Tool to implement runner.ToolExecutor
+type toolAdapter struct {
+	tool *Tool
+}
+
+// Execute implements runner.ToolExecutor
+func (ta *toolAdapter) Execute(arguments string, contextVariables map[string]any) (any, error) {
+	// ContextVariables is just a type alias for map[string]any, so this is safe
+	return ta.tool.Execute(arguments, ContextVariables(contextVariables))
+}
+
+// prepareRequest builds the OpenAI API request
 func (r *Runner) prepareRequest(
 	ctx context.Context,
 	agent *Agent,
@@ -192,143 +327,249 @@ func (r *Runner) prepareRequest(
 	tools []openai.ChatCompletionToolParam,
 	history []openai.ChatCompletionMessageParamUnion,
 ) (openai.ChatCompletionNewParams, error) {
-	req := openai.ChatCompletionNewParams{
-		Model: openai.ChatModel(agent.Model),
+	// Merge configurations
+	merger := &runner.ConfigMerger{
+		AgentTemperature:       agent.Temperature,
+		AgentMaxTokens:         agent.MaxTokens,
+		AgentParallelToolCalls: agent.ParallelToolCalls,
+		AgentResponseFormat:    agent.ResponseFormat,
+		RunTemperature:         config.Temperature,
+		RunMaxTokens:           config.MaxTokens,
+		RunParallelToolCalls:   config.ParallelToolCalls,
+		RunResponseFormat:      config.ResponseFormat,
 	}
 
-	// Apply model settings
-	if config.Temperature != nil {
-		req.Temperature = openai.Float(*config.Temperature)
-	} else if agent.Temperature != nil {
-		req.Temperature = openai.Float(*agent.Temperature)
+	if config.Debug {
+		fmt.Printf("DEBUG prepareRequest: agent.ResponseFormat=%v, config.ResponseFormat=%v\n",
+			agent.ResponseFormat, config.ResponseFormat)
+		fmt.Printf("DEBUG prepareRequest: merger.AgentResponseFormat=%v, merger.RunResponseFormat=%v\n",
+			merger.AgentResponseFormat, merger.RunResponseFormat)
+		fmt.Printf("DEBUG prepareRequest: merger.GetResponseFormat()=%v\n", merger.GetResponseFormat())
 	}
 
-	if config.MaxTokens != nil {
-		req.MaxTokens = openai.Int(int64(*config.MaxTokens))
-	} else if agent.MaxTokens != nil {
-		req.MaxTokens = openai.Int(int64(*agent.MaxTokens))
+	parallelToolCalls := merger.GetParallelToolCalls()
+	requestConfig := &runner.RequestConfig{
+		Model:              agent.Model,
+		Temperature:        merger.GetTemperature(),
+		MaxTokens:          merger.GetMaxTokens(),
+		ParallelToolCalls:  &parallelToolCalls,
+		ResponseFormat:     merger.GetResponseFormat(),
+		SystemInstructions: agent.GetInstructions(ctx),
 	}
 
-	if len(tools) > 0 {
-		req.Tools = tools
-		parallelCalls := agent.ParallelToolCalls
-		if config.ParallelToolCalls != nil {
-			parallelCalls = *config.ParallelToolCalls
-		}
-		if !parallelCalls {
-			req.ParallelToolCalls = openai.Bool(false)
-		}
-	}
-
-	// Apply response format
-	var responseFormat *jsonschema.ResponseFormat
-	if config.ResponseFormat != nil {
-		responseFormat = config.ResponseFormat
-	} else if agent.ResponseFormat != nil {
-		responseFormat = agent.ResponseFormat
-	}
-
-	if responseFormat != nil {
-		if responseFormat.Type == "text" {
-			req.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
-				OfText: &openai.ResponseFormatTextParam{
-					Type: "text",
-				},
-			}
-		} else if responseFormat.Type == "json_schema" && responseFormat.JSONSchema != nil {
-			js := responseFormat.JSONSchema
-			schemaMap, err := js.Schema.ToMap()
-			if err != nil {
-				return req, fmt.Errorf("invalid schema: %w", err)
-			}
-
-			params := openai.ResponseFormatJSONSchemaJSONSchemaParam{
-				Name:   js.Name,
-				Schema: schemaMap,
-				Strict: openai.Bool(js.Strict),
-			}
-			if js.Description != "" {
-				params.Description = openai.String(js.Description)
-			}
-
-			req.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
-				OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{
-					Type:       "json_schema",
-					JSONSchema: params,
-				},
-			}
-		}
-	}
-
-	// Inject system instructions
-	instructions := agent.GetInstructions(ctx)
-	messagesForTurn := []openai.ChatCompletionMessageParamUnion{
-		openai.SystemMessage(instructions),
-	}
-	messagesForTurn = append(messagesForTurn, history...)
-	req.Messages = messagesForTurn
-
-	return req, nil
+	return runner.PrepareRequest(ctx, requestConfig, tools, history, r.convertResponseFormat)
 }
 
+// convertResponseFormat converts response format to OpenAI parameter format
+func (r *Runner) convertResponseFormat(format any) (openai.ChatCompletionNewParamsResponseFormatUnion, error) {
+	responseFormat, ok := format.(*jsonschema.ResponseFormat)
+	if !ok || responseFormat == nil {
+		return openai.ChatCompletionNewParamsResponseFormatUnion{}, nil
+	}
+
+	if responseFormat.Type == "text" {
+		return openai.ChatCompletionNewParamsResponseFormatUnion{
+			OfText: &openai.ResponseFormatTextParam{
+				Type: "text",
+			},
+		}, nil
+	}
+
+	if responseFormat.Type == "json_schema" && responseFormat.JSONSchema != nil {
+		js := responseFormat.JSONSchema
+		schemaMap, err := js.Schema.ToMap()
+		if err != nil {
+			return openai.ChatCompletionNewParamsResponseFormatUnion{}, fmt.Errorf("invalid schema: %w", err)
+		}
+
+		params := openai.ResponseFormatJSONSchemaJSONSchemaParam{
+			Name:   js.Name,
+			Schema: schemaMap,
+			Strict: openai.Bool(js.Strict),
+		}
+		if js.Description != "" {
+			params.Description = openai.String(js.Description)
+		}
+
+		return openai.ChatCompletionNewParamsResponseFormatUnion{
+			OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{
+				Type:       "json_schema",
+				JSONSchema: params,
+			},
+		}, nil
+	}
+
+	return openai.ChatCompletionNewParamsResponseFormatUnion{}, nil
+}
+
+// handleToolCalls executes tool calls and returns results
 func (r *Runner) handleToolCalls(
 	toolCalls []openai.ChatCompletionMessageToolCall,
-	toolMap map[string]Tool,
+	toolMap runner.ToolMap,
 	contextParams ContextVariables,
-	currentAgent *Agent,
+	_ *Agent,
 ) ([]openai.ChatCompletionMessageParamUnion, []ToolCall, *Agent) {
-	var messages []openai.ChatCompletionMessageParamUnion
-	var recordedToolCalls []ToolCall
-	nextAgent := currentAgent
+	// Use the internal tool handler
+	messages, results, nextAgentAny := runner.HandleToolCalls(
+		toolCalls,
+		toolMap,
+		contextParams,
+		r.isHandoffFunc,
+	)
 
-	for _, toolCall := range toolCalls {
-		toolStart := time.Now()
-		toolName := toolCall.Function.Name
-		args := toolCall.Function.Arguments
-
-		tool, found := toolMap[toolName]
-		var result any
-		var err error
-
-		if !found {
-			// Provide helpful error with available tools
-			available := make([]string, 0, len(toolMap))
-			for name := range toolMap {
-				available = append(available, name)
-			}
-			result = fmt.Sprintf("Error: Tool %s not found. Available tools: %v", toolName, available)
-			err = fmt.Errorf("tool %s not found (available: %v)", toolName, available)
-		} else {
-			result, err = tool.Execute(args, contextParams)
-			if err != nil {
-				result = fmt.Sprintf("Error executing tool %s: %v", toolName, err)
-				err = NewToolExecutionError(toolName, err)
-			}
+	// Convert results to public ToolCall type
+	recordedToolCalls := make([]ToolCall, len(results))
+	for i, result := range results {
+		recordedToolCalls[i] = ToolCall{
+			ToolName:  result.ToolName,
+			Arguments: result.Arguments,
+			Result:    result.Result,
+			Error:     result.Error,
+			Duration:  result.Duration,
 		}
+	}
 
-		// Record tool call
-		recordedToolCalls = append(recordedToolCalls, ToolCall{
-			ToolName:  toolName,
-			Arguments: args,
-			Result:    result,
-			Error:     err,
-			Duration:  time.Since(toolStart),
-		})
-
-		// Check for Handoff
-		if extractedAgent, ok := IsHandoff(result); ok {
+	// Handle agent handoff
+	var nextAgent *Agent
+	if nextAgentAny != nil {
+		if extractedAgent, ok := nextAgentAny.(*Agent); ok {
 			nextAgent = extractedAgent
-			result = fmt.Sprintf("Transferred to %s", nextAgent.Name)
+			// Update the last message to indicate the transfer
+			// The HandleToolCalls function already created the message with truncated ID
+			// We just need to update the content, preserving the already-truncated ID
+			if len(messages) > 0 {
+				lastIdx := len(messages) - 1
+				// Extract the truncated ID that HandleToolCalls already created
+				var truncatedID string
+				// Get the truncated tool call ID from the last processed tool call
+				if lastIdx < len(toolCalls) {
+					truncatedID = toolCalls[lastIdx].ID
+					if len(truncatedID) > runner.MaxToolCallIDLength {
+						truncatedID = truncatedID[:runner.MaxToolCallIDLength]
+					}
+				}
+				messages[lastIdx] = openai.ToolMessage(
+					fmt.Sprintf("Transferred to %s", nextAgent.Name),
+					truncatedID,
+				)
+			}
 		}
-
-		// Add tool output to history
-		toolCallID := toolCall.ID
-		if len(toolCallID) > 40 {
-			toolCallID = toolCallID[:40]
-		}
-		resultStr := fmt.Sprintf("%v", result)
-		messages = append(messages, openai.ToolMessage(resultStr, toolCallID))
 	}
 
 	return messages, recordedToolCalls, nextAgent
+}
+
+// isHandoffFunc checks if a result is an agent handoff
+func (r *Runner) isHandoffFunc(result any) (any, bool) {
+	return IsHandoff(result)
+}
+
+// executeInputGuardrails runs input guardrails on the agent
+func (r *Runner) executeInputGuardrails(
+	ctx context.Context,
+	agent *Agent,
+	messages []openai.ChatCompletionMessageParamUnion,
+) error {
+	if len(agent.InputGuardrails) == 0 || len(messages) == 0 {
+		return nil
+	}
+
+	// Convert guardrails to internal format
+	guardrails := make([]*runner.Guardrail, len(agent.InputGuardrails))
+	for i, gr := range agent.InputGuardrails {
+		guardrails[i] = &runner.Guardrail{
+			Name: gr.Name,
+			Func: func(ctx context.Context, text string) (runner.GuardrailResult, error) {
+				result, err := gr.Func(ctx, text)
+				return runner.GuardrailResult{
+					TripwireTriggered: result.TripwireTriggered,
+					Message:           result.Message,
+				}, err
+			},
+		}
+	}
+
+	executor := runner.NewGuardrailExecutor(guardrails, "input")
+	userInput := fmt.Sprintf("%v", messages[len(messages)-1])
+
+	if err := executor.Execute(ctx, userInput); err != nil {
+		// Convert internal error to public error type
+		if strings.Contains(err.Error(), "guardrail") {
+			// Extract guardrail name and message from error
+			return &guardrail.InputGuardrailTripwireError{
+				GuardrailName: extractGuardrailName(err.Error()),
+				Message:       err.Error(),
+			}
+		}
+		return err
+	}
+
+	return nil
+}
+
+// executeOutputGuardrails runs output guardrails on the agent output
+func (r *Runner) executeOutputGuardrails(
+	ctx context.Context,
+	agent *Agent,
+	finalOutput string,
+) error {
+	if len(agent.OutputGuardrails) == 0 || finalOutput == "" {
+		return nil
+	}
+
+	// Convert guardrails to internal format
+	guardrails := make([]*runner.Guardrail, len(agent.OutputGuardrails))
+	for i, gr := range agent.OutputGuardrails {
+		guardrails[i] = &runner.Guardrail{
+			Name: gr.Name,
+			Func: func(ctx context.Context, text string) (runner.GuardrailResult, error) {
+				result, err := gr.Func(ctx, text)
+				return runner.GuardrailResult{
+					TripwireTriggered: result.TripwireTriggered,
+					Message:           result.Message,
+				}, err
+			},
+		}
+	}
+
+	executor := runner.NewGuardrailExecutor(guardrails, "output")
+
+	if err := executor.Execute(ctx, finalOutput); err != nil {
+		// Convert internal error to public error type
+		if strings.Contains(err.Error(), "guardrail") {
+			return &guardrail.OutputGuardrailTripwireError{
+				GuardrailName: extractGuardrailName(err.Error()),
+				Message:       err.Error(),
+			}
+		}
+		return err
+	}
+
+	return nil
+}
+
+// extractGuardrailName extracts the guardrail name from an error message
+func extractGuardrailName(errMsg string) string {
+	// Simple extraction from error message format
+	// Format: "input guardrail 'name' triggered: message"
+	start := strings.Index(errMsg, "'")
+	if start == -1 {
+		return "unknown"
+	}
+	end := strings.Index(errMsg[start+1:], "'")
+	if end == -1 {
+		return "unknown"
+	}
+	return errMsg[start+1 : start+1+end]
+}
+
+// extractFinalOutput extracts the final output from the last message
+func extractFinalOutput(lastMessage openai.ChatCompletionMessage) string {
+	if len(lastMessage.Content) > 0 {
+		return lastMessage.Content
+	}
+	if lastMessage.Refusal != "" {
+		return lastMessage.Refusal
+	}
+	return ""
 }
