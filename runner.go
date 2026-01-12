@@ -427,11 +427,22 @@ func (r *Runner) handleToolCalls(
 		if extractedAgent, ok := nextAgentAny.(*Agent); ok {
 			nextAgent = extractedAgent
 			// Update the last message to indicate the transfer
+			// The HandleToolCalls function already created the message with truncated ID
+			// We just need to update the content, preserving the already-truncated ID
 			if len(messages) > 0 {
 				lastIdx := len(messages) - 1
+				// Extract the truncated ID that HandleToolCalls already created
+				var truncatedID string
+				// Get the truncated tool call ID from the last processed tool call
+				if lastIdx < len(toolCalls) {
+					truncatedID = toolCalls[lastIdx].ID
+					if len(truncatedID) > runner.MaxToolCallIDLength {
+						truncatedID = truncatedID[:runner.MaxToolCallIDLength]
+					}
+				}
 				messages[lastIdx] = openai.ToolMessage(
 					fmt.Sprintf("Transferred to %s", nextAgent.Name),
-					extractToolCallID(messages[lastIdx]),
+					truncatedID,
 				)
 			}
 		}
@@ -443,13 +454,6 @@ func (r *Runner) handleToolCalls(
 // isHandoffFunc checks if a result is an agent handoff
 func (r *Runner) isHandoffFunc(result any) (any, bool) {
 	return IsHandoff(result)
-}
-
-// extractToolCallID extracts the tool call ID from a tool message
-func extractToolCallID(msg openai.ChatCompletionMessageParamUnion) string {
-	// This is a helper to extract the tool call ID from the message
-	// We'll use a simple string conversion approach
-	return fmt.Sprintf("%v", msg)
 }
 
 // executeInputGuardrails runs input guardrails on the agent
