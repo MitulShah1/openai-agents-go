@@ -22,7 +22,7 @@ type FileSession struct {
 // basePath is the directory where session files will be stored.
 func NewFileSession(basePath string) (*FileSession, error) {
 	// Create base directory if it doesn't exist
-	if err := os.MkdirAll(basePath, 0755); err != nil {
+	if err := os.MkdirAll(basePath, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create session directory: %w", err)
 	}
 
@@ -42,6 +42,7 @@ func (f *FileSession) Get(_ context.Context, sessionID string) ([]openai.ChatCom
 	defer f.mu.RUnlock()
 
 	path := f.sessionPath(sessionID)
+	//nolint:gosec // Session files are intentionally read from user-controlled paths
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -67,14 +68,14 @@ func (f *FileSession) Get(_ context.Context, sessionID string) ([]openai.ChatCom
 }
 
 // Append adds messages to a session.
-func (f *FileSession) Append(ctx context.Context, sessionID string, messages []openai.ChatCompletionMessageParamUnion) error {
+func (f *FileSession) Append(_ context.Context, sessionID string, messages []openai.ChatCompletionMessageParamUnion) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	// Load existing messages
 	var existing []openai.ChatCompletionMessageParamUnion
 	path := f.sessionPath(sessionID)
 
+	//nolint:gosec // Session files are intentionally read from user-controlled paths
 	data, err := os.ReadFile(path)
 	if err == nil {
 		if err := json.Unmarshal(data, &existing); err != nil {
@@ -146,7 +147,7 @@ func (f *FileSession) writeAtomic(sessionID string, messages []openai.ChatComple
 
 	// Write to temp file
 	tempPath := f.sessionPath(sessionID) + ".tmp"
-	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+	if err := os.WriteFile(tempPath, data, 0600); err != nil {
 		return &StorageError{
 			SessionID: sessionID,
 			Operation: "write",
@@ -157,7 +158,8 @@ func (f *FileSession) writeAtomic(sessionID string, messages []openai.ChatComple
 	// Atomic rename
 	finalPath := f.sessionPath(sessionID)
 	if err := os.Rename(tempPath, finalPath); err != nil {
-		os.Remove(tempPath) // Clean up temp file
+		// Clean up temp file (best effort)
+		_ = os.Remove(tempPath)
 		return &StorageError{
 			SessionID: sessionID,
 			Operation: "rename",

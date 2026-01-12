@@ -42,7 +42,12 @@ func main() {
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("My name is Alice"),
 	}
-	result, err := runner.Run(ctx, agent, messages, nil, nil, memSession, sessionID)
+	result, err := runner.Run(
+		ctx,
+		agent,
+		messages,
+		agents.WithSession(memSession, sessionID),
+	)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -53,7 +58,12 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What's my name?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, nil, nil, memSession, sessionID)
+	result, err = runner.Run(
+		ctx,
+		agent,
+		messages,
+		agents.WithSession(memSession, sessionID),
+	)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -72,7 +82,11 @@ func main() {
 		fmt.Printf("Error creating file session: %v\n", err)
 		return
 	}
-	defer os.RemoveAll(sessionsDir)
+	defer func() {
+		if err := os.RemoveAll(sessionsDir); err != nil {
+			fmt.Printf("Warning: failed to clean up sessions directory: %v\n", err)
+		}
+	}()
 
 	sessionID2 := "user_456"
 
@@ -80,7 +94,12 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("I live in San Francisco"),
 	}
-	result, err = runner.Run(ctx, agent, messages, nil, nil, fileSession, sessionID2)
+	result, err = runner.Run(
+		ctx,
+		agent,
+		messages,
+		agents.WithSession(fileSession, sessionID2),
+	)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -91,7 +110,12 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What city did I mention?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, nil, nil, fileSession, sessionID2)
+	result, err = runner.Run(
+		ctx,
+		agent,
+		messages,
+		agents.WithSession(fileSession, sessionID2),
+	)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -108,7 +132,12 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("I work at Google"),
 	}
-	resultA, _ := runner.Run(ctx, agent, messages, nil, nil, fileSession, sessionA)
+	resultA, _ := runner.Run(
+		ctx,
+		agent,
+		messages,
+		agents.WithSession(fileSession, sessionA),
+	)
 	fmt.Printf("Alice: %s\n", resultA.FinalOutput)
 
 	// Session B (different user, different history)
@@ -116,7 +145,12 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("I work at Microsoft"),
 	}
-	resultB, _ := runner.Run(ctx, agent, messages, nil, nil, fileSession, sessionB)
+	resultB, _ := runner.Run(
+		ctx,
+		agent,
+		messages,
+		agents.WithSession(fileSession, sessionB),
+	)
 	fmt.Printf("Bob: %s\n", resultB.FinalOutput)
 
 	// Ask same question to both - they should remember their own company
@@ -124,10 +158,10 @@ func main() {
 		openai.UserMessage("Where do I work?"),
 	}
 
-	resultA, _ = runner.Run(ctx, agent, messages, nil, nil, fileSession, sessionA)
+	resultA, _ = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, sessionA))
 	fmt.Printf("Alice remembers: %s\n", resultA.FinalOutput)
 
-	resultB, _ = runner.Run(ctx, agent, messages, nil, nil, fileSession, sessionB)
+	resultB, _ = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, sessionB))
 	fmt.Printf("Bob remembers: %s\n\n", resultB.FinalOutput)
 
 	// ===================================================================
@@ -141,7 +175,15 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Remember: my favorite color is blue"),
 	}
-	runner.Run(ctx, agent, messages, nil, nil, fileSession, sessionID3)
+	if _, err := runner.Run(
+		ctx,
+		agent,
+		messages,
+		agents.WithSession(fileSession, sessionID3),
+	); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
 
 	// Get session history
 	history, err := fileSession.Get(ctx, sessionID3)

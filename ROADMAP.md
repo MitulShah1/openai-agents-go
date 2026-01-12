@@ -101,13 +101,46 @@ Future    │ v1.1.0+ - Advanced Integrations
 
 ---
 
-### v0.3.0 - Database Session Backends & Tracing 💾🔍
+### v0.3.0 - Enhanced Guardrails, Database Session Backends & Tracing 🛡️��🔍
 
 **Timeline**: Week 5-6  
 **Status**: Planned  
 **Dependencies**: Optional session backends (SQLite, Redis, PostgreSQL drivers)
 
 #### Features
+
+**Enhanced Guardrails** (Advanced Security & Validation) - NEW:
+- ⏳ **Content Length Guardrail**: Min/max character/word/line limits
+- ⏳ **Rate Limiting Guardrail**: Token bucket algorithm for API protection
+  - Per-user, per-IP, or global limits
+  - Configurable time windows and burst sizes
+  - Thread-safe concurrent execution
+- ⏳ **Profanity Detection**: Pattern-based toxicity detection
+  - Comprehensive profanity word lists
+  - Leetspeak normalization
+  - Configurable severity levels
+- ⏳ **Prompt Injection Detection**: LLM security guardrail
+  - Detect instruction override attempts
+  - Role manipulation prevention
+  - Delimiter and encoding attack detection
+- ⏳ **Secrets Detection**: Credential leakage prevention
+  - API keys (AWS, OpenAI, GitHub, etc.)
+  - Private keys (RSA, SSH, PGP)
+  - High-entropy string detection
+  - JWT token patterns
+
+**Guardrail Composition** (Advanced Features) - NEW:
+- ⏳ **Chaining Support**: Combine multiple guardrails
+  - Sequential mode (short-circuit on failure)
+  - Parallel mode (collect all results)
+  - StopOnFirst mode (early exit on pass)
+- ⏳ **Async Validation**: Timeout and cancellation support
+  - Context-aware execution
+  - Graceful degradation
+- ⏳ **Basic Metrics Collection**: Guardrail telemetry
+  - Success/failure counters
+  - Tripwire statistics
+  - Average latency tracking
 
 **Session Backends** (Production-Ready Persistence):
 - ⏳ SQLite session backend (file-based database)
@@ -135,9 +168,14 @@ Future    │ v1.1.0+ - Advanced Integrations
 - ⏳ Basic tracing framework with spans
 - ⏳ Console trace processor (stdout)
 - ⏳ OpenTelemetry integration (optional)
-- ⏳ Automatic tracing of operations (LLM, tools, sessions)
+- ⏳ Automatic tracing of operations (LLM, tools, sessions, guardrails)
 
 #### Use Cases
+- LLM security (prompt injection prevention)
+- Credential protection (secrets detection)
+- Content moderation (profanity, PII)
+- API rate limiting and resource protection
+- Complex validation workflows (chaining)
 - Production deployments with database persistence
 - High-scale distributed systems (Redis)
 - Enterprise applications (PostgreSQL)
@@ -148,14 +186,20 @@ Future    │ v1.1.0+ - Advanced Integrations
 
 ---
 
-### v0.4.0 - Advanced Features 🚀
+### v0.4.0 - Streaming & Advanced Features 🚀
 
 **Timeline**: Week 7-8  
 **Status**: Planned  
 **Dependencies**: Optional SQLite driver (`modernc.org/sqlite`)
 
 #### Features
-- ⏳ Streaming support (token-by-token responses)
+
+**Streaming Support**:
+- ⏳ Token-by-token response streaming
+- ⏳ Server-Sent Events (SSE) support
+- ⏳ Stream cancellation and error handling
+
+**Advanced Features**:
 - ⏳ Parallel tool execution
 - ⏳ Advanced handoff patterns:
   - Conditional handoffs
@@ -165,11 +209,19 @@ Future    │ v1.1.0+ - Advanced Integrations
 - ⏳ Full documentation
 - ⏳ Performance benchmarks
 
+**Additional Guardrails** (Optional):
+- ⏳ Sentiment analysis guardrail
+- ⏳ Language detection guardrail
+- ⏳ SQL injection detection
+- ⏳ Data Loss Prevention (DLP) with comprehensive patterns
+- ⏳ Conditional guardrails (context-based)
+- ⏳ Validation caching (LRU with TTL)
+
 #### Use Cases
-- High-performance agents
-- Real-time interactions
+- High-performance real-time agents
 - Complex multi-agent workflows
 - Production applications at scale
+- Advanced content moderation
 
 ---
 
@@ -210,7 +262,8 @@ Future    │ v1.1.0+ - Advanced Integrations
 - 🔮 **MySQL Session Backend**: For users preferring MySQL over PostgreSQL
 - 🔮 **Batch API Support**: Process multiple requests in batch mode
 - 🔮 **Fine-tuned Model Support**: Integration with custom fine-tuned models
-- 🔮 **Advanced Guardrails**: Hallucination detection, NSFW detection, jailbreak detection
+- 🔮 **AI-Powered Guardrails**: Hallucination detection, NSFW detection, jailbreak detection (requires external APIs)
+- 🔮 **Advanced Metrics**: Prometheus exporter, OpenTelemetry full integration
 - 🔮 **Multi-modal Support**: Image, audio, video processing
 
 ---
@@ -234,7 +287,7 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-10  
-**Current Focus**: v0.2.0 Substantially Complete - Guardrails & Sessions core features done, examples/docs pending
+**Last Updated**: 2026-01-12  
+**Current Focus**: v0.2.0 Substantially Complete - Planning v0.3.0 Enhanced Guardrails
 
 

@@ -7,6 +7,8 @@ import (
 	"github.com/openai/openai-go"
 )
 
+const testSessionID = "test-session"
+
 func TestMemorySession_GetNotFound(t *testing.T) {
 	s := NewMemorySession()
 	_, err := s.Get(context.Background(), "nonexistent")
@@ -23,7 +25,7 @@ func TestMemorySession_GetNotFound(t *testing.T) {
 func TestMemorySession_AppendAndGet(t *testing.T) {
 	s := NewMemorySession()
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Hello"),
@@ -49,13 +51,15 @@ func TestMemorySession_AppendAndGet(t *testing.T) {
 func TestMemorySession_Clear(t *testing.T) {
 	s := NewMemorySession()
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	// Add messages
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Hello"),
 	}
-	s.Append(ctx, sessionID, messages)
+	if err := s.Append(ctx, sessionID, messages); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	// Clear
 	if err := s.Clear(ctx, sessionID); err != nil {
@@ -76,12 +80,14 @@ func TestMemorySession_Clear(t *testing.T) {
 func TestMemorySession_Delete(t *testing.T) {
 	s := NewMemorySession()
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	// Add messages
-	s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
+	if err := s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Hello"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	// Delete
 	if err := s.Delete(ctx, sessionID); err != nil {
@@ -98,17 +104,21 @@ func TestMemorySession_Delete(t *testing.T) {
 func TestMemorySession_MultipleAppends(t *testing.T) {
 	s := NewMemorySession()
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	// First append
-	s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
+	if err := s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Message 1"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	// Second append
-	s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
+	if err := s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Message 2"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	// Verify both messages
 	retrieved, err := s.Get(ctx, sessionID)
@@ -126,13 +136,17 @@ func TestMemorySession_IsolatedSessions(t *testing.T) {
 	ctx := context.Background()
 
 	// Create two separate sessions
-	s.Append(ctx, "session1", []openai.ChatCompletionMessageParamUnion{
+	if err := s.Append(ctx, "session1", []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Session 1 message"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
-	s.Append(ctx, "session2", []openai.ChatCompletionMessageParamUnion{
+	if err := s.Append(ctx, "session2", []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Session 2 message"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	// Verify isolation
 	msg1, _ := s.Get(ctx, "session1")

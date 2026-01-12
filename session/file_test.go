@@ -11,7 +11,7 @@ import (
 
 func TestFileSession_CreateDir(t *testing.T) {
 	tempDir := filepath.Join(os.TempDir(), "test-sessions-"+t.Name())
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	_, err := NewFileSession(tempDir)
 	if err != nil {
@@ -26,7 +26,7 @@ func TestFileSession_CreateDir(t *testing.T) {
 
 func TestFileSession_AppendAndGet(t *testing.T) {
 	tempDir := filepath.Join(os.TempDir(), "test-sessions-"+t.Name())
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	s, err := NewFileSession(tempDir)
 	if err != nil {
@@ -34,7 +34,7 @@ func TestFileSession_AppendAndGet(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Hello"),
@@ -59,16 +59,18 @@ func TestFileSession_AppendAndGet(t *testing.T) {
 
 func TestFileSession_Persistence(t *testing.T) {
 	tempDir := filepath.Join(os.TempDir(), "test-sessions-"+t.Name())
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	// Create first session instance
 	s1, _ := NewFileSession(tempDir)
-	s1.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
+	if err := s1.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Persisted message"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	// Create second session instance (simulates restart)
 	s2, _ := NewFileSession(tempDir)
@@ -84,16 +86,18 @@ func TestFileSession_Persistence(t *testing.T) {
 
 func TestFileSession_Clear(t *testing.T) {
 	tempDir := filepath.Join(os.TempDir(), "test-sessions-"+t.Name())
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	s, _ := NewFileSession(tempDir)
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	// Add and clear
-	s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
+	if err := s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Message"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	if err := s.Clear(ctx, sessionID); err != nil {
 		t.Fatalf("failed to clear: %v", err)
@@ -108,16 +112,18 @@ func TestFileSession_Clear(t *testing.T) {
 
 func TestFileSession_Delete(t *testing.T) {
 	tempDir := filepath.Join(os.TempDir(), "test-sessions-"+t.Name())
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	s, _ := NewFileSession(tempDir)
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	// Add and delete
-	s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
+	if err := s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Message"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	if err := s.Delete(ctx, sessionID); err != nil {
 		t.Fatalf("failed to delete: %v", err)
@@ -138,19 +144,23 @@ func TestFileSession_Delete(t *testing.T) {
 
 func TestFileSession_MultipleAppends(t *testing.T) {
 	tempDir := filepath.Join(os.TempDir(), "test-sessions-"+t.Name())
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	s, _ := NewFileSession(tempDir)
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	// Multiple appends
-	s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
+	if err := s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Message 1"),
-	})
-	s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
+	if err := s.Append(ctx, sessionID, []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Message 2"),
-	})
+	}); err != nil {
+		t.Fatalf("failed to append: %v", err)
+	}
 
 	// Verify both
 	retrieved, _ := s.Get(ctx, sessionID)

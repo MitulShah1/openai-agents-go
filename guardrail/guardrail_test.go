@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewGuardrail(t *testing.T) {
-	fn := func(_ context.Context, input string) (*Result, error) {
+	fn := func(_ context.Context, _ string) (*Result, error) {
 		return &Result{
 			Passed:            true,
 			TripwireTriggered: false,
@@ -30,7 +30,7 @@ func TestNewGuardrail(t *testing.T) {
 }
 
 func TestGuardrailWithParallel(t *testing.T) {
-	fn := func(ctx context.Context, input string) (*Result, error) {
+	fn := func(_ context.Context, _ string) (*Result, error) {
 		return &Result{Passed: true}, nil
 	}
 
@@ -97,7 +97,7 @@ func TestGuardrailFunc(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fn := func(ctx context.Context, input string) (*Result, error) {
+			fn := func(_ context.Context, input string) (*Result, error) {
 				return &Result{
 					Passed:            input == "valid input",
 					TripwireTriggered: input != "valid input",

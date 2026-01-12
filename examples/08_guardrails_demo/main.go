@@ -70,7 +70,7 @@ func main() {
 		openai.UserMessage("What is the capital of France?"),
 	}
 
-	result, err := runner.Run(ctx, agent, messages, nil, nil, nil, "")
+	result, err := runner.Run(ctx, agent, messages)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
@@ -83,7 +83,7 @@ func main() {
 		openai.UserMessage("My email is john@example.com, can you help?"),
 	}
 
-	result, err = runner.Run(ctx, agent, messages, nil, nil, nil, "")
+	result, err = runner.Run(ctx, agent, messages)
 	if err != nil {
 		fmt.Printf("✅ Guardrail blocked: %v\n\n", err)
 	} else {
@@ -96,7 +96,7 @@ func main() {
 		openai.UserMessage("What's my password for the account?"),
 	}
 
-	result, err = runner.Run(ctx, agent, messages, nil, nil, nil, "")
+	result, err = runner.Run(ctx, agent, messages)
 	if err != nil {
 		fmt.Printf("✅ Guardrail blocked: %v\n\n", err)
 	} else {
@@ -109,7 +109,7 @@ func main() {
 		openai.UserMessage("Check out this link: https://evil.com/malware"),
 	}
 
-	result, err = runner.Run(ctx, agent, messages, nil, nil, nil, "")
+	result, err = runner.Run(ctx, agent, messages)
 	if err != nil {
 		fmt.Printf("✅ Guardrail blocked: %v\n\n", err)
 	} else {
