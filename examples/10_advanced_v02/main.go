@@ -75,12 +75,17 @@ func main() {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	defer os.RemoveAll(sessionsDir)
+	defer func() {
+		if err := os.RemoveAll(sessionsDir); err != nil {
+			fmt.Printf("Warning: failed to clean up sessions directory: %v\n", err)
+		}
+	}()
 
 	ctx := context.Background()
 
 	// Simulate a multi-turn customer conversation
-	fmt.Println("=== Production Chatbot Demo ===\n")
+	fmt.Println("=== Production Chatbot Demo ===")
+	fmt.Println()
 
 	userID := "customer_001"
 
@@ -89,7 +94,7 @@ func main() {
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What products do you offer?"),
 	}
-	result, err := runner.Run(ctx, agent, messages, nil, nil, fileSession, userID)
+	result, err := runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -101,7 +106,7 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("How much does the first one cost?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, nil, nil, fileSession, userID)
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -113,11 +118,12 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("My email is customer@example.com, can you send me details?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, nil, nil, fileSession, userID)
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
 	if err != nil {
 		// Guardrail blocked the request
 		fmt.Printf("⚠️  Safety Alert: %v\n", err)
-		fmt.Println("(In production, log this and ask user to rephrase)\n")
+		fmt.Println("(In production, log this and ask user to rephrase)")
+		fmt.Println()
 	} else {
 		fmt.Printf("Agent: %s\n\n", result.FinalOutput)
 	}
@@ -127,7 +133,7 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What's your return policy?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, nil, nil, fileSession, userID)
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return

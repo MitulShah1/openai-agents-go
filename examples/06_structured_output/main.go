@@ -56,7 +56,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	result, err := runner.Run(ctx, agent, messages, nil, nil, nil, "")
+	result, err := runner.Run(ctx, agent, messages)
 	if err != nil {
 		log.Fatalf("Error running agent: %v", err)
 	}
