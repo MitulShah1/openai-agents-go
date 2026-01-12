@@ -339,6 +339,14 @@ func (r *Runner) prepareRequest(
 		RunResponseFormat:      config.ResponseFormat,
 	}
 
+	if config.Debug {
+		fmt.Printf("DEBUG prepareRequest: agent.ResponseFormat=%v, config.ResponseFormat=%v\n",
+			agent.ResponseFormat, config.ResponseFormat)
+		fmt.Printf("DEBUG prepareRequest: merger.AgentResponseFormat=%v, merger.RunResponseFormat=%v\n",
+			merger.AgentResponseFormat, merger.RunResponseFormat)
+		fmt.Printf("DEBUG prepareRequest: merger.GetResponseFormat()=%v\n", merger.GetResponseFormat())
+	}
+
 	parallelToolCalls := merger.GetParallelToolCalls()
 	requestConfig := &runner.RequestConfig{
 		Model:              agent.Model,

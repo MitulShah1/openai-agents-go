@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/openai/openai-go"
+
+	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
 )
 
 // RequestConfig holds configuration for preparing requests
@@ -103,8 +105,14 @@ func (cm *ConfigMerger) GetParallelToolCalls() bool {
 
 // GetResponseFormat returns the effective response format setting
 func (cm *ConfigMerger) GetResponseFormat() any {
+	// Check RunResponseFormat first (higher priority)
 	if cm.RunResponseFormat != nil {
-		return cm.RunResponseFormat
+		// Need to check if the value itself is nil, not just the interface
+		// In Go, an interface can be non-nil but contain a nil value
+		if v, ok := cm.RunResponseFormat.(*jsonschema.ResponseFormat); ok && v != nil {
+			return cm.RunResponseFormat
+		}
 	}
+	// Fall back to AgentResponseFormat
 	return cm.AgentResponseFormat
 }
