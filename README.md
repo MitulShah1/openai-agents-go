@@ -17,7 +17,9 @@ A lightweight, powerful Go framework for building multi-agent workflows with Ope
 2. **Tools**: Functions that agents can call to perform actions
 3. **Handoffs**: Transfer control between specialized agents dynamically
 4. **Structured Outputs**: Schema-validated JSON responses for reliable parsing
-5. **Run Configuration**: Control execution flow with max turns, timeouts, and more
+5. **Guardrails**: Input/output validation for safety and compliance
+6. **Sessions**: Persistent conversation history and memory management
+7. **Run Configuration**: Control execution flow with max turns, timeouts, and more
 
 Explore the [`examples/`](./examples) directory to see the SDK in action.
 
@@ -29,14 +31,16 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 - ✅ **Tool Integration**: Seamlessly call Go functions from agent responses
 - ✅ **Handoffs**: Dynamic agent-to-agent transfers during execution
 - ✅ **Structured Outputs**: Schema-validated JSON responses with fluent API
+- ✅ **Guardrails**: Input/output validation with PII detection, URL filtering, and custom regex
+- ✅ **Sessions**: Persistent conversation history with memory and file-based storage
 - ✅ **Lifecycle Hooks**: Execute code before/after agent runs
 - ✅ **Context Variables**: Pass state between agents and tools
 - ✅ **Usage Tracking**: Monitor token consumption and costs
 - ✅ **Error Handling**: Comprehensive error types for debugging
 - ✅ **Type Safety**: Full Go type safety with generics support
-- 🔮 **Streaming** (Coming soon - see [ROADMAP.md](./ROADMAP.md))
-- 🔮 **Tracing & Debugging** (Planned)
-- 🔮 **Guardrails** (Planned)
+- 🔮 **Streaming** (Coming in v0.4.0 - see [ROADMAP.md](./ROADMAP.md))
+- 🔮 **Tracing & Observability** (Coming in v0.3.0)
+- 🔮 **Database Session Backends** (SQLite, Redis, PostgreSQL - Coming in v0.3.0)
 
 ---
 

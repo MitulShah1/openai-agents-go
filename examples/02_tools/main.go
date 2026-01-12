@@ -97,7 +97,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	result, err := runner.Run(ctx, agent, messages, nil, nil)
+	result, err := runner.Run(ctx, agent, messages)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
