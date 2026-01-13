@@ -31,7 +31,7 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 - ✅ **Tool Integration**: Seamlessly call Go functions from agent responses
 - ✅ **Handoffs**: Dynamic agent-to-agent transfers during execution
 - ✅ **Structured Outputs**: Schema-validated JSON responses with fluent API
-- ✅ **Guardrails**: Input/output validation with PII detection, URL filtering, and custom regex
+- ✅ **Guardrails**: Input/output validation with PII detection, URL filtering, custom regex, and OpenAI Moderation API
 - ✅ **Sessions**: Persistent conversation history with memory and file-based storage
 - ✅ **Lifecycle Hooks**: Execute code before/after agent runs
 - ✅ **Context Variables**: Pass state between agents and tools
@@ -243,6 +243,14 @@ cd examples/06_structured_output && go run main.go
 
 # Complex nested schemas
 cd examples/07_complex_schema && go run main.go
+# Guardrails and sessions
+cd examples/08_guardrails_demo && go run main.go
+
+# Session management
+cd examples/09_sessions_demo && go run main.go
+
+# Production chatbot (combines guardrails + sessions}
+cd examples/10_advanced_v02 && go run main.go
 ```
 
 ---
@@ -292,7 +300,7 @@ make check
 | Handoffs | ✅ | ✅ | ✅ |
 | Structured Outputs | ✅ | ✅ | ✅ |
 | Streaming | ✅ | ✅ | 🔮 Planned |
-| Guardrails | ✅ | ✅ | 🔮 Planned |
+| Guardrails | ✅ | ✅ | ✅ (v0.2.1) |
 | Tracing | ✅ | ✅ | 🔮 Planned |
 | Voice Agents | ❌ | ✅ | 🔮 Future |
 | **Type Safety** | ⚠️ Runtime | ⚠️ TypeScript | ✅ Compile-time |
