@@ -30,3 +30,16 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Example binaries
+examples/*/01_basic
+examples/*/02_tools
+examples/*/03_handoffs
+examples/*/04_lifecycle_hooks
+examples/*/05_config_usage
+examples/*/06_structured_output
+examples/*/07_complex_schema
+examples/*/08_guardrails_demo
+examples/*/09_sessions_demo
+examples/*/10_advanced_v02
+examples/*/test_moderation
