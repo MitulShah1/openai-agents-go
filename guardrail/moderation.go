@@ -9,10 +9,22 @@ import (
 	"github.com/openai/openai-go"
 )
 
-// ModerationCategory represents a content moderation category.
+// ModerationCategory represents a content moderation category from OpenAI's Moderation API.
+// These categories are used to classify and flag potentially harmful content.
 type ModerationCategory string
 
-// Available moderation categories from OpenAI's Moderation API.
+// Moderation categories supported by OpenAI's Moderation API.
+// Each category represents a different type of potentially harmful content.
+//
+// Categories include:
+//   - Harassment: Content targeting or demeaning individuals
+//   - Hate: Content promoting hate based on protected characteristics
+//   - Illicit: Instructions for illegal activities
+//   - Self-Harm: Content promoting or encouraging self-harm
+//   - Sexual: Sexual content (excluding minors)
+//   - Violence: Content depicting or promoting violence
+//
+// Some categories have sub-categories (e.g., "hate/threatening") for more severe violations.
 const (
 	CategoryHarassment            ModerationCategory = "harassment"
 	CategoryHarassmentThreatening ModerationCategory = "harassment/threatening"
@@ -29,7 +41,8 @@ const (
 	CategoryViolenceGraphic       ModerationCategory = "violence/graphic"
 )
 
-// ModerationConfig configures the OpenAI Moderation guardrail.
+// ModerationConfig configures the OpenAI Moderation guardrail behavior.
+// Use functional options (WithModerationX) to customize the configuration.
 type ModerationConfig struct {
 	// Tripwire determines if flagged content should halt execution
 	Tripwire bool
@@ -76,6 +89,34 @@ func WithModerationCategories(categories ...ModerationCategory) ModerationOption
 
 // NewModerationGuardrail creates a guardrail that uses OpenAI's Moderation API
 // to detect harmful content across multiple categories.
+//
+// By default, all 13 moderation categories are checked with a threshold of 0.5.
+// Content scoring above the threshold is flagged as a violation.
+//
+// Example usage:
+//
+//	client := openai.NewClient(option.WithAPIKey("your-key"))
+//
+//	// Default configuration (all categories, threshold 0.5)
+//	guard := guardrail.NewModerationGuardrail(client)
+//
+//	// Custom threshold (stricter)
+//	guard = guardrail.NewModerationGuardrail(client,
+//		guardrail.WithModerationThreshold(0.3),
+//	)
+//
+//	// Specific categories only
+//	guard = guardrail.NewModerationGuardrail(client,
+//		guardrail.WithModerationCategories(
+//			guardrail.CategoryHate,
+//			guardrail.CategoryViolence,
+//		),
+//	)
+//
+//	// With tripwire (halts agent on violation)
+//	guard = guardrail.NewModerationGuardrail(client,
+//		guardrail.WithModerationTripwire(true),
+//	)
 func NewModerationGuardrail(client *openai.Client, opts ...ModerationOption) *Guardrail {
 	config := &ModerationConfig{
 		Tripwire:  false, // Default to non-blocking
