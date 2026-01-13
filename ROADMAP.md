@@ -68,7 +68,7 @@ Future    │ v1.1.0+ - Advanced Integrations
 
 **Guardrails** (Input/Output Validation):
 - ✅ Guardrail framework with pluggable validators
-- ❌ OpenAI Moderation API integration (SKIPPED - requires API testing)
+- ✅ OpenAI Moderation API integration (✅ v0.2.1)
 - ✅ PII detection (email, phone, SSN, credit card)
 - ✅ URL filtering (blocklist/allowlist)
 - ✅ Custom regex-based validation
@@ -78,7 +78,7 @@ Future    │ v1.1.0+ - Advanced Integrations
 - ✅ Session interface for pluggable backends
 - ✅ In-Memory session (thread-safe, zero deps)
 - ✅ File-Based session (JSON files with atomic writes, zero deps)
-- ❌ OpenAI Conversations API session (SKIPPED - requires API testing)
+- ⏸️ OpenAI Conversations API session (DEFERRED to v0.2.2 - requires API testing)
 - ✅ Automatic history management (load/save integrated in Runner)
 
 **What's Complete**:
@@ -86,11 +86,14 @@ Future    │ v1.1.0+ - Advanced Integrations
 - Zero new dependencies added
 - Runner.Run signature updated (breaking change: added session parameters)
 - All existing tests and examples fixed
+- ✅ v0.2.1: OpenAI Moderation API guardrail with 13 categories
+- ✅ v0.2.1: Examples 08, 09, 10 demonstrating production usage
+- ✅ v0.2.1: Comprehensive documentation and godoc
 
-**Pending** (for final v0.2.0 release):
-- Examples: 08_guardrails_demo, 09_sessions_demo, 10_advanced_v02
-- Documentation: README.md and ROADMAP.md updates
-- Godoc comments for all public APIs
+**Completed** (v0.2.1 released):
+- ✅ OpenAI Moderation API guardrail
+- ✅ All examples (08, 09, 10)
+- ✅ Documentation updates (README, ROADMAP, godoc)
 
 #### Use Cases
 - Multi-turn conversations
@@ -287,7 +290,7 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-12  
-**Current Focus**: v0.2.0 Substantially Complete - Planning v0.3.0 Enhanced Guardrails
+**Last Updated**: 2026-01-13  
+**Current Focus**: v0.2.1 Complete - OpenAI Moderation API, Examples, Documentation (Ready to tag)
 
 
