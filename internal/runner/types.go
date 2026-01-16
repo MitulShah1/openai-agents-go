@@ -4,7 +4,7 @@ package runner
 import (
 	"time"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 // Constants for truncation and defaults

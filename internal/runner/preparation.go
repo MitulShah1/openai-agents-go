@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 
 	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
 )
@@ -23,7 +23,7 @@ type RequestConfig struct {
 func PrepareRequest(
 	_ context.Context,
 	config *RequestConfig,
-	tools []openai.ChatCompletionToolParam,
+	tools []openai.ChatCompletionToolUnionParam,
 	history []openai.ChatCompletionMessageParamUnion,
 	responseFormatConverter func(any) (openai.ChatCompletionNewParamsResponseFormatUnion, error),
 ) (openai.ChatCompletionNewParams, error) {

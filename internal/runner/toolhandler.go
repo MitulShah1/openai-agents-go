@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 // ToolExecutor defines the interface for executing tools
@@ -33,7 +33,7 @@ func TruncateToolCallIDs(message *openai.ChatCompletionMessage) {
 // HandleToolCalls executes tool calls and returns the results
 // Returns: tool messages, recorded tool calls, and next agent (if handoff occurred)
 func HandleToolCalls(
-	toolCalls []openai.ChatCompletionMessageToolCall,
+	toolCalls []openai.ChatCompletionMessageToolCallUnion,
 	toolMap ToolMap,
 	contextParams map[string]any,
 	isHandoffFunc func(result any) (any, bool),

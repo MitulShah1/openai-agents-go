@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
@@ -294,8 +294,8 @@ func (r *Runner) executeAgentLoop(
 }
 
 // prepareTools builds the tool map and parameter list
-func (r *Runner) prepareTools(agent *Agent) ([]openai.ChatCompletionToolParam, runner.ToolMap) {
-	tools := make([]openai.ChatCompletionToolParam, 0, len(agent.Tools))
+func (r *Runner) prepareTools(agent *Agent) ([]openai.ChatCompletionToolUnionParam, runner.ToolMap) {
+	tools := make([]openai.ChatCompletionToolUnionParam, 0, len(agent.Tools))
 	toolMap := make(runner.ToolMap, len(agent.Tools))
 
 	for i := range agent.Tools {
@@ -324,7 +324,7 @@ func (r *Runner) prepareRequest(
 	ctx context.Context,
 	agent *Agent,
 	config *RunConfig,
-	tools []openai.ChatCompletionToolParam,
+	tools []openai.ChatCompletionToolUnionParam,
 	history []openai.ChatCompletionMessageParamUnion,
 ) (openai.ChatCompletionNewParams, error) {
 	// Merge configurations
@@ -404,7 +404,7 @@ func (r *Runner) convertResponseFormat(format any) (openai.ChatCompletionNewPara
 
 // handleToolCalls executes tool calls and returns results
 func (r *Runner) handleToolCalls(
-	toolCalls []openai.ChatCompletionMessageToolCall,
+	toolCalls []openai.ChatCompletionMessageToolCallUnion,
 	toolMap runner.ToolMap,
 	contextParams ContextVariables,
 	_ *Agent,

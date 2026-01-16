@@ -32,7 +32,7 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 - ✅ **Handoffs**: Dynamic agent-to-agent transfers during execution
 - ✅ **Structured Outputs**: Schema-validated JSON responses with fluent API
 - ✅ **Guardrails**: Input/output validation with PII detection, URL filtering, custom regex, and OpenAI Moderation API
-- ✅ **Sessions**: Persistent conversation history with memory and file-based storage
+- ✅ **Sessions**: Persistent conversation history with memory, file-based, and cloud-based (Conversations API) storage
 - ✅ **Lifecycle Hooks**: Execute code before/after agent runs
 - ✅ **Context Variables**: Pass state between agents and tools
 - ✅ **Usage Tracking**: Monitor token consumption and costs
@@ -249,8 +249,11 @@ cd examples/08_guardrails_demo && go run main.go
 # Session management
 cd examples/09_sessions_demo && go run main.go
 
-# Production chatbot (combines guardrails + sessions}
+# Production chatbot (combines guardrails + sessions)
 cd examples/10_advanced_v02 && go run main.go
+
+# Cloud-based Conversations session (v0.2.2)
+cd examples/11_conversations_session && go run main.go
 ```
 
 ---
