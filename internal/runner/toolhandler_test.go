@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 // mockToolExecutor is a mock implementation of ToolExecutor
@@ -27,10 +27,10 @@ func TestTruncateToolCallIDs(t *testing.T) {
 		{
 			name: "truncate long ID",
 			message: &openai.ChatCompletionMessage{
-				ToolCalls: []openai.ChatCompletionMessageToolCall{
+				ToolCalls: []openai.ChatCompletionMessageToolCallUnion{
 					{
 						ID: strings.Repeat("a", 50), // 50 chars, should be truncated to 40
-						Function: openai.ChatCompletionMessageToolCallFunction{
+						Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 							Name: "test_tool",
 						},
 					},
@@ -41,10 +41,10 @@ func TestTruncateToolCallIDs(t *testing.T) {
 		{
 			name: "keep short ID",
 			message: &openai.ChatCompletionMessage{
-				ToolCalls: []openai.ChatCompletionMessageToolCall{
+				ToolCalls: []openai.ChatCompletionMessageToolCallUnion{
 					{
 						ID: "short_id",
-						Function: openai.ChatCompletionMessageToolCallFunction{
+						Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 							Name: "test_tool",
 						},
 					},
@@ -55,7 +55,7 @@ func TestTruncateToolCallIDs(t *testing.T) {
 		{
 			name: "no tool calls",
 			message: &openai.ChatCompletionMessage{
-				ToolCalls: []openai.ChatCompletionMessageToolCall{},
+				ToolCalls: []openai.ChatCompletionMessageToolCallUnion{},
 			},
 			expectedIDLen: 0,
 		},
@@ -78,7 +78,7 @@ func TestTruncateToolCallIDs(t *testing.T) {
 func TestHandleToolCalls(t *testing.T) {
 	tests := []struct {
 		name            string
-		toolCalls       []openai.ChatCompletionMessageToolCall
+		toolCalls       []openai.ChatCompletionMessageToolCallUnion
 		toolMap         ToolMap
 		contextParams   map[string]any
 		isHandoffFunc   func(result any) (any, bool)
@@ -88,10 +88,10 @@ func TestHandleToolCalls(t *testing.T) {
 	}{
 		{
 			name: "successful tool execution",
-			toolCalls: []openai.ChatCompletionMessageToolCall{
+			toolCalls: []openai.ChatCompletionMessageToolCallUnion{
 				{
 					ID: "call_1",
-					Function: openai.ChatCompletionMessageToolCallFunction{
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 						Name:      "test_tool",
 						Arguments: `{"key": "value"}`,
 					},
@@ -111,10 +111,10 @@ func TestHandleToolCalls(t *testing.T) {
 		},
 		{
 			name: "tool not found",
-			toolCalls: []openai.ChatCompletionMessageToolCall{
+			toolCalls: []openai.ChatCompletionMessageToolCallUnion{
 				{
 					ID: "call_1",
-					Function: openai.ChatCompletionMessageToolCallFunction{
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 						Name:      "unknown_tool",
 						Arguments: `{}`,
 					},
@@ -134,10 +134,10 @@ func TestHandleToolCalls(t *testing.T) {
 		},
 		{
 			name: "tool execution error",
-			toolCalls: []openai.ChatCompletionMessageToolCall{
+			toolCalls: []openai.ChatCompletionMessageToolCallUnion{
 				{
 					ID: "call_1",
-					Function: openai.ChatCompletionMessageToolCallFunction{
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 						Name:      "test_tool",
 						Arguments: `{}`,
 					},
@@ -157,10 +157,10 @@ func TestHandleToolCalls(t *testing.T) {
 		},
 		{
 			name: "agent handoff",
-			toolCalls: []openai.ChatCompletionMessageToolCall{
+			toolCalls: []openai.ChatCompletionMessageToolCallUnion{
 				{
 					ID: "call_1",
-					Function: openai.ChatCompletionMessageToolCallFunction{
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 						Name:      "test_tool",
 						Arguments: `{}`,
 					},
@@ -185,17 +185,17 @@ func TestHandleToolCalls(t *testing.T) {
 		},
 		{
 			name: "multiple tool calls",
-			toolCalls: []openai.ChatCompletionMessageToolCall{
+			toolCalls: []openai.ChatCompletionMessageToolCallUnion{
 				{
 					ID: "call_1",
-					Function: openai.ChatCompletionMessageToolCallFunction{
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 						Name:      "tool_1",
 						Arguments: `{}`,
 					},
 				},
 				{
 					ID: "call_2",
-					Function: openai.ChatCompletionMessageToolCallFunction{
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 						Name:      "tool_2",
 						Arguments: `{}`,
 					},
@@ -213,10 +213,10 @@ func TestHandleToolCalls(t *testing.T) {
 		},
 		{
 			name: "long tool call ID truncation",
-			toolCalls: []openai.ChatCompletionMessageToolCall{
+			toolCalls: []openai.ChatCompletionMessageToolCallUnion{
 				{
 					ID: strings.Repeat("x", 50), // 50 chars, should be truncated
-					Function: openai.ChatCompletionMessageToolCallFunction{
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 						Name:      "test_tool",
 						Arguments: `{}`,
 					},
@@ -271,10 +271,10 @@ func TestHandleToolCalls(t *testing.T) {
 }
 
 func TestHandleToolCalls_ErrorMessage(t *testing.T) {
-	toolCalls := []openai.ChatCompletionMessageToolCall{
+	toolCalls := []openai.ChatCompletionMessageToolCallUnion{
 		{
 			ID: "call_1",
-			Function: openai.ChatCompletionMessageToolCallFunction{
+			Function: openai.ChatCompletionMessageFunctionToolCallFunction{
 				Name:      "test_tool",
 				Arguments: `{}`,
 			},

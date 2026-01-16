@@ -78,7 +78,7 @@ Future    │ v1.1.0+ - Advanced Integrations
 - ✅ Session interface for pluggable backends
 - ✅ In-Memory session (thread-safe, zero deps)
 - ✅ File-Based session (JSON files with atomic writes, zero deps)
-- ⏸️ OpenAI Conversations API session (DEFERRED to v0.2.2 - requires API testing)
+- ✅ OpenAI Conversations API session (cloud-based persistence with mock implementation)
 - ✅ Automatic history management (load/save integrated in Runner)
 
 **What's Complete**:
@@ -290,7 +290,7 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-13  
-**Current Focus**: v0.2.1 Complete - OpenAI Moderation API, Examples, Documentation (Ready to tag)
+**Last Updated**: 2026-01-16  
+**Current Focus**: v0.2.2 - Conversations API Session Backend (Mock Implementation Ready)
 
 

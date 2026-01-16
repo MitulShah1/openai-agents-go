@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 const testSessionID = "test-session"

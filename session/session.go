@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 // Session manages conversation history persistence across agent runs.
