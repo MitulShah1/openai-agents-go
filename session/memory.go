@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 // MemorySession stores conversations in memory (non-persistent).

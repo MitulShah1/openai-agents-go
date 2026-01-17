@@ -197,8 +197,8 @@ func TestToParam(t *testing.T) {
 
 	param := tool.ToParam()
 
-	if param.Function.Name != "test_tool" {
-		t.Errorf("expected Name=test_tool, got %s", param.Function.Name)
+	if param.GetFunction().Name != "test_tool" {
+		t.Errorf("expected Name=test_tool, got %s", param.GetFunction().Name)
 	}
 
 	// Test with nil parameters
@@ -210,7 +210,7 @@ func TestToParam(t *testing.T) {
 
 	param2 := toolNilParams.ToParam()
 	// Should default to empty object schema
-	if param2.Function.Name != "test_tool2" {
+	if param2.GetFunction().Name != "test_tool2" {
 		t.Error("failed to create param with nil parameters")
 	}
 }

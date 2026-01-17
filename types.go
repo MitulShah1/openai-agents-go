@@ -3,7 +3,7 @@ package agents
 import (
 	"time"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 // Result is the output of running an agent.
