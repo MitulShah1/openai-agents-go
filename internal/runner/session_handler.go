@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 
 	"github.com/MitulShah1/openai-agents-go/session"
 )

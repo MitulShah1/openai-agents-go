@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 // Tool represents a function that can be called by an agent.
@@ -20,8 +20,8 @@ type Tool struct {
 	Callback func(args map[string]any, ctx ContextVariables) (any, error)
 }
 
-// ToParam converts the Tool to an openai.ChatCompletionToolParam.
-func (t Tool) ToParam() openai.ChatCompletionToolParam {
+// ToParam converts the Tool to an openai.ChatCompletionToolUnionParam.
+func (t Tool) ToParam() openai.ChatCompletionToolUnionParam {
 	// If parameters are empty, default to empty object
 	params := t.Parameters
 	if params == nil {
@@ -31,13 +31,12 @@ func (t Tool) ToParam() openai.ChatCompletionToolParam {
 		}
 	}
 
-	return openai.ChatCompletionToolParam{
-		Function: openai.FunctionDefinitionParam{
-			Name:        t.Name,
-			Description: openai.String(t.Description),
-			Parameters:  openai.FunctionParameters(params),
-		},
-	}
+	// Use v3 API helper function
+	return openai.ChatCompletionFunctionTool(openai.FunctionDefinitionParam{
+		Name:        t.Name,
+		Description: openai.String(t.Description),
+		Parameters:  openai.FunctionParameters(params),
+	})
 }
 
 // Execute runs the tool's callback with the provided arguments.
