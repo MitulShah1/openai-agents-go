@@ -1,176 +1,114 @@
 # Agents
 
-Agents are the core building blocks of the SDK. An agent represents an AI model configured with specific behavior, tools, and capabilities.
+The `Agent` is the core entity in the SDK. It encapsulates an LLM model, instructions, tools, and configuration settings.
 
-## Creating an Agent
+## Basic Structure
 
-The simplest way to create an agent is with `NewAgent()`:
-
-```go
-agent := agents.NewAgent("My Agent")
-agent.Instructions = "You are a helpful coding assistant"
-```
-
-## Agent Configuration
-
-### Basic Properties
+At its simplest, an agent only needs a name and instructions:
 
 ```go
-agent := agents.NewAgent("CodeHelper")
+import agents "github.com/MitulShah1/openai-agents-go"
 
-// Required: Instructions define the agent's behavior
-agent.Instructions = "You are an expert Go programmer who helps with code reviews"
-
-// Optional: Model selection (defaults to gpt-4o)
-agent.Model = "gpt-4"
-agent.Model = "gpt-4-turbo"
-agent.Model = "gpt-3.5-turbo"
-
-// Optional: Temperature controls randomness (0.0 - 2.0)
-agent.Temperature = 0.7  // More creative
-agent.Temperature = 0.0  // More deterministic
-
-// Optional: Max tokens for responses
-agent.MaxTokens = 500
+agent := agents.NewAgent("Assistant")
+agent.Instructions = "You are a helpful AI assistant."
 ```
 
-### Tools
+## Agent Attributes
 
-Agents can use tools to perform actions:
+| Field | Type | But | Description |
+|-------|------|-----|-------------|
+| `Name` | `string` | Required | The name of the agent. Used for logging and tool identification. |
+| `Model` | `string` | Optional | The OpenAI model to use. Defaults to `gpt-4o`. |
+| `Instructions` | `string` \| `func` | Required | The system prompt or instructions for the agent. |
+| `Tools` | `[]Tool` | Optional | A list of tools the agent can use. |
+| `ResponseFormat`| `*jsonschema.ResponseFormat` | Optional | Schema for [Structured Outputs](structured_outputs.md). |
+| `Temperature` | `*float64` | Optional | Sampling temperature (0.0 - 2.0). |
+| `MaxTokens` | `*int` | Optional | Max tokens for generated response. |
+| `ParallelToolCalls` | `bool` | Optional | Whether to allow parallel tool execution (default: `true`). |
+
+## Instructions
+
+Instructions define the behavior and persona of the agent.
+
+### Static Instructions
+
+Most agents use a simple string for instructions:
+
+```go
+agent.Instructions = `You are a math tutor. 
+Always explain your reasoning step-by-step.`
+```
+
+### Dynamic Instructions
+
+For more advanced use cases, you can provide a function that returns the instructions string. This is useful for injecting dynamic context, such as user details or current state.
+
+```go
+agent.Instructions = func(ctx context.Context) string {
+    userName := ctx.Value("user_name")
+    return fmt.Sprintf("You are assisting user %s. Be polite.", userName)
+}
+```
+
+## Tools
+
+Agents can be equipped with tools to interact with external systems.
 
 ```go
 agent.Tools = []agents.Tool{
-    myCustomTool,
-    agents.HandoffTool(otherAgent, "Transfer to specialist"),
+    weatherTool,
+    databaseTool,
 }
 ```
 
-See the [Tools documentation](tools.md) for more details.
+When an agent decides to call a tool, the `Runner` executes the corresponding Go function and feeds the result back to the agent. See [Tools](tools.md) for more comprehensive documentation.
 
-### Response Format
+## Handoffs
 
-Control output format with structured outputs:
+Agents can "hand off" the conversation to another agent. This is the basis for multi-agent orchestration. A handoff occurs when a **Tool returns an Agent object**.
 
 ```go
-import "github.com/MitulShah1/openai-agents-go/internal/jsonschema"
+// Define a specialized agent
+salesAgent := agents.NewAgent("Sales")
+salesAgent.Instructions = "You process sales orders."
 
-schema := jsonschema.Object().
-    WithProperty("summary", jsonschema.String()).
-    WithRequired("summary")
+// Define a tool that performs the handoff
+transferTool := agents.FunctionTool("transfer_to_sales", "Transfer to sales department", nil, 
+    func(args map[string]any, ctx agents.ContextVariables) (any, error) {
+        // Returning *Agent triggers the handoff
+        return salesAgent, nil
+    },
+)
 
-agent.ResponseFormat = jsonschema.JSONSchema("response", schema)
+// Equip the main agent with the transfer tool
+mainAgent.Tools = []agents.Tool{transferTool}
 ```
-
-See [Structured Outputs](structured_outputs.md) for details.
 
 ## Lifecycle Hooks
 
-Execute code before and after agent runs:
+You can attach hooks to run code before or after an agent executes. This is useful for logging, setup, or cleanup.
 
 ```go
+// Run before the agent starts processing
 agent.OnBeforeRun = func(ctx context.Context, agent *agents.Agent) error {
-    fmt.Println("Starting agent:", agent.Name)
+    log.Printf("Starting agent: %s", agent.Name)
     return nil
 }
 
+// Run after the agent finishes
 agent.OnAfterRun = func(ctx context.Context, agent *agents.Agent, result *agents.Result) error {
-    fmt.Printf("Agent completed. Tokens used: %d\n", result.Usage.TotalTokens)
+    log.Printf("Agent finished. Usage: %d tokens", result.Usage.TotalTokens)
     return nil
 }
 ```
 
-## Complete Example
+## Guardrails
+
+Agents can be configured with input guardrails (to validate user messages) and output guardrails (to validate model responses) for safety and compliance.
 
 ```go
-package main
-
-import (
-    "context"
-    "fmt"
-
-    agents "github.com/MitulShah1/openai-agents-go"
-    "github.com/openai/openai-go"
-)
-
-func main() {
-    // Create fully configured agent
-    agent := agents.NewAgent("ProductivityCoach")
-    agent.Instructions = `You are a productivity coach who helps users:
-    - Break down large tasks
-    - Create actionable plans
-    - Provide motivation and accountability`
-    
-    agent.Model = "gpt-4"
-    agent.Temperature = 0.8
-    agent.MaxTokens = 1000
-    
-    agent.OnBeforeRun = func(ctx context.Context, a *agents.Agent) error {
-        fmt.Println("🤖 Agent starting...")
-        return nil
-    }
-    
-    agent.OnAfterRun = func(ctx context.Context, a *agents.Agent, r *agents.Result) error {
-        fmt.Printf("✅ Completed in %d steps\n", len(r.Steps))
-        return nil
-    }
-
-    // Run the agent
-    client := openai.NewClient(/* ... */)
-    runner := agents.NewRunner(&client)
-    
-    result, err := runner.Run(
-        context.Background(),
-        agent,
-        []openai.ChatCompletionMessageParamUnion{
-            openai.UserMessage("Help me organize my week"),
-        },
-        nil,
-        nil,
-    )
-    
-    if err != nil {
-        panic(err)
-    }
-    
-    fmt.Println(result.FinalOutput)
-}
+agent.InputGuardrails = []*guardrail.Guardrail{piiGuardrail}
+// ...
 ```
 
-## Best Practices
-
-### Clear Instructions
-
-✅ **Good**: Specific, actionable instructions
-```go
-agent.Instructions = `You are a code reviewer. For each code submission:
-1. Check for bugs and security issues
-2. Suggest improvements for readability
-3. Verify tests are present
-4. Provide specific line-by-line feedback`
-```
-
-❌ **Bad**: Vague instructions
-```go
-agent.Instructions = "You help with code"
-```
-
-### Model Selection
-
-- **gpt-4o**: Best balance of speed and capability (default)
-- **gpt-4**: Most capable, slower and more expensive
-- **gpt-4-turbo**: Fast and capable
-- **gpt-3.5-turbo**: Fastest and cheapest, less capable
-
-### Temperature Guidelines
-
-| Temperature | Use Case | Example |
-|------------|----------|---------|
-| 0.0 - 0.3 | Deterministic tasks | Code generation, data extraction |
-| 0.4 - 0.7 | Balanced | General assistance, Q&A |
-| 0.8 - 1.0 | Creative tasks | Writing, brainstorming |
-| 1.0+ | Highly creative | Poetry, experimental |
-
-## Related Topics
-
-- [Tools](tools.md) - Give agents capabilities
-- [Structured Outputs](structured_outputs.md) - Type-safe responses
+See [Guardrails](guardrails.md) for implementation details.
