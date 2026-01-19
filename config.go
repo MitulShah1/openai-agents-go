@@ -3,7 +3,7 @@ package agents
 import (
 	"time"
 
-	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/jsonschema"
 )
 
 // RunConfig configures how an agent execution should behave

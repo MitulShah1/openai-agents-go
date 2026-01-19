@@ -6,7 +6,7 @@ import (
 
 	"github.com/openai/openai-go/v3"
 
-	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/jsonschema"
 )
 
 // RequestConfig holds configuration for preparing requests

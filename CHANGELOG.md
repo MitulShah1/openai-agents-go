@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.2.5] - 2026-01-19
+
+### Changed
+- **Refactored JSON Schema Package**: Moved from `internal/jsonschema` to `jsonschema` (root). This is a **breaking change** for internal users, but necessary to expose the package for public use as intended. All examples have been updated.
+- **Improved Error Handling**: Replaced brittle string matching with robust sentinel errors (`ErrMaxTurnsExceeded`, `ErrTimeout`) in the `runner` package.
+
+### Fixed
+- Fixed an issue where `jsonschema` package could not be imported by external projects.
+- Fixed `TestCheckContext` failure by aligning test expectations with new error types.
+
 ## [v0.2.3] - 2026-01-19
 
 ### Added

@@ -9,7 +9,7 @@ Structured outputs ensure agents return JSON that matches your schema, enabling 
 ## Quick Example
 
 ```go
-import "github.com/MitulShah1/openai-agents-go/internal/jsonschema"
+import "github.com/MitulShah1/openai-agents-go/jsonschema"
 
 // Define schema
 schema := jsonschema.Object().
