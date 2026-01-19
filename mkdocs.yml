@@ -71,6 +71,7 @@ nav:
   - Examples: examples.md
   - Documentation:
       - Agents: agents.md
+      - Running Agents: running_agents.md
       - Tools: tools.md
       - Structured Outputs: structured_outputs.md
       - Guardrails: guardrails.md

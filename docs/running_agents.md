@@ -1,0 +1,132 @@
+# Running Agents
+
+The `Runner` is the engine that drives agent execution. It manages the conversation loop, interacts with the OpenAI API, executes tools, and handles agent handoffs.
+
+## The Runner
+
+First, initialize a `Runner` with an OpenAI client:
+
+```go
+import (
+    "github.com/openai/openai-go"
+    "github.com/openai/openai-go/option"
+    agents "github.com/MitulShah1/openai-agents-go"
+)
+
+client := openai.NewClient(option.WithAPIKey("your-api-key"))
+runner := agents.NewRunner(&client)
+```
+
+## Basic Execution
+
+To run an agent, call the `Run` method with a context, the agent, and the initial messages.
+
+```go
+messages := []openai.ChatCompletionMessageParamUnion{
+    openai.UserMessage("Hello! Can you help me?"),
+}
+
+result, err := runner.Run(context.Background(), myAgent, messages)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.FinalOutput)
+```
+
+## The Execution Loop
+
+When `Run()` is called, the runner executes a continuous loop:
+
+1.  **Context Preparation**: It resolves the current agent's instructions (calling the function if dynamic).
+2.  **LLM Request**: It sends the conversation history and available tools to the OpenAI API.
+3.  **Model Decision**: The model returns either a text response or tool calls.
+4.  **Tool Execution**:
+    *   If **Text**: The loop typically ends (unless configured otherwise).
+    *   If **Tool Calls**: The runner executes the Go functions for the requested tools.
+5.  **Handoff Check**: If a tool returns a new `*Agent`, the runner updates the `Current Agent` for the next turn.
+6.  **Loop**: The process repeats with the updated history (including tool results) and the potentially new agent.
+
+The loop terminates when:
+*   The model produces a final text response and no further tools are called.
+*   The maximum number of turns is reached.
+*   A timeout occurs.
+*   A tool/execution error occurs (depending on handling).
+
+## Configuration
+
+You can customize the execution behavior using functional options passed to `Run()`.
+
+### Run Configuration (`RunConfig`)
+
+Control operational limits and debug settings:
+
+```go
+config := &agents.RunConfig{
+    MaxTurns:          30,              // Max conversation turns (default: 30)
+    Timeout:           2 * time.Minute, // Total execution timeout
+    Temperature:       nil,             // Override agent temperature
+    MaxTokens:         nil,             // Override agent max tokens
+    ParallelToolCalls: true,            // Enable/disable parallel execution
+    Debug:             true,            // Print debug logs to stdout
+}
+
+runner.Run(ctx, agent, messages, agents.WithConfig(config))
+```
+
+### Context Variables
+
+Pass data into tools without polluting the global scope or agent definition. These are available to every tool execution in the run.
+
+```go
+ctxVars := agents.ContextVariables{
+    "user_id": "user_123",
+    "region":  "us-east-1",
+}
+
+runner.Run(ctx, agent, messages, agents.WithContextVariables(ctxVars))
+```
+
+### Sessions
+
+Use sessions to automatically load and save conversation history from a storage backend.
+
+```go
+// Example: Using an in-memory session backend
+sess := session.NewInMemorySession()
+
+runner.Run(ctx, agent, messages, agents.WithSession(sess, "unique-session-id"))
+```
+
+The runner will load previous messages for "unique-session-id" before starting and save the new interactions after finishing.
+
+## Inspecting Results
+
+The `Run()` method returns a `Result` struct containing comprehensive details about the execution.
+
+```go
+type Result struct {
+    // The final text response from the agent
+    FinalOutput string
+    
+    // The full conversation history, including initial messages and new interactions
+    Messages []openai.ChatCompletionMessageParamUnion
+    
+    // The specific agent that was active at the end of the run
+    Agent *Agent
+    
+    // A simplified trace of steps (Agent Name, Duration, Tools Called)
+    Steps []Step
+    
+    // Token usage statistics for the entire run
+    Usage Usage
+}
+```
+
+You can use the `Steps` slice to visualize the agent's thought process or debug handoffs.
+
+```go
+for i, step := range result.Steps {
+    fmt.Printf("Step %d [%s]: %v\n", i, step.AgentName, step.ToolCalls)
+}
+```
