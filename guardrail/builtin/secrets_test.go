@@ -22,7 +22,8 @@ func TestSecretsGuardrail_APIKeys(t *testing.T) {
 	})
 
 	t.Run("detects Google API key", func(t *testing.T) {
-		err := guard.Validate(ctx, "Google key: AIzaSyDaGmWKa4JsXZ-HjGw7ISLn_3namBGewQe")
+		// Using TEST_ prefix to avoid GitHub secret scanning
+		err := guard.Validate(ctx, "Google key: TEST_AIzaSyFAKEGOOGLEKEY1234567890abcde")
 		if err == nil {
 			t.Error("expected error for Google API key")
 		}
