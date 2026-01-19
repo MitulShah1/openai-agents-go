@@ -130,17 +130,18 @@ See the [CHANGELOG](https://github.com/MitulShah1/openai-agents-go/blob/main/CHA
 
 ## Comparison with Official SDKs
 
-| Feature | [Python SDK](https://github.com/openai/openai-agents-python) | [JavaScript SDK](https://github.com/openai/openai-agents-js) | **Go SDK (This)** |
-|---------|---------------|--------------|---------------| | Agents | ✅ | ✅ | ✅ |
-| Tools | ✅ | ✅ | ✅ |
-| Handoffs | ✅ | ✅ | ✅ |
-| Structured Outputs | ✅ | ✅ | ✅ |
-| Streaming | ✅ | ✅ | 🔮 Planned |
-| Guardrails | ✅ | ✅ | ✅ (9+ guardrails) |
-| Tracing | ✅ | ✅ | 🔮 Planned |
-| Voice Agents | ❌ | ✅ | 🔮 Future |
-| **Type Safety** | ⚠️ Runtime | ⚠️ TypeScript | ✅ Compile-time |
-| **Zero Dependencies** | ❌ | ❌ | ✅ (core only) |
+|Feature|Python SDK|JavaScript SDK|Go SDK (This)|
+|---|---|---|---|
+|Agents|✅|✅|✅|
+|Tools|✅|✅|✅|
+|Handoffs|✅|✅|✅|
+|Structured Outputs|✅|✅|✅|
+|Streaming|✅|✅|🔮 Planned|
+|Guardrails|✅|✅|✅ (9+ guardrails)|
+|Tracing|✅|✅|🔮 Planned|
+|Voice Agents|❌|✅|🔮 Future|
+|**Type Safety**|⚠️ Runtime|⚠️ TypeScript|✅ Compile-time|
+|**Zero Dependencies**|❌|❌|✅ (core only)|
 
 ## Community & Support
 
