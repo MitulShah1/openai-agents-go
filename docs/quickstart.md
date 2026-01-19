@@ -298,7 +298,6 @@ Now that you've learned the basics, explore more advanced topics:
 
 - **[Agents](agents.md)** - Deep dive into agent configuration
 - **[Tools](tools.md)** - Advanced tool patterns and custom tools
-- **[Handoffs](handoffs.md)** - Multi-agent orchestration
 - **[Guardrails](guardrails.md)** - Comprehensive input/output validation
 - **[Sessions](sessions/index.md)** - Persistent conversation management
 - **[Structured Outputs](structured_outputs.md)** - Complex JSON schemas

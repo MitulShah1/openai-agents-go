@@ -55,10 +55,9 @@ type Tool interface {
 
 ## Complete Example
 
-See [Quickstart Guide](quickstart.md#adding-tools) and [API Reference](ref/tool.md) for more details.
+See [Quickstart Guide](quickstart.md#adding-tools) for more details.
 
 ## Related Topics
 
 - [Agents](agents.md)
-- [Handoffs](handoffs.md)
-- [Context Variables](context.md)
+- [Quickstart Guide](quickstart.md#adding-tools)

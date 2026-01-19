@@ -71,5 +71,5 @@ result, err := runner.Run(
 
 ## See Also
 
-- [Sessions Guide](../sessions/index.md)
+- [Sessions Guide](../../sessions/index.md)
 - [Examples](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/09_sessions_demo)

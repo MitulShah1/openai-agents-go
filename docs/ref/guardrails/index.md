@@ -84,5 +84,5 @@ func NewPromptInjectionGuardrail(name string, isTripwire bool) Guardrail
 
 ## See Also
 
-- [Guardrails Guide](../guardrails.md)
+- [Guardrails Guide](../../guardrails.md)
 - [Examples](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/08_guardrails_demo)

@@ -172,7 +172,5 @@ agent.Instructions = "You help with code"
 
 ## Related Topics
 
-- [Running Agents](running_agents.md) - Execute agents and handle results
 - [Tools](tools.md) - Give agents capabilities
-- [Handoffs](handoffs.md) - Transfer between agents
 - [Structured Outputs](structured_outputs.md) - Type-safe responses
