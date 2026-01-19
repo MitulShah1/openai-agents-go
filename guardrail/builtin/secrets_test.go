@@ -61,14 +61,14 @@ func TestSecretsGuardrail_GitHub(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("detects GitHub personal access token", func(t *testing.T) {
-		err := guard.Validate(ctx, "token: ghp_1234567890abcdefghijklmnopqrstuv123")
+		err := guard.Validate(ctx, "token: ghp_TEST1234567890abcdefghijklmnop")
 		if err == nil {
 			t.Error("expected error for GitHub token")
 		}
 	})
 
 	t.Run("detects GitHub OAuth token", func(t *testing.T) {
-		err := guard.Validate(ctx, "oauth: gho_1234567890abcdefghijklmnopqrstuv123")
+		err := guard.Validate(ctx, "oauth: gho_TEST1234567890abcdefghijklmnop")
 		if err == nil {
 			t.Error("expected error for GitHub OAuth")
 		}

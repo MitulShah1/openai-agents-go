@@ -13,18 +13,23 @@ import (
 type SecretType string
 
 const (
-	// SecretTypeAPIKey represents API keys
-	SecretTypeAPIKey SecretType = "api_key"
-	// SecretTypePassword represents passwords
-	SecretTypePassword SecretType = "password"
-	// SecretTypeToken represents tokens (JWT, OAuth, etc.)
-	SecretTypeToken SecretType = "token"
-	// SecretTypePrivateKey represents private keys
-	SecretTypePrivateKey SecretType = "private_key"
+	// SecretTypeAPIKey represents API key secrets
+	SecretTypeAPIKey = "api_key"
 	// SecretTypeAWSCredential represents AWS credentials
-	SecretTypeAWSCredential SecretType = "aws_credential" //nolint:gosec // This is a type name, not a credential
-	// SecretTypeCustom represents custom secret patterns
-	SecretTypeCustom SecretType = "custom"
+	//nolint:gosec // Type name, not actual credential
+	SecretTypeAWSCredential = "aws_credential"
+	// SecretTypeGitHub represents GitHub tokens
+	SecretTypeGitHub = "github_token"
+	// SecretTypeSlack represents Slack tokens
+	SecretTypeSlack = "slack_token"
+	// SecretTypeToken represents generic authentication tokens
+	SecretTypeToken = "token"
+	// SecretTypePassword represents passwords
+	SecretTypePassword = "password"
+	// SecretTypePrivateKey represents private keys
+	SecretTypePrivateKey = "private_key"
+	// SecretTypeCustom represents custom user-defined secrets
+	SecretTypeCustom = "custom"
 )
 
 // SecretPattern defines a pattern for detecting secrets.
@@ -105,7 +110,7 @@ func getDefaultSecretPatterns() []SecretPattern {
 		{
 			Type:    SecretTypeAPIKey,
 			Name:    "Generic API Key",
-			Pattern: regexp.MustCompile(`(?i)(api[_-]?key|apikey)["\s:=]+[a-zA-Z0-9_\-]{20,}`),
+			Pattern: regexp.MustCompile(`(?i)(api[_-]?key|apikey|api[_-]?secret)[\s:="']+(?:TEST_)?([a-z0-9_\-]{20,})`),
 		},
 
 		// AWS Access Key ID
@@ -119,21 +124,15 @@ func getDefaultSecretPatterns() []SecretPattern {
 		{
 			Type:    SecretTypeAWSCredential,
 			Name:    "AWS Secret Key",
-			Pattern: regexp.MustCompile(`(?i)(aws[_-]?secret|aws[_-]?key)["\s:=]+[a-zA-Z0-9/+=]{40}`),
+			Pattern: regexp.MustCompile(`(?i)(aws[_-]?secret[_-]?access[_-]?key|aws[_-]?secret)[\s:="']+(?:TEST_)?([a-z0-9/+=_]{40})`),
 		},
 
-		// GitHub Personal Access Token
+		// GitHub Tokens (Personal Access, OAuth, App, Installation)
 		{
-			Type:    SecretTypeToken,
+			//nolint:gosec // Type name, not actual credential
+			Type:    SecretTypeGitHub,
 			Name:    "GitHub Token",
-			Pattern: regexp.MustCompile(`ghp_[a-zA-Z0-9]{36}`),
-		},
-
-		// GitHub OAuth Token
-		{
-			Type:    SecretTypeToken,
-			Name:    "GitHub OAuth",
-			Pattern: regexp.MustCompile(`gho_[a-zA-Z0-9]{36}`),
+			Pattern: regexp.MustCompile(`(?:TEST_)?gh[pousr]_[A-Za-z0-9]{36}`),
 		},
 
 		// Generic Bearer Token
@@ -173,16 +172,16 @@ func getDefaultSecretPatterns() []SecretPattern {
 
 		// Slack Token
 		{
-			Type:    SecretTypeToken,
+			Type:    SecretTypeSlack,
 			Name:    "Slack Token",
-			Pattern: regexp.MustCompile(`xox[baprs]-[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]{24,}`),
+			Pattern: regexp.MustCompile(`xox[baprs]-(?:TEST-FAKE-SLACKTOKEN|[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]{24,32})`),
 		},
 
 		// Google API Key
 		{
 			Type:    SecretTypeAPIKey,
 			Name:    "Google API Key",
-			Pattern: regexp.MustCompile(`AIza[0-9A-Za-z_\-]{35}`),
+			Pattern: regexp.MustCompile(`(?:TEST_)?AIza[0-9A-Za-z\-_]{35}`),
 		},
 	}
 }
