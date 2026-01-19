@@ -70,12 +70,12 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
-  - Home: index.md
+  - Intro: index.md
   - Quickstart: quickstart.md
-  - Core Concepts:
+  - Examples: examples.md
+  - Documentation:
       - Agents: agents.md
       - Tools: tools.md
-  - Advanced Features:
       - Structured Outputs: structured_outputs.md
       - Guardrails: guardrails.md
       - Sessions:

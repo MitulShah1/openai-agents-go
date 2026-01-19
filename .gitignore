@@ -43,3 +43,6 @@ examples/*/08_guardrails_demo
 examples/*/09_sessions_demo
 examples/*/10_advanced_v02
 examples/*/test_moderation
+
+# Python virtual environment
+.venv

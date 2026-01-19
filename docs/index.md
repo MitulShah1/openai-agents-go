@@ -124,7 +124,7 @@ See the [CHANGELOG](https://github.com/MitulShah1/openai-agents-go/blob/main/CHA
 
     Browse 11+ working examples on GitHub
 
-    [:octicons-arrow-right-24: View Examples](https://github.com/MitulShah1/openai-agents-go/tree/main/examples)
+    [:octicons-arrow-right-24: View Examples](examples.md)
 
 </div>
 
