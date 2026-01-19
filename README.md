@@ -260,11 +260,12 @@ cd examples/11_conversations_session && go run main.go
 
 ## Documentation
 
-- 📚 [API Documentation](https://pkg.go.dev/github.com/MitulShah1/openai-agents-go)
+- 📖 **[Documentation Site](https://mitulshah1.github.io/openai-agents-go/)** - Comprehensive guides and tutorials
+- 📚 [API Documentation](https://pkg.go.dev/github.com/MitulShah1/openai-agents-go) - GoDoc reference
+- 📝 [CHANGELOG](./CHANGELOG.md) - Version history and release notes
 - 🤖 [AI Assistant Guide](./AGENT.md) - For Claude, Copilot, etc.
 - 🗺️ [Development Roadmap](./ROADMAP.md)
-- 📝 [Examples Directory](./examples)
-- 🔧 [OpenAI Go SDK](https://github.com/openai/openai-go)
+- 📋 [Examples Directory](./examples)
 
 ---
 
