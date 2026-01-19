@@ -277,6 +277,64 @@ Reviewers look for:
 
 ## Documentation Standards
 
+### Keep Documentation Up-to-Date ⚠️
+
+**CRITICAL**: Documentation must be updated alongside code changes. This is mandatory, not optional.
+
+#### When to Update Documentation
+
+After **ANY** code change, check if these need updates:
+
+1. **CHANGELOG.md** - ALWAYS update for:
+   - New features (Added section)
+   - Bug fixes (Fixed section)
+   - Breaking changes (Changed section)
+   - Deprecated features (Deprecated section)
+   - Add entry under "Unreleased" or upcoming version
+
+2. **ROADMAP.md** - Update when:
+   - Completing planned features (move from future → completed)
+   - Adding new planned features
+   - Changing timelines or priorities
+   - Update "Current Version" and "Last Updated" in footer
+
+3. **User Documentation** (`docs/`) - Update when:
+   - Adding new features or APIs
+   - Changing behavior of existing features
+   - Adding new examples
+   - Files to check: `docs/quickstart.md`, concept guides, API reference
+
+4. **README.md** - Update when:
+   - Adding major features (update "Supported Features" section)
+   - Changing installation or quick start examples
+   - Updating comparison table with other SDKs
+   - Adding new examples directory
+
+5. **Examples** - Update when:
+   - API signatures change
+   - Best practices change
+   - New features are added
+
+#### Documentation Update Checklist
+
+Before submitting PR:
+- [ ] CHANGELOG.md updated with changes
+- [ ] ROADMAP.md updated if completing planned features
+- [ ] User documentation updated if user-facing changes
+- [ ] README.md updated if major feature or quick start affected
+- [ ] Examples still build and run correctly
+- [ ] Godoc comments added/updated for public APIs
+
+#### AI Assistant Reminder
+
+When making code changes:
+1. Identify all affected documentation
+2. Update documentation in the same commit/PR
+3. Use conventional commit messages that indicate doc updates:
+   - `feat(guardrails): add XYZ guardrail` → Update CHANGELOG, docs/guardrails.md
+   - `fix(runner): correct timeout handling` → Update CHANGELOG, possibly README
+   - `docs: update quickstart guide` → Documentation-only change
+
 ### Godoc Comments
 All exported types, functions, and methods must have godoc comments:
 

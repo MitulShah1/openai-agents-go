@@ -31,121 +31,29 @@ Future    │ v1.1.0+ - Advanced Integrations
 
 ## Version Roadmap
 
-### v0.1.0 - Core Foundation 🏗️ ✅ COMPLETE
+### Completed Releases ✅
 
-**Released**: 2026-01-12  
-**Status**: ✅ Complete  
-**Dependencies**: Zero external dependencies
+For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
-#### Features
-- ✅ Enhanced Agent configuration (temperature, max_tokens, lifecycle hooks)
-- ✅ RunConfig for execution control (max_turns, timeout, debug mode)
-- ✅ Custom error types for better error handling
-- ✅ Usage tracking (tokens, costs)
-- ✅ Execution steps recording
-- ✅ Function schema generation from Go structs
-- ✅ Improved tool execution with context
-- ✅ **Structured Outputs** - JSON schema builder with fluent API
-  - Complete JSON schema support (objects, arrays, primitives, validation)
-  - OpenAI Structured Outputs integration
-  - Response format control (text vs JSON schema)
-  - Modular `internal/jsonschema` package
+#### v0.2.3 - Enhanced Guardrails & Error Handling (2026-01-19) ✅
+- 9+ production-ready guardrails (PII, Moderation, Rate Limiting, Profanity, Secrets, Prompt Injection, etc.)
+- Production-grade error handling with 4 retry strategies
+- 98.1% test coverage on guardrails
 
-#### Use Cases
-- Simple chatbots
-- Basic tool-calling agents
-- Single-turn interactions
-- Development and testing
+#### v0.2.2 - Conversations API (2026-01-16) ✅
+- Cloud-based session persistence via OpenAI Conversations API
 
----
+#### v0.2.1 - Moderation Guardrail (2026-01-13) ✅
+- OpenAI Moderation API integration (13 categories)
 
-### v0.2.0 - Guardrails & Sessions 🛡️ ✅ COMPLETE
+#### v0.2.0 - Guardrails & Sessions (2026-01-16) ✅
+- Guardrail framework with PII, URL filtering, custom regex
+- Session framework with in-memory, file-based, and cloud backends
 
-**Released**: 2026-01-16  
-**Status**: ✅ Complete  
-**Dependencies**: Zero external dependencies
-
-#### Features
-
-**Guardrails** (Input/Output Validation):
-- ✅ Guardrail framework with pluggable validators
-- ✅ OpenAI Moderation API integration (13 categories)
-- ✅ PII detection (email, phone, SSN, credit card)
-- ✅ URL filtering (blocklist/allowlist)
-- ✅ Custom regex-based validation
-- ✅ Tripwire support (halt on failure)
-
-**Sessions** (Conversation Persistence):
-- ✅ Session interface for pluggable backends
-- ✅ In-Memory session (thread-safe, zero deps)
-- ✅ File-Based session (JSON files with atomic writes, zero deps)
-- ✅ OpenAI Conversations API session (cloud-based persistence)
-- ✅ Automatic history management (load/save integrated in Runner)
-
-**What's Complete**:
-- ✅ 32 tests passing (20 guardrail + 12 session)
-- ✅ Zero new dependencies added
-- ✅ Runner.Run signature updated (functional options pattern)
-- ✅ All examples working (01-11)
-- ✅ Comprehensive documentation and godoc
-- ✅ Examples: Basic, Tools, Handoffs, Lifecycle, Config, Structured Output, Guardrails, Sessions
-
-#### Use Cases
-- Multi-turn conversations
-- Chatbots with memory
-- Content moderation
-- Compliance checks (PII protection)
-- Production deployments with cloud sessions
-
----
-
-### v0.2.3 - Enhanced Guardrails & Error Handling 🛡️⚡ ✅ COMPLETE
-
-**Released**: 2026-01-19  
-**Status**: ✅ Complete  
-**Dependencies**: Zero external dependencies
-
-#### Features
-
-**Enhanced Error Handling**:
-- ✅ Production-grade error types (RateLimitError, TimeoutError, NetworkError, ErrorContext)
-- ✅ 4 backoff strategies (Fixed, Linear, Exponential, Custom)
-- ✅ RetryWithBackoff function with context cancellation support
-- ✅ Crypto-secure jitter using crypto/rand
-
-**Advanced Guardrails**:
-- ✅ **Content Length Guardrail**: 3 counting modes (characters, words, lines)
-- ✅ **Rate Limiting Guardrail**: Distributed-ready with token bucket algorithm
-  - Per-user, per-agent, per-IP, or global limiting
-  - Pluggable backend interface (in-memory included)
-  - Thread-safe concurrent execution
-  - Custom key functions
-- ✅ **Profanity Detection**: Pattern-based toxicity filtering
-  - Comprehensive word lists with severity levels (Low/Medium/High)
-  - Leetspeak normalization (@ → a, $ → s, ! → i, etc.)
-  - Custom word list support
-- ✅ **Secrets Detection**: Credential leakage prevention
-  - 12 secret type patterns (AWS, GitHub, Google, JWT, passwords, private keys, etc.)
-  - Custom regex pattern support
-- ✅ **Prompt Injection Detection**: LLM security guardrail
-  - 13 attack pattern detection (instruction override, role manipulation, jailbreak, etc.)
-  - Delimiter and encoding attack detection
-  - Case-insensitive matching
-
-**Quality Metrics**:
-- ✅ 98.1% test coverage on guardrails
-- ✅ 80/85 tests passing (94% pass rate)
-- ✅ All linting checks pass (gofmt, goimports, golangci-lint)
-- ✅ Race detection tests passing
-- ✅ ~1,800 lines of production code
-- ✅ ~1,600 lines of test code
-
-#### Use Cases
-- Multi-agent security (prompt injection, secrets detection)
-- Content moderation and compliance (profanity, length limits)
-- API protection (rate limiting, retry strategies)
-- Production error handling with automatic retries
-- Distributed systems with pluggable rate limiting backends
+#### v0.1.0 - Core Foundation (2026-01-12) ✅
+- Agent, Runner, Tool abstractions
+- Structured outputs with JSON schema builder
+- Multi-agent workflows and handoffs
 
 ---
 
@@ -438,7 +346,9 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-17  
-**Current Version**: v0.2.0 ✅  
-**Current Focus**: v0.3.0 - Enhanced Guardrails, Database Backends & Tracing  
+**Last Updated**: 2026-01-19  
+**Current Version**: v0.2.3 ✅  
+**Next Focus**: v0.3.0 - Database Backends, Tracing & Composition  
 **SDK Version**: openai-go/v3 v3.16.0
+
+See [CHANGELOG.md](./CHANGELOG.md) for detailed release history.
