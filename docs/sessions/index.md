@@ -53,8 +53,6 @@ sess := session.NewMemorySession()
 // Zero external dependencies
 ```
 
-See [Memory Session Guide](memory_session.md) for details.
-
 ### File-Based Session
 
 Best for single-server production:
@@ -71,8 +69,6 @@ if err != nil {
 // Atomic writes prevent corruption
 // Works across process restarts
 ```
-
-See [File Session Guide](file_session.md) for details.
 
 ### Conversations API
 
@@ -95,8 +91,6 @@ if err != nil {
 // Distributed-ready
 // Automatic synchronization
 ```
-
-See [Conversations API Guide](conversations_session.md) for details.
 
 ## Complete Example
 
@@ -264,10 +258,3 @@ err := session.Migrate(fileSession, redisSession, "user-123")
 ## API Reference
 
 See [Sessions API Reference](../ref/sessions/index.md) for detailed API documentation.
-
-## Related Topics
-
-- [Memory Session](memory_session.md)
-- [File Session](file_session.md)
-- [Conversations API Session](conversations_session.md)
-- [Running Agents](../running_agents.md)

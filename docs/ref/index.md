@@ -24,7 +24,7 @@ github.com/MitulShah1/openai-agents-go
 
 ## Core Types
 
-### [Agent](agent.md)
+### [Agent](#)
 The central type representing an AI agent with configured behavior.
 
 ```go
@@ -41,9 +41,9 @@ type Agent struct {
 }
 ```
 
-[View Agent documentation →](agent.md)
+_Detailed documentation coming soon_
 
-### [Runner](runner.md)
+### [Runner](#)
 Orchestrates agent execution and manages the interaction loop.
 
 ```go
@@ -61,9 +61,9 @@ func (*Runner) Run(
 ) (*Result, error)
 ```
 
-[View Runner documentation →](runner.md)
+_Detailed documentation coming soon_
 
-### [Tool](tool.md)
+### [Tool](#)
 Interface for functions that agents can call.
 
 ```go
@@ -77,9 +77,9 @@ func FunctionTool(name, description string, schema map[string]any, fn ToolFuncti
 func HandoffTool(agent *Agent, description string) Tool
 ```
 
-[View Tool documentation →](tool.md)
+See [Tools Guide](../tools.md) for details.
 
-### [Result & Types](types.md)
+### [Result & Types](#)
 Execution results, steps, usage tracking, and error types.
 
 ```go
@@ -107,7 +107,7 @@ type Usage struct {
 }
 ```
 
-[View Types & Errors documentation →](types.md)
+_Detailed API documentation coming soon_
 
 ## Advanced Features
 

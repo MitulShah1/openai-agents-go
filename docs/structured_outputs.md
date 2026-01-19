@@ -48,9 +48,6 @@ jsonschema.String().WithEnum("small", "medium", "large")
 
 ## Complete Examples
 
-See examples:- `examples/06_structured_output/` - Basic usage
+See examples:
+- `examples/06_structured_output/` - Basic usage
 - `examples/07_complex_schema/` - Nested schemas
-
-## API Reference
-
-See [API Reference](ref/types.md) for detailed documentation.
