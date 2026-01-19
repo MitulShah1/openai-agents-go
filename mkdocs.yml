@@ -1,0 +1,107 @@
+site_name: OpenAI Agents Go SDK
+site_description: Community-maintained Go SDK for building AI agents with OpenAI's API
+site_url: https://mitulshah1.github.io/openai-agents-go/
+repo_name: MitulShah1/openai-agents-go
+repo_url: https://github.com/MitulShah1/openai-agents-go
+
+theme:
+  name: material
+  features:
+    # Allows copying code blocks
+    - content.code.copy
+    # Allows selecting code blocks
+    - content.code.select
+    # Shows the current path in the sidebar
+    - navigation.path
+    # Shows sections in the sidebar
+    - navigation.sections
+    # Shows sections expanded by default
+    - navigation.expand
+    # Enables annotations in code blocks
+    - content.code.annotate
+    # Top navigation tabs
+    - navigation.tabs
+    # Instant loading
+    - navigation.instant
+  palette:
+    primary: indigo
+    accent: indigo
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_source: false
+
+markdown_extensions:
+  # Code highlighting
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  # Admonitions (notes, warnings, etc.)
+  - admonition
+  - pymdownx.details
+  # Better lists
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  # Tabs
+  - pymdownx.tabbed:
+      alternate_style: true
+  # Better tables
+  - tables
+  # Footnotes
+  - footnotes
+  # Abbreviations
+  - abbr
+  # Icons and emojis
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Core Concepts:
+      - Agents: agents.md
+      - Tools: tools.md
+      - Running Agents: running_agents.md
+      - Handoffs: handoffs.md
+      - Context Variables: context.md
+      - Results: results.md
+  - Advanced Features:
+      - Structured Outputs: structured_outputs.md
+      - Guardrails: guardrails.md
+      - Multi-Agent Workflows: multi_agent.md
+      - Sessions:
+          - Overview: sessions/index.md
+          - Memory Session: sessions/memory_session.md
+          - File Session: sessions/file_session.md
+          - Conversations API: sessions/conversations_session.md
+      - Configuration: config.md
+      - Usage Tracking: usage.md
+  - API Reference:
+      - Overview: ref/index.md
+      - Agent: ref/agent.md
+      - Runner: ref/runner.md
+      - Tool: ref/tool.md
+      - Types & Errors: ref/types.md
+      - Guardrails: ref/guardrails/index.md
+      - Sessions: ref/sessions/index.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/MitulShah1/openai-agents-go
+  version:
+    provider: mike
