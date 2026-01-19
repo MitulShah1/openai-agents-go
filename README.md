@@ -189,7 +189,7 @@ func main() {
 package main
 
 import (
-    "github.com/MitulShah1/openai-agents-go/internal/jsonschema"
+    "github.com/MitulShah1/openai-agents-go/jsonschema"
 )
 
 func main() {

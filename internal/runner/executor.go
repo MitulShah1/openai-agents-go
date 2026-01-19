@@ -28,7 +28,7 @@ func CheckContext(ctx context.Context) error {
 		err := ctx.Err()
 		if err == context.DeadlineExceeded {
 			// Return a more specific timeout error
-			return fmt.Errorf("execution timeout exceeded: %w", err)
+			return fmt.Errorf("%w: %v", ErrTimeout, err)
 		}
 		return err
 	default:
@@ -41,7 +41,7 @@ func CheckContext(ctx context.Context) error {
 func (e *Executor) ShouldContinueExecution(ctx context.Context, turnCount int) (bool, error) {
 	// Check max turns
 	if e.maxTurns > 0 && turnCount >= e.maxTurns {
-		return false, fmt.Errorf("max turns exceeded: %d", e.maxTurns)
+		return false, fmt.Errorf("%w: %d", ErrMaxTurnsExceeded, e.maxTurns)
 	}
 
 	// Check context cancellation/timeout

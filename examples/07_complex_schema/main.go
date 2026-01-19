@@ -12,7 +12,7 @@ import (
 	"github.com/openai/openai-go/v3/option"
 
 	agents "github.com/MitulShah1/openai-agents-go"
-	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/jsonschema"
 )
 
 // Person represents a person with contact information

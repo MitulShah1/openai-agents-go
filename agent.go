@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/MitulShah1/openai-agents-go/guardrail"
-	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/jsonschema"
 )
 
 const (

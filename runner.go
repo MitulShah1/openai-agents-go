@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -9,8 +10,8 @@ import (
 	"github.com/openai/openai-go/v3"
 
 	"github.com/MitulShah1/openai-agents-go/guardrail"
-	"github.com/MitulShah1/openai-agents-go/internal/jsonschema"
 	"github.com/MitulShah1/openai-agents-go/internal/runner"
+	"github.com/MitulShah1/openai-agents-go/jsonschema"
 	"github.com/MitulShah1/openai-agents-go/session"
 )
 
@@ -202,10 +203,10 @@ func (r *Runner) executeAgentLoop(
 		// Check if execution should continue
 		shouldContinue, err := executor.ShouldContinueExecution(ctx, turnCount)
 		if err != nil {
-			if strings.Contains(err.Error(), "max turns") {
+			if errors.Is(err, runner.ErrMaxTurnsExceeded) {
 				return nil, ErrMaxTurnsExceeded
 			}
-			if strings.Contains(err.Error(), "timeout") {
+			if errors.Is(err, runner.ErrTimeout) {
 				return nil, ErrTimeout
 			}
 			return nil, err

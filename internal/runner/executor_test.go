@@ -57,7 +57,7 @@ func TestCheckContext(t *testing.T) {
 				return ctx
 			}(),
 			wantErr: true,
-			errType: context.DeadlineExceeded,
+			errType: ErrTimeout,
 		},
 	}
 
