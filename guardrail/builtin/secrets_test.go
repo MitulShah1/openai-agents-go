@@ -14,8 +14,8 @@ func TestSecretsGuardrail_APIKeys(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("detects generic API key", func(t *testing.T) {
-		// Using obviously fake key for testing
-		err := guard.Validate(ctx, "My api_key is sk_test_EXAMPLE1234567890abcdefghijklmnop")
+		// Using TEST_ prefix to avoid GitHub secret scanning
+		err := guard.Validate(ctx, "My api_key is TEST_sk_FAKEKEY1234567890abcdef")
 		if err == nil {
 			t.Error("expected error for API key")
 		}
