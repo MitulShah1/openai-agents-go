@@ -19,13 +19,8 @@ theme:
     - navigation.expand
     # Enables annotations in code blocks
     - content.code.annotate
-    # Top navigation tabs
-    - navigation.tabs
-    # Instant loading
-    - navigation.instant
   palette:
-    primary: indigo
-    accent: indigo
+    primary: black
   icon:
     repo: fontawesome/brands/github
 
@@ -89,5 +84,6 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/MitulShah1/openai-agents-go
+  generator: false
   version:
     provider: mike
