@@ -1,6 +1,7 @@
 # OpenAI Agents Go SDK
 
 [![CI](https://github.com/MitulShah1/openai-agents-go/workflows/CI/badge.svg)](https://github.com/MitulShah1/openai-agents-go/actions)
+[![CodeQL](https://github.com/MitulShah1/openai-agents-go/actions/workflows/codeql.yml/badge.svg)](https://github.com/MitulShah1/openai-agents-go/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/MitulShah1/openai-agents-go/branch/main/graph/badge.svg)](https://codecov.io/gh/MitulShah1/openai-agents-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MitulShah1/openai-agents-go)](https://goreportcard.com/report/github.com/MitulShah1/openai-agents-go)
 [![GoDoc](https://pkg.go.dev/badge/github.com/MitulShah1/openai-agents-go.svg)](https://pkg.go.dev/github.com/MitulShah1/openai-agents-go)
