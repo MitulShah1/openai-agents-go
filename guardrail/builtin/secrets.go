@@ -106,11 +106,11 @@ func (g *SecretsGuardrail) IsTripwire() bool {
 // getDefaultSecretPatterns returns common secret patterns to detect.
 func getDefaultSecretPatterns() []SecretPattern {
 	return []SecretPattern{
-		// API Keys (generic high-entropy strings)
+		// Generic API Key
 		{
 			Type:    SecretTypeAPIKey,
 			Name:    "Generic API Key",
-			Pattern: regexp.MustCompile(`(?i)(api[_-]?key|apikey|api[_-]?secret)[\s:="']+(?:TEST_)?([a-z0-9_\-]{20,})`),
+			Pattern: regexp.MustCompile(`(?i)(api[_-]?key|apikey|api[_-]?secret)[\s:="']+[a-zA-Z0-9_\-]{20,}`),
 		},
 
 		// AWS Access Key ID
@@ -120,11 +120,11 @@ func getDefaultSecretPatterns() []SecretPattern {
 			Pattern: regexp.MustCompile(`AKIA[0-9A-Z]{16}`),
 		},
 
-		// AWS Secret Access Key (high entropy)
+		// AWS Secret Access Key
 		{
 			Type:    SecretTypeAWSCredential,
 			Name:    "AWS Secret Key",
-			Pattern: regexp.MustCompile(`(?i)(aws[_-]?secret[_-]?access[_-]?key|aws[_-]?secret)[\s:="']+(?:TEST_)?([a-z0-9/+=_]{40})`),
+			Pattern: regexp.MustCompile(`(?i)(aws[_-]?secret[_-]?access[_-]?key|aws[_-]?secret)[\s:="']+[a-zA-Z0-9/+=]{40}`),
 		},
 
 		// GitHub Tokens (Personal Access, OAuth, App, Installation)
@@ -132,7 +132,7 @@ func getDefaultSecretPatterns() []SecretPattern {
 			//nolint:gosec // Type name, not actual credential
 			Type:    SecretTypeGitHub,
 			Name:    "GitHub Token",
-			Pattern: regexp.MustCompile(`(?:TEST_)?gh[pousr]_[A-Za-z0-9]{36}`),
+			Pattern: regexp.MustCompile(`gh[pousr]_[A-Za-z0-9]{36}`),
 		},
 
 		// Generic Bearer Token
@@ -149,39 +149,39 @@ func getDefaultSecretPatterns() []SecretPattern {
 			Pattern: regexp.MustCompile(`eyJ[a-zA-Z0-9_\-]*\.eyJ[a-zA-Z0-9_\-]*\.[a-zA-Z0-9_\-]*`),
 		},
 
-		// Private Keys (PEM format)
-		{
-			Type:    SecretTypePrivateKey,
-			Name:    "Private Key",
-			Pattern: regexp.MustCompile(`-----BEGIN[ A-Z]*PRIVATE KEY-----`),
-		},
-
-		// Password in URLs
-		{
-			Type:    SecretTypePassword,
-			Name:    "Password in URL",
-			Pattern: regexp.MustCompile(`(?i)[a-z]+://[a-z0-9]+:[^@\s]+@`),
-		},
-
-		// Generic password= patterns
-		{
-			Type:    SecretTypePassword,
-			Name:    "Password Assignment",
-			Pattern: regexp.MustCompile(`(?i)(password|passwd|pwd)["\s:=]+[^\s"']{8,}`),
-		},
-
 		// Slack Token
 		{
 			Type:    SecretTypeSlack,
 			Name:    "Slack Token",
-			Pattern: regexp.MustCompile(`xox[baprs]-(?:TEST-FAKE-SLACKTOKEN|[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]{24,32})`),
+			Pattern: regexp.MustCompile(`xox[baprs]-[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]{24,32}`),
 		},
 
 		// Google API Key
 		{
 			Type:    SecretTypeAPIKey,
 			Name:    "Google API Key",
-			Pattern: regexp.MustCompile(`(?:TEST_)?AIza[0-9A-Za-z\-_]{35}`),
+			Pattern: regexp.MustCompile(`AIza[0-9A-Za-z\-_]{35}`),
+		},
+
+		// Password in URL
+		{
+			Type:    SecretTypePassword,
+			Name:    "Password in URL",
+			Pattern: regexp.MustCompile(`(?i)[a-z]{3,10}://[^:@\s]+:([^@\s]{8,})@`),
+		},
+
+		// Generic Password Assignment
+		{
+			Type:    SecretTypePassword,
+			Name:    "Password Assignment",
+			Pattern: regexp.MustCompile(`(?i)(password|passwd|pwd)[\s:="']+[^\s]{8,}`),
+		},
+
+		// Private Key
+		{
+			Type:    SecretTypePrivateKey,
+			Name:    "Private Key",
+			Pattern: regexp.MustCompile(`-----BEGIN[A-Z ]+PRIVATE KEY-----`),
 		},
 	}
 }

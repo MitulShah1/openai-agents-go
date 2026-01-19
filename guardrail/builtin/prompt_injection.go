@@ -65,7 +65,18 @@ func (g *PromptInjectionGuardrail) Validate(_ context.Context, input string) err
 	var detected []string
 
 	for _, pattern := range g.patterns {
-		if pattern.Pattern.MatchString(testInput) {
+		// For custom patterns or case-sensitive mode, use original input
+		inputToTest := testInput
+		// Check if this is a custom pattern by comparing to customPatterns
+		for _, custom := range g.customPatterns {
+			if pattern.Name == custom.Name {
+				// Custom pattern should always use original input
+				inputToTest = input
+				break
+			}
+		}
+
+		if pattern.Pattern.MatchString(inputToTest) {
 			detected = append(detected, pattern.Name)
 		}
 	}
