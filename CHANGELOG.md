@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [v0.3.0] - Unreleased
+## [v0.3.0] - 2026-01-20
 
 ### Added
 
@@ -43,10 +43,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - In-memory database support (`:memory:`)
   - Full CRUD operations (Get, Append, Clear, Delete)
   - Persistence across restarts
+- **Session Utilities**:
+  - `WithCompression()`: Transparent GZIP compression for session data
+  - `WithEncryption()`: AES-GCM encryption for secure storage
 
 ### Changed
 - Tool callbacks can now return `Content` objects for rich responses
 - Session backends now auto-register via `init()` functions
+- **Docs**: Comprehensive updates to `docs/guardrails.md`, `docs/sessions/index.md`, and README.
+
+### Fixed
+- **Security**: Resolved potential integer overflows in `runner` package (CWE-190).
+- **Security**: Added strict validation for session encryption keys.
+- **Stability**: Fixed potential race conditions in parallel guardrail execution.
+- **Linting**: Resolved all `goconst`, `revive`, and `misspell` issues.
 
 ---
 
@@ -198,6 +208,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Links
 
+- [v0.3.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.3.0)
+- [v0.2.5](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.2.5)
 - [v0.2.3](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.2.3)
 - [v0.2.2](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.2.2)
 - [v0.2.1](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.2.1)
@@ -209,7 +221,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Future Releases
 
 See [ROADMAP.md](./ROADMAP.md) for planned features:
-- v0.3.0: Database session backends (SQLite, Redis, PostgreSQL), Tracing & Observability
+- v0.3.5: Tracing (OpenTelemetry) & Enhanced Metrics
 - v0.4.0: Streaming support, Performance optimizations
 - v1.0.0: Stable release with API guarantees
 - v1.1.0+: Advanced integrations (Batch API, Realtime API, RAG, MCP)
+
