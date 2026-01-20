@@ -162,7 +162,7 @@ func TestToolWithMultimodalCallback(t *testing.T) {
 				"prompt": map[string]any{"type": "string"},
 			},
 		},
-		func(args map[string]any, ctx ContextVariables) (any, error) {
+		func(_ map[string]any, _ ContextVariables) (any, error) {
 			return ImageContent("https://example.com/generated.png", "high"), nil
 		},
 	)
@@ -187,7 +187,7 @@ func TestToolBackwardCompatibility(t *testing.T) {
 		"old_tool",
 		"Legacy tool returning string",
 		map[string]any{"type": "object"},
-		func(args map[string]any, ctx ContextVariables) (any, error) {
+		func(_ map[string]any, _ ContextVariables) (any, error) {
 			return "plain string result", nil
 		},
 	)

@@ -17,7 +17,7 @@ func TestSQLiteSession_CreateAndGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create SQLite session: %v", err)
 	}
-	defer sess.(*SQLiteSession).Close()
+	defer func() { _ = sess.(*SQLiteSession).Close() }()
 
 	// Test Get on non-existent session
 	_, err = sess.Get(context.Background(), "test-session")
@@ -37,8 +37,9 @@ func TestSQLiteSession_AppendAndGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create SQLite session: %v", err)
 	}
-	defer sess.(*SQLiteSession).Close()
+	defer func() { _ = sess.(*SQLiteSession).Close() }()
 
+	//nolint:goconst // "test-session" used as example in multiple tests
 	sessionID := "test-session"
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Hello"),
@@ -70,7 +71,7 @@ func TestSQLiteSession_MultipleAppends(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create SQLite session: %v", err)
 	}
-	defer sess.(*SQLiteSession).Close()
+	defer func() { _ = sess.(*SQLiteSession).Close() }()
 
 	sessionID := "test-session"
 
@@ -111,7 +112,7 @@ func TestSQLiteSession_Clear(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create SQLite session: %v", err)
 	}
-	defer sess.(*SQLiteSession).Close()
+	defer func() { _ = sess.(*SQLiteSession).Close() }()
 
 	sessionID := "test-session"
 	messages := []openai.ChatCompletionMessageParamUnion{
@@ -119,7 +120,7 @@ func TestSQLiteSession_Clear(t *testing.T) {
 	}
 
 	// Append messages
-	sess.Append(context.Background(), sessionID, messages)
+	_ = sess.Append(context.Background(), sessionID, messages)
 
 	// Clear session
 	err = sess.Clear(context.Background(), sessionID)
@@ -146,7 +147,7 @@ func TestSQLiteSession_Delete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create SQLite session: %v", err)
 	}
-	defer sess.(*SQLiteSession).Close()
+	defer func() { _ = sess.(*SQLiteSession).Close() }()
 
 	sessionID := "test-session"
 	messages := []openai.ChatCompletionMessageParamUnion{
@@ -154,7 +155,7 @@ func TestSQLiteSession_Delete(t *testing.T) {
 	}
 
 	// Append messages
-	sess.Append(context.Background(), sessionID, messages)
+	_ = sess.Append(context.Background(), sessionID, messages)
 
 	// Delete session
 	err = sess.Delete(context.Background(), sessionID)
@@ -180,7 +181,7 @@ func TestSQLiteSession_DeleteNonExistent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create SQLite session: %v", err)
 	}
-	defer sess.(*SQLiteSession).Close()
+	defer func() { _ = sess.(*SQLiteSession).Close() }()
 
 	err = sess.Delete(context.Background(), "non-existent")
 	if err == nil {
@@ -206,8 +207,8 @@ func TestSQLiteSession_Persistence(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create SQLite session: %v", err)
 		}
-		sess.Append(context.Background(), sessionID, messages)
-		sess.(*SQLiteSession).Close()
+		_ = sess.Append(context.Background(), sessionID, messages)
+		_ = sess.(*SQLiteSession).Close()
 	}
 
 	// Reopen and verify persistence
@@ -216,7 +217,7 @@ func TestSQLiteSession_Persistence(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to reopen SQLite session: %v", err)
 		}
-		defer sess.(*SQLiteSession).Close()
+		defer func() { _ = sess.(*SQLiteSession).Close() }()
 
 		retrieved, err := sess.Get(context.Background(), sessionID)
 		if err != nil {
@@ -235,14 +236,14 @@ func TestSQLiteSession_InMemory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create in-memory SQLite session: %v", err)
 	}
-	defer sess.(*SQLiteSession).Close()
+	defer func() { _ = sess.(*SQLiteSession).Close() }()
 
 	sessionID := "memory-test"
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("In-memory message"),
 	}
 
-	sess.Append(context.Background(), sessionID, messages)
+	_ = sess.Append(context.Background(), sessionID, messages)
 	retrieved, err := sess.Get(context.Background(), sessionID)
 	if err != nil {
 		t.Fatalf("Failed to get in-memory messages: %v", err)
@@ -262,7 +263,7 @@ func TestSQLiteSession_ConcurrentAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create SQLite session: %v", err)
 	}
-	defer sess.(*SQLiteSession).Close()
+	defer func() { _ = sess.(*SQLiteSession).Close() }()
 
 	// Test concurrent appends to different sessions
 	done := make(chan bool)
@@ -272,7 +273,7 @@ func TestSQLiteSession_ConcurrentAccess(t *testing.T) {
 			messages := []openai.ChatCompletionMessageParamUnion{
 				openai.UserMessage(fmt.Sprintf("Message from goroutine %d", id)),
 			}
-			sess.Append(context.Background(), sessionID, messages)
+			_ = sess.Append(context.Background(), sessionID, messages)
 			done <- true
 		}(i)
 	}

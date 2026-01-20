@@ -13,10 +13,12 @@ type MetricsCollector interface {
 	// OnComplete is called when a guardrail completes successfully.
 	OnComplete(name string, result *Result, duration time.Duration)
 	// OnError is called when a guardrail encounters an error.
-	OnError(name string, err error)
+	OnError(name string, _ error)
 }
 
 // GuardrailStats contains statistics for a single guardrail.
+//
+//nolint:revive // GuardrailStats is intentionally prefixed for clarity in external usage
 type GuardrailStats struct {
 	TotalCount    int
 	PassedCount   int
@@ -134,7 +136,7 @@ func (m *InMemoryMetrics) OnComplete(name string, result *Result, duration time.
 }
 
 // OnError records an error during guardrail execution.
-func (m *InMemoryMetrics) OnError(name string, err error) {
+func (m *InMemoryMetrics) OnError(name string, _ error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

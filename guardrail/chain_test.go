@@ -12,7 +12,7 @@ import (
 func testGuardrail(name string, passed bool, tripwire bool, delay time.Duration) *Guardrail {
 	return &Guardrail{
 		Name: name,
-		Func: func(ctx context.Context, input string) (*Result, error) {
+		Func: func(_ context.Context, _ string) (*Result, error) {
 			if delay > 0 {
 				time.Sleep(delay)
 			}
@@ -30,7 +30,7 @@ func testGuardrail(name string, passed bool, tripwire bool, delay time.Duration)
 func testGuardrailWithError(name string, err error) *Guardrail {
 	return &Guardrail{
 		Name: name,
-		Func: func(ctx context.Context, input string) (*Result, error) {
+		Func: func(_ context.Context, _ string) (*Result, error) {
 			return nil, err
 		},
 	}

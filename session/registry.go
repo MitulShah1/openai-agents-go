@@ -8,7 +8,7 @@ import (
 )
 
 // BackendFactory is a function that creates a session backend from configuration.
-type BackendFactory func(config map[string]any) (Session, error)
+type BackendFactory func(_ map[string]any) (Session, error)
 
 var (
 	// Global registry of session backends
@@ -57,7 +57,7 @@ func ListBackends() []string {
 
 func init() {
 	// Register built-in backends
-	Register("memory", func(config map[string]any) (Session, error) {
+	Register("memory", func(_ map[string]any) (Session, error) {
 		return NewMemorySession(), nil
 	})
 

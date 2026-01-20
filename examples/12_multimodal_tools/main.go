@@ -1,3 +1,4 @@
+// Package main demonstrates multimodal tool outputs with v0.3.0 features.
 package main
 
 import (
@@ -6,9 +7,10 @@ import (
 	"log"
 	"os"
 
-	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
+
+	agents "github.com/MitulShah1/openai-agents-go"
 )
 
 func main() {
@@ -46,7 +48,7 @@ func main() {
 			},
 			"required": []string{"width", "height"},
 		},
-		func(args map[string]any, ctx agents.ContextVariables) (any, error) {
+		func(args map[string]any, _ agents.ContextVariables) (any, error) {
 			width := int(args["width"].(float64))
 			height := int(args["height"].(float64))
 			text := ""
@@ -83,7 +85,7 @@ func main() {
 			},
 			"required": []string{"title", "content"},
 		},
-		func(args map[string]any, ctx agents.ContextVariables) (any, error) {
+		func(args map[string]any, _ agents.ContextVariables) (any, error) {
 			title := args["title"].(string)
 			content := args["content"].(string)
 
@@ -113,7 +115,7 @@ func main() {
 			},
 			"required": []string{"location"},
 		},
-		func(args map[string]any, ctx agents.ContextVariables) (any, error) {
+		func(args map[string]any, _ agents.ContextVariables) (any, error) {
 			location := args["location"].(string)
 			// Traditional string return (still works!)
 			return fmt.Sprintf("Weather in %s: Sunny, 72°F", location), nil

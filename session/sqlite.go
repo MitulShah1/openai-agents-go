@@ -34,7 +34,7 @@ func NewSQLite(path string) (Session, error) {
 
 	// Initialize schema
 	if err := session.initSchema(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 

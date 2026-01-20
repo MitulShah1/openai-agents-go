@@ -43,7 +43,7 @@ type ProfanityConfig struct {
 }
 
 // NewProfanityGuardrail creates a new profanity detection guardrail.
-func NewProfanityGuardrail(config ProfanityConfig) *ProfanityGuardrail {
+func NewProfanityGuardrail(config ProfanityConfig) *guardrail.Guardrail {
 	wordList := config.WordList
 	if wordList == nil {
 		wordList = getDefaultWordList()
@@ -61,13 +61,61 @@ func NewProfanityGuardrail(config ProfanityConfig) *ProfanityGuardrail {
 		normalizeLeetspeak = true // Default to true for default word list
 	}
 
-	return &ProfanityGuardrail{
-		wordList:           wordList,
-		minSeverity:        minSeverity,
-		normalizeLeetspeak: normalizeLeetspeak,
-		tripwire:           config.Tripwire,
-		leetSpeakMap:       getLeetSpeakMap(),
-	}
+	tripwire := config.Tripwire
+	leetSpeakMap := getLeetSpeakMap()
+
+	return guardrail.NewGuardrail("profanity", func(_ context.Context, input string) (*guardrail.Result, error) {
+		// Normalize input
+		normalized := strings.ToLower(input)
+
+		if normalizeLeetspeak {
+			var result strings.Builder
+			result.Grow(len(normalized))
+			for _, r := range normalized {
+				if replacement, found := leetSpeakMap[r]; found {
+					result.WriteRune(replacement)
+				} else {
+					result.WriteRune(r)
+				}
+			}
+			normalized = result.String()
+		}
+
+		// Check for profanity
+		words := regexp.MustCompile(`\w+`).FindAllString(normalized, -1)
+
+		var detectedWords []string
+		highestSeverity := SeverityLevel(0)
+
+		for _, word := range words {
+			if severity, found := wordList[word]; found {
+				if severity >= minSeverity {
+					detectedWords = append(detectedWords, word)
+					if severity > highestSeverity {
+						highestSeverity = severity
+					}
+				}
+			}
+		}
+
+		if len(detectedWords) > 0 {
+			return &guardrail.Result{
+				Passed:            false,
+				TripwireTriggered: tripwire,
+				Message:           fmt.Sprintf("profanity detected (severity: %d): %d word(s) found", highestSeverity, len(detectedWords)),
+				Metadata: map[string]any{
+					"severity":       highestSeverity,
+					"detected_count": len(detectedWords),
+				},
+			}, nil
+		}
+
+		return &guardrail.Result{
+			Passed:            true,
+			TripwireTriggered: false,
+			Message:           "no profanity detected",
+		}, nil
+	})
 }
 
 // Name returns the guardrail name.
