@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.3.0] - Unreleased
+
+### Added
+
+**Multimodal Tool Output Support**:
+- `Content` type for rich tool responses (text, images, files)
+- Helper functions: `TextContent()`, `ImageContent()`, `FileContent()`
+- `IsContent()` helper for type inspection
+- Full backward compatibility with string-returning tools
+
+**Guardrail Composition**:
+- `Chain` guardrail builder with fluent API
+- 3 execution strategies:
+  - `Sequential`: Run guardrails in order, fail-fast
+  - `Parallel`: Run all guardrails concurrently
+  - `StopOnFirstPass`: OR logic, stop on first pass
+- Async support:
+  - `WithTimeout()`: Add execution timeout
+  - `WithContext()`: Context-aware cancellation
+  - `WithTimeoutGraceful()`: Graceful degradation on timeout
+- Metrics collection:
+  - `MetricsCollector` interface
+  - `InMemoryMetrics` with latency tracking
+  - `WithMetrics()` wrapper
+  - P95/P99 percentile calculations
+
+**Database Session Backends**:
+- Registry system for session backend plugins
+- `Register()`, `Get()`, `Create()` functions for plugin discovery
+- **SQLite backend** (core, pure Go):
+  - Zero CGo dependency using `modernc.org/sqlite`
+  - Connection pooling (25 max open, 5 idle)
+  - Automatic schema migrations
+  - In-memory database support (`:memory:`)
+  - Full CRUD operations (Get, Append, Clear, Delete)
+  - Persistence across restarts
+
+### Changed
+- Tool callbacks can now return `Content` objects for rich responses
+- Session backends now auto-register via `init()` functions
+
+---
+
 ## [v0.2.5] - 2026-01-19
 
 ### Changed
