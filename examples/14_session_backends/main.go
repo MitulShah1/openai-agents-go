@@ -7,10 +7,11 @@ import (
 	"log"
 	"os"
 
-	agents "github.com/MitulShah1/openai-agents-go"
-	"github.com/MitulShah1/openai-agents-go/session"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
+
+	agents "github.com/MitulShah1/openai-agents-go"
+	"github.com/MitulShah1/openai-agents-go/session"
 )
 
 func main() {
@@ -37,7 +38,6 @@ func main() {
 	agent := agents.NewAgent("helpful_assistant")
 	agent.Instructions = "You are a helpful assistant. Keep responses concise."
 	agent.Model = "gpt-4o-mini"
-	agent.SessionBackend = sqliteSession
 
 	userID := "user123"
 
@@ -46,7 +46,7 @@ func main() {
 	messages1 := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("Remember: my favorite color is blue"),
 	}
-	result, err := runner.Run(context.Background(), agent, messages1, agents.WithSessionID(userID))
+	result, err := runner.Run(context.Background(), agent, messages1, agents.WithSession(sqliteSession, userID))
 	if err != nil {
 		log.Fatalf("Run failed: %v", err)
 	}
@@ -57,7 +57,7 @@ func main() {
 	messages2 := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What's my favorite color?"),
 	}
-	result, err = runner.Run(context.Background(), agent, messages2, agents.WithSessionID(userID))
+	result, err = runner.Run(context.Background(), agent, messages2, agents.WithSession(sqliteSession, userID))
 	if err != nil {
 		log.Fatalf("Run failed: %v", err)
 	}
@@ -75,13 +75,12 @@ func main() {
 		}
 	}()
 
-	agent.SessionBackend = memSession
 	tempUserID := "temp_user"
 
 	messages3 := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("This conversation won't persist after the program ends"),
 	}
-	result, err = runner.Run(context.Background(), agent, messages3, agents.WithSessionID(tempUserID))
+	result, err = runner.Run(context.Background(), agent, messages3, agents.WithSession(memSession, tempUserID))
 	if err != nil {
 		log.Fatalf("Run failed: %v", err)
 	}
@@ -99,13 +98,12 @@ func main() {
 		log.Fatalf("Failed to create file session: %v", err)
 	}
 
-	agent.SessionBackend = fileSession
 	registryUserID := "registry_user"
 
 	messages4 := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("This uses the file backend via registry"),
 	}
-	result, err = runner.Run(context.Background(), agent, messages4, agents.WithSessionID(registryUserID))
+	result, err = runner.Run(context.Background(), agent, messages4, agents.WithSession(fileSession, registryUserID))
 	if err != nil {
 		log.Fatalf("Run failed: %v", err)
 	}
