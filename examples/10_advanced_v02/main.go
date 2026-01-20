@@ -69,16 +69,17 @@ func main() {
 		),
 	}
 
-	// Setup persistent file-based session
-	sessionsDir := filepath.Join(os.TempDir(), "production-sessions")
-	fileSession, err := session.NewFileSession(sessionsDir)
+	// Setup persistent SQLite session
+	dbPath := filepath.Join(os.TempDir(), "production-sessions.db")
+	sqlSession, err := session.NewSQLite(dbPath)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
 	defer func() {
-		if err := os.RemoveAll(sessionsDir); err != nil {
-			fmt.Printf("Warning: failed to clean up sessions directory: %v\n", err)
+		_ = sqlSession.(*session.SQLiteSession).Close()
+		if err := os.Remove(dbPath); err != nil {
+			fmt.Printf("Warning: failed to clean up db file: %v\n", err)
 		}
 	}()
 
@@ -95,7 +96,7 @@ func main() {
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What products do you offer?"),
 	}
-	result, err := runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
+	result, err := runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -107,7 +108,7 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("How much does the first one cost?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -119,7 +120,7 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("My email is customer@example.com, can you send me details?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, userID))
 	if err != nil {
 		// Guardrail blocked the request
 		fmt.Printf("⚠️  Safety Alert: %v\n", err)
@@ -134,7 +135,7 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What's your return policy?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -143,9 +144,9 @@ func main() {
 
 	// Show session management
 	fmt.Println("=== Session Management ===")
-	history, _ := fileSession.Get(ctx, userID)
+	history, _ := sqlSession.Get(ctx, userID)
 	fmt.Printf("Session '%s' has %d messages stored\n", userID, len(history))
-	fmt.Printf("Conversation persisted to: %s/%s.json\n\n", sessionsDir, userID)
+	fmt.Printf("Conversation persisted to: %s (session_id: %s)\n\n", dbPath, userID)
 
 	// Show usage tracking
 	fmt.Println("=== Usage Tracking ===")

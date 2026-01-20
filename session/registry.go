@@ -61,14 +61,6 @@ func init() {
 		return NewMemorySession(), nil
 	})
 
-	Register("file", func(config map[string]any) (Session, error) {
-		dir, ok := config["directory"].(string)
-		if !ok {
-			return nil, fmt.Errorf("file backend requires 'directory' config")
-		}
-		return NewFileSession(dir)
-	})
-
 	Register("conversations", func(config map[string]any) (Session, error) {
 		client, ok := config["client"].(*openai.Client)
 		if !ok {
