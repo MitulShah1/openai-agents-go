@@ -20,14 +20,6 @@ const (
 	CountModeLines CountMode = "lines"
 )
 
-// ContentLengthGuardrail validates content length constraints.
-type ContentLengthGuardrail struct {
-	mode     CountMode
-	min      int
-	max      int
-	tripwire bool
-}
-
 // ContentLengthConfig configures the content length guardrail.
 type ContentLengthConfig struct {
 	// Mode determines how to count content (characters, words, or lines)
@@ -41,93 +33,77 @@ type ContentLengthConfig struct {
 }
 
 // NewContentLengthGuardrail creates a new content length guardrail.
-func NewContentLengthGuardrail(config ContentLengthConfig) *ContentLengthGuardrail {
+func NewContentLengthGuardrail(config ContentLengthConfig) *guardrail.Guardrail {
 	mode := config.Mode
 	if mode == "" {
 		mode = CountModeCharacters // Default to character counting
 	}
+	minVal := config.Min
+	maxVal := config.Max
+	tripwire := config.Tripwire
 
-	return &ContentLengthGuardrail{
-		mode:     mode,
-		min:      config.Min,
-		max:      config.Max,
-		tripwire: config.Tripwire,
-	}
-}
+	return guardrail.NewGuardrail("content_length", func(_ context.Context, input string) (*guardrail.Result, error) {
+		count := countContent(input, mode)
 
-// Name returns the guardrail name.
-func (g *ContentLengthGuardrail) Name() string {
-	return "content_length"
-}
-
-// Validate checks if the content meets length constraints.
-func (g *ContentLengthGuardrail) Validate(_ context.Context, input string) error {
-	count := g.count(input)
-
-	// Check minimum
-	if g.min > 0 && count < g.min {
-		msg := fmt.Sprintf("content too short: %d %s (minimum: %d)", count, g.mode, g.min)
-		if g.tripwire {
-			return &guardrail.InputGuardrailTripwireError{
-				GuardrailName: g.Name(),
-				Message:       msg,
-			}
+		// Check minimum
+		if minVal > 0 && count < minVal {
+			return &guardrail.Result{
+				Passed:            false,
+				TripwireTriggered: tripwire,
+				Message:           fmt.Sprintf("content too short: %d %s (minimum: %d)", count, mode, minVal),
+				Metadata: map[string]any{
+					"count": count,
+					"mode":  mode,
+					"min":   minVal,
+				},
+			}, nil
 		}
-		return fmt.Errorf("%s", msg)
-	}
 
-	// Check maximum
-	if g.max > 0 && count > g.max {
-		msg := fmt.Sprintf("content too long: %d %s (maximum: %d)", count, g.mode, g.max)
-		if g.tripwire {
-			return &guardrail.InputGuardrailTripwireError{
-				GuardrailName: g.Name(),
-				Message:       msg,
-			}
+		// Check maximum
+		if maxVal > 0 && count > maxVal {
+			return &guardrail.Result{
+				Passed:            false,
+				TripwireTriggered: tripwire,
+				Message:           fmt.Sprintf("content too long: %d %s (maximum: %d)", count, mode, maxVal),
+				Metadata: map[string]any{
+					"count": count,
+					"mode":  mode,
+					"max":   maxVal,
+				},
+			}, nil
 		}
-		return fmt.Errorf("%s", msg)
-	}
 
-	return nil
+		return &guardrail.Result{
+			Passed:            true,
+			TripwireTriggered: false,
+			Message:           "content length within limits",
+			Metadata: map[string]any{
+				"count": count,
+			},
+		}, nil
+	})
 }
 
-// IsTripwire returns whether this guardrail halts execution on failure.
-func (g *ContentLengthGuardrail) IsTripwire() bool {
-	return g.tripwire
-}
-
-// count returns the count based on the configured mode.
-func (g *ContentLengthGuardrail) count(input string) int {
-	switch g.mode {
+// countContent returns the count based on the configured mode.
+func countContent(input string, mode CountMode) int {
+	switch mode {
 	case CountModeWords:
-		return g.countWords(input)
+		// Trim whitespace and split on whitespace
+		trimmed := strings.TrimSpace(input)
+		if trimmed == "" {
+			return 0
+		}
+		words := strings.Fields(trimmed)
+		return len(words)
 	case CountModeLines:
-		return g.countLines(input)
+		if input == "" {
+			return 0
+		}
+		lines := strings.Split(input, "\n")
+		return len(lines)
 	case CountModeCharacters:
 		fallthrough
 	default:
 		return len(input)
 	}
-}
-
-// countWords counts whitespace-separated words.
-func (g *ContentLengthGuardrail) countWords(input string) int {
-	// Trim whitespace and split on whitespace
-	trimmed := strings.TrimSpace(input)
-	if trimmed == "" {
-		return 0
-	}
-
-	words := strings.Fields(trimmed)
-	return len(words)
-}
-
-// countLines counts newline-separated lines.
-func (g *ContentLengthGuardrail) countLines(input string) int {
-	if input == "" {
-		return 0
-	}
-
-	lines := strings.Split(input, "\n")
-	return len(lines)
 }

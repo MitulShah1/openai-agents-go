@@ -42,6 +42,25 @@ Transfer control to another agent:
 handoff := agents.HandoffTool(specialistAgent, "Transfer to specialist")
 ```
 
+### Multimodal Tool (New in v0.3.0)
+
+Return rich content like images and files that multimodal models (e.g., GPT-4o) can process:
+
+```go
+cameraTool := agents.FunctionTool(
+    "get_camera_feed",
+    "Get snapshot from security camera",
+    /* ... params ... */,
+    func(args map[string]any, ctx agents.ContextVariables) (any, error) {
+        // Return structured content
+        return []agents.Content{
+            agents.TextContent("Here is the latest snapshot:"),
+            agents.ImageContent("https://example.com/snap.jpg", "high"),
+        }, nil
+    },
+)
+```
+
 ## Tool Interface
 
 All tools implement the `Tool` interface:

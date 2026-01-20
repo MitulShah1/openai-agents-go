@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 	"testing"
-
-	"github.com/MitulShah1/openai-agents-go/guardrail"
 )
 
 func TestContentLengthGuardrail_Characters(t *testing.T) {
@@ -19,9 +17,12 @@ func TestContentLengthGuardrail_Characters(t *testing.T) {
 		ctx := context.Background()
 
 		// Valid input
-		err := guard.Validate(ctx, "Hello, World!")
+		result, err := guard.Func(ctx, "Hello, World!")
 		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result.Passed {
+			t.Errorf("expected pass, got failure: %s", result.Message)
 		}
 	})
 
@@ -33,9 +34,12 @@ func TestContentLengthGuardrail_Characters(t *testing.T) {
 
 		ctx := context.Background()
 
-		err := guard.Validate(ctx, "Short")
-		if err == nil {
-			t.Error("expected error for content below minimum")
+		result, err := guard.Func(ctx, "Short")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for content below minimum")
 		}
 	})
 
@@ -47,9 +51,12 @@ func TestContentLengthGuardrail_Characters(t *testing.T) {
 
 		ctx := context.Background()
 
-		err := guard.Validate(ctx, "This is a very long string")
-		if err == nil {
-			t.Error("expected error for content above maximum")
+		result, err := guard.Func(ctx, "This is a very long string")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for content above maximum")
 		}
 	})
 
@@ -61,9 +68,12 @@ func TestContentLengthGuardrail_Characters(t *testing.T) {
 
 		ctx := context.Background()
 
-		err := guard.Validate(ctx, "Hello")
+		result, err := guard.Func(ctx, "Hello")
 		if err != nil {
-			t.Errorf("unexpected error for exact minimum: %v", err)
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result.Passed {
+			t.Error("expected pass for exact minimum")
 		}
 	})
 
@@ -75,9 +85,12 @@ func TestContentLengthGuardrail_Characters(t *testing.T) {
 
 		ctx := context.Background()
 
-		err := guard.Validate(ctx, "Hello")
+		result, err := guard.Func(ctx, "Hello")
 		if err != nil {
-			t.Errorf("unexpected error for exact maximum: %v", err)
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result.Passed {
+			t.Error("expected pass for exact maximum")
 		}
 	})
 
@@ -89,9 +102,12 @@ func TestContentLengthGuardrail_Characters(t *testing.T) {
 
 		ctx := context.Background()
 
-		err := guard.Validate(ctx, "")
+		result, err := guard.Func(ctx, "")
 		if err != nil {
-			t.Errorf("unexpected error for empty input: %v", err)
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result.Passed {
+			t.Error("expected pass for empty input")
 		}
 	})
 }
@@ -107,9 +123,12 @@ func TestContentLengthGuardrail_Words(t *testing.T) {
 		ctx := context.Background()
 
 		// 4 words - valid
-		err := guard.Validate(ctx, "This is a test")
+		result, err := guard.Func(ctx, "This is a test")
 		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result.Passed {
+			t.Error("expected pass")
 		}
 	})
 
@@ -122,9 +141,12 @@ func TestContentLengthGuardrail_Words(t *testing.T) {
 		ctx := context.Background()
 
 		// 2 words
-		err := guard.Validate(ctx, "Hello World")
-		if err == nil {
-			t.Error("expected error for too few words")
+		result, err := guard.Func(ctx, "Hello World")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for too few words")
 		}
 	})
 
@@ -137,9 +159,12 @@ func TestContentLengthGuardrail_Words(t *testing.T) {
 		ctx := context.Background()
 
 		// 5 words
-		err := guard.Validate(ctx, "This is a long sentence")
-		if err == nil {
-			t.Error("expected error for too many words")
+		result, err := guard.Func(ctx, "This is a long sentence")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for too many words")
 		}
 	})
 
@@ -151,9 +176,12 @@ func TestContentLengthGuardrail_Words(t *testing.T) {
 
 		ctx := context.Background()
 
-		err := guard.Validate(ctx, "")
-		if err == nil {
-			t.Error("expected error for empty input with word minimum")
+		result, err := guard.Func(ctx, "")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for empty input with word minimum")
 		}
 	})
 
@@ -165,9 +193,12 @@ func TestContentLengthGuardrail_Words(t *testing.T) {
 
 		ctx := context.Background()
 
-		err := guard.Validate(ctx, "   \t\n   ")
-		if err == nil {
-			t.Error("expected error for whitespace-only input")
+		result, err := guard.Func(ctx, "   \t\n   ")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for whitespace-only input")
 		}
 	})
 }
@@ -183,9 +214,12 @@ func TestContentLengthGuardrail_Lines(t *testing.T) {
 		ctx := context.Background()
 
 		// 3 lines - valid
-		err := guard.Validate(ctx, "Line 1\nLine 2\nLine 3")
+		result, err := guard.Func(ctx, "Line 1\nLine 2\nLine 3")
 		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result.Passed {
+			t.Error("expected pass")
 		}
 	})
 
@@ -198,9 +232,12 @@ func TestContentLengthGuardrail_Lines(t *testing.T) {
 		ctx := context.Background()
 
 		// 1 line
-		err := guard.Validate(ctx, "Single line")
-		if err == nil {
-			t.Error("expected error for too few lines")
+		result, err := guard.Func(ctx, "Single line")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for too few lines")
 		}
 	})
 
@@ -213,9 +250,12 @@ func TestContentLengthGuardrail_Lines(t *testing.T) {
 		ctx := context.Background()
 
 		// 3 lines
-		err := guard.Validate(ctx, "Line 1\nLine 2\nLine 3")
-		if err == nil {
-			t.Error("expected error for too many lines")
+		result, err := guard.Func(ctx, "Line 1\nLine 2\nLine 3")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for too many lines")
 		}
 	})
 
@@ -227,9 +267,12 @@ func TestContentLengthGuardrail_Lines(t *testing.T) {
 
 		ctx := context.Background()
 
-		err := guard.Validate(ctx, "")
-		if err == nil {
-			t.Error("expected error for empty input with line minimum")
+		result, err := guard.Func(ctx, "")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected failure for empty input with line minimum")
 		}
 	})
 
@@ -243,9 +286,12 @@ func TestContentLengthGuardrail_Lines(t *testing.T) {
 		ctx := context.Background()
 
 		// 2 lines (second is empty after newline)
-		err := guard.Validate(ctx, "Line 1\n")
+		result, err := guard.Func(ctx, "Line 1\n")
 		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !result.Passed {
+			t.Error("expected pass")
 		}
 	})
 }
@@ -260,9 +306,12 @@ func TestContentLengthGuardrail_DefaultMode(t *testing.T) {
 	ctx := context.Background()
 
 	// 7 characters - valid
-	err := guard.Validate(ctx, "Testing")
+	result, err := guard.Func(ctx, "Testing")
 	if err != nil {
-		t.Errorf("unexpected error with default mode: %v", err)
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Passed {
+		t.Error("expected pass")
 	}
 }
 
@@ -273,28 +322,25 @@ func TestContentLengthGuardrail_Tripwire(t *testing.T) {
 		Tripwire: true,
 	})
 
-	if !guard.IsTripwire() {
-		t.Error("guardrail should be marked as tripwire")
-	}
-
+	// Check tripwire by triggering it
 	ctx := context.Background()
-
-	err := guard.Validate(ctx, "Too long content")
-	if err == nil {
-		t.Error("expected tripwire error")
+	result, err := guard.Func(ctx, "Too long content")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-
-	// Check it's the right error type
-	if _, ok := err.(*guardrail.InputGuardrailTripwireError); !ok {
-		t.Errorf("expected InputGuardrailTripwireError, got %T", err)
+	if result.Passed {
+		t.Error("expected failure")
+	}
+	if !result.TripwireTriggered {
+		t.Error("expected TripwireTriggered to be true")
 	}
 }
 
 func TestContentLengthGuardrail_Name(t *testing.T) {
 	guard := NewContentLengthGuardrail(ContentLengthConfig{})
 
-	if guard.Name() != "content_length" {
-		t.Errorf("expected name 'content_length', got '%s'", guard.Name())
+	if guard.Name != "content_length" {
+		t.Errorf("expected name 'content_length', got '%s'", guard.Name)
 	}
 }
 
@@ -314,9 +360,12 @@ func TestContentLengthGuardrail_NoLimits(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		err := guard.Validate(ctx, tc)
+		result, err := guard.Func(ctx, tc)
 		if err != nil {
 			t.Errorf("unexpected error for no-limits guardrail: %v", err)
+		}
+		if !result.Passed {
+			t.Errorf("expected pass for valid input, got failure: %s", result.Message)
 		}
 	}
 }

@@ -54,7 +54,7 @@ type SecretsConfig struct {
 }
 
 // NewSecretsGuardrail creates a new secrets detection guardrail.
-func NewSecretsGuardrail(config SecretsConfig) *SecretsGuardrail {
+func NewSecretsGuardrail(config SecretsConfig) *guardrail.Guardrail {
 	patterns := getDefaultSecretPatterns()
 
 	// Add custom patterns
@@ -62,10 +62,34 @@ func NewSecretsGuardrail(config SecretsConfig) *SecretsGuardrail {
 		patterns = append(patterns, config.CustomPatterns...)
 	}
 
-	return &SecretsGuardrail{
-		patterns: patterns,
-		tripwire: config.Tripwire,
-	}
+	tripwire := config.Tripwire
+
+	return guardrail.NewGuardrail("secrets", func(_ context.Context, input string) (*guardrail.Result, error) {
+		var detected []string
+
+		for _, pattern := range patterns {
+			if pattern.Pattern.MatchString(input) {
+				detected = append(detected, pattern.Name)
+			}
+		}
+
+		if len(detected) > 0 {
+			return &guardrail.Result{
+				Passed:            false,
+				TripwireTriggered: tripwire,
+				Message:           "secrets detected: " + strings.Join(detected, ", "),
+				Metadata: map[string]any{
+					"detected_types": detected,
+				},
+			}, nil
+		}
+
+		return &guardrail.Result{
+			Passed:            true,
+			TripwireTriggered: false,
+			Message:           "no secrets detected",
+		}, nil
+	})
 }
 
 // Name returns the guardrail name.

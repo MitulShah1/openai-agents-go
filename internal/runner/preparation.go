@@ -58,8 +58,7 @@ func PrepareRequest(
 	}
 
 	// Inject system instructions and build messages
-	messagesForTurn := make([]openai.ChatCompletionMessageParamUnion, 0, len(history)+1)
-	messagesForTurn = append(messagesForTurn, openai.SystemMessage(config.SystemInstructions))
+	messagesForTurn := []openai.ChatCompletionMessageParamUnion{openai.SystemMessage(config.SystemInstructions)}
 	messagesForTurn = append(messagesForTurn, history...)
 	req.Messages = messagesForTurn
 

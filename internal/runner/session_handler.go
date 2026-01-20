@@ -38,7 +38,7 @@ func (sh *SessionHandler) LoadHistory(
 		return messages, nil
 	}
 
-	sessionHistory, err := sh.session.Get(ctx, sh.sessionID)
+	combined, err := sh.session.Get(ctx, sh.sessionID)
 	if err != nil {
 		// Check if it's a NotFoundError - that's acceptable, we'll create the session on save
 		var notFoundErr *session.NotFoundError
@@ -50,8 +50,6 @@ func (sh *SessionHandler) LoadHistory(
 	}
 
 	// Prepend session history to new messages
-	combined := make([]openai.ChatCompletionMessageParamUnion, 0, len(sessionHistory)+len(messages))
-	combined = append(combined, sessionHistory...)
 	combined = append(combined, messages...)
 
 	return combined, nil
