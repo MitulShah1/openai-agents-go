@@ -97,7 +97,7 @@ func TestPrepareRequest(t *testing.T) {
 		}
 
 		// converter mock returning OfText variant using string literal for type
-		converter := func(v any) (openai.ChatCompletionNewParamsResponseFormatUnion, error) {
+		converter := func(_ any) (openai.ChatCompletionNewParamsResponseFormatUnion, error) {
 			return openai.ChatCompletionNewParamsResponseFormatUnion{
 				OfText: &openai.ResponseFormatTextParam{
 					Type: "text",

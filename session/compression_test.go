@@ -12,7 +12,7 @@ func TestWithCompression(t *testing.T) {
 	ctx := context.Background()
 	mem := NewMemorySession()
 	compressed := WithCompression(mem)
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	t.Run("basic append and get", func(t *testing.T) {
 		msgs := []openai.ChatCompletionMessageParamUnion{
@@ -115,7 +115,7 @@ func TestWithCompression(t *testing.T) {
 
 func TestCombinedUtilities(t *testing.T) {
 	// Stack: Compression(Encryption(Memory))
-	// Data -> Encrypt -> Compress -> Storage (Best practice for size? No, Entrophy.)
+	// Data -> Encrypt -> Compress -> Storage (Best practice for size? No, Entropy.)
 	// Wait, code says:
 	// compressed := WithCompression(encrypted)
 	// compressed.Append calls encrypted.Append with "AGENTS_GZIP..." blob.
