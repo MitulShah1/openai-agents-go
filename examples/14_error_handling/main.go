@@ -21,6 +21,14 @@ func main() {
 		Backoff: &agents.FixedBackoff{
 			Delay: 500 * time.Millisecond,
 		},
+		RetryableErrors: func(err error) bool {
+			var netErr *agents.NetworkError
+			var rateLimitErr *agents.RateLimitError
+			var timeoutErr *agents.TimeoutError
+			return (errors.As(err, &netErr) && netErr.Retryable) ||
+				errors.As(err, &rateLimitErr) ||
+				errors.As(err, &timeoutErr)
+		},
 	}
 
 	attempt := 0
@@ -42,6 +50,14 @@ func main() {
 			Initial:   100 * time.Millisecond,
 			Increment: 200 * time.Millisecond,
 			MaxDelay:  1 * time.Second,
+		},
+		RetryableErrors: func(err error) bool {
+			var netErr *agents.NetworkError
+			var rateLimitErr *agents.RateLimitError
+			var timeoutErr *agents.TimeoutError
+			return (errors.As(err, &netErr) && netErr.Retryable) ||
+				errors.As(err, &rateLimitErr) ||
+				errors.As(err, &timeoutErr)
 		},
 	}
 
@@ -66,6 +82,14 @@ func main() {
 			MaxDelay:   2 * time.Second,
 			Jitter:     0.2, // 20% randomization
 		},
+		RetryableErrors: func(err error) bool {
+			var netErr *agents.NetworkError
+			var rateLimitErr *agents.RateLimitError
+			var timeoutErr *agents.TimeoutError
+			return (errors.As(err, &netErr) && netErr.Retryable) ||
+				errors.As(err, &rateLimitErr) ||
+				errors.As(err, &timeoutErr)
+		},
 	}
 
 	attempt = 0
@@ -87,6 +111,14 @@ func main() {
 		MaxAttempts: 3,
 		Backoff: &agents.FixedBackoff{
 			Delay: 100 * time.Millisecond,
+		},
+		RetryableErrors: func(err error) bool {
+			var netErr *agents.NetworkError
+			var rateLimitErr *agents.RateLimitError
+			var timeoutErr *agents.TimeoutError
+			return (errors.As(err, &netErr) && netErr.Retryable) ||
+				errors.As(err, &rateLimitErr) ||
+				errors.As(err, &timeoutErr)
 		},
 	}
 
@@ -120,6 +152,14 @@ func main() {
 				}
 				return 1 * time.Second
 			},
+		},
+		RetryableErrors: func(err error) bool {
+			var netErr *agents.NetworkError
+			var rateLimitErr *agents.RateLimitError
+			var timeoutErr *agents.TimeoutError
+			return (errors.As(err, &netErr) && netErr.Retryable) ||
+				errors.As(err, &rateLimitErr) ||
+				errors.As(err, &timeoutErr)
 		},
 	}
 

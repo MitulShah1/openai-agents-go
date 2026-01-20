@@ -34,7 +34,7 @@ func WithTimeout(g *Guardrail, timeout time.Duration) *Guardrail {
 			case err := <-errChan:
 				return nil, err
 			case <-ctx.Done():
-				return nil, fmt.Errorf("guardrail %s timed out after %v", g.Name, timeout)
+				return nil, fmt.Errorf("guardrail %s timed out after %v: %w", g.Name, timeout, ctx.Err())
 			}
 		},
 	}

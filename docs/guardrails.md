@@ -267,26 +267,67 @@ critical := builtin.NewPIIGuardrail("Critical PII", true)
 warning := builtin.NewPIIGuardrail("PII Warning", false)
 ```
 
-## Chaining Guardrails
+## Guardrail Composition
+Since v0.3.0, you can compose complex guardrail logic using chains.
 
-Combine multiple guardrails:
+### Chaining Strategies
+
+```go
+import "github.com/MitulShah1/openai-agents-go/guardrail"
+
+chain := guardrail.NewChain().
+    // Add guardrails
+    Add(builtin.NewPIIGuardrail("pii", true)).
+    Add(builtin.NewProfanityGuardrail("profanity", true)).
+    
+    // Choose strategy
+    WithStrategy(guardrail.Sequential). // Stop at first failure (Short-circuit)
+    // OR
+    // WithStrategy(guardrail.Parallel). // Run all concurrently
+    // OR
+    // WithStrategy(guardrail.StopOnFirstPass). // First pass wins
+    
+    Build()
+
+// Use the chain as a single guardrail
+runner.Run(..., agents.WithGuardrails([]agents.Guardrail{chain}))
+```
+
+### Async & Timeouts
+
+Apply timeouts to guardrails (v0.3.0):
+
+```go
+// Timeout after 500ms
+timedGuard := guardrail.WithTimeout(slowGuardrail, 500*time.Millisecond)
+
+// Timeout with graceful degradation (warns instead of failing)
+gracefulGuard := guardrail.WithTimeoutGraceful(slowGuardrail, 500*time.Millisecond)
+```
+
+### Metrics
+
+Track guardrail performance (v0.3.0):
+
+```go
+metrics := guardrail.NewInMemoryMetrics()
+monitoredGuard := guardrail.WithMetrics(myGuardrail, metrics)
+
+// ... run agent ...
+
+stats := metrics.GetStats("my_guardrail")
+fmt.Printf("Avg Latency: %v", stats.AvgDuration())
+```
+
+## Legacy Chaining (Simple List)
+
+You can also pass a simple list of guardrails to the runner. This is equivalent to a Sequential chain.
 
 ```go
 guardrails := []agents.Guardrail{
     builtin.NewPIIGuardrail("PII", true),
     builtin.NewSecretsGuardrail("Secrets", true),
-    builtin.NewPromptInjectionGuardrail("Injection", true),
-    builtin.NewContentLengthGuardrail("Length", 1000, builtin.CountCharacters, false),
-    builtin.NewProfanityGuardrail("Profanity", false),
 }
-
-result, err := runner.Run(
-    ctx,
-    agent,
-    messages,
-    nil,
-    agents.WithGuardrails(guardrails),
-)
 ```
 
 ## Complete Example

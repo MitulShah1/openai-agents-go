@@ -1,4 +1,6 @@
 // Package session provides conversation history persistence for agents.
+// It includes the core Session interface, backend implementations (SQLite, Memory),
+// and utilities for transparent Compression and Encryption.
 package session
 
 import (

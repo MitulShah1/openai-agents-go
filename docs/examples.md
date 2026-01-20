@@ -15,4 +15,8 @@ Explore these practical examples to learn how to build AI agents with the Go SDK
 | [Sessions Demo](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/09_sessions_demo) | Maintaining conversation state across multiple turns. |
 | [Advanced Features](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/10_advanced_v02) | Showcase of v0.2.0 features working together. |
 | [Conversations API](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/11_conversations_session) | Using the new Conversations API for session management. |
-| [Error Handling](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/14_error_handling) | robust error handling strategies. |
+| [Error Handling](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/14_error_handling) | Robust error handling strategies. |
+| [Session Backends](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/15_session_backends) | Using SQLite and custom session storage. |
+| [Multimodal Tools](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/12_multimodal_tools) | Returning images and files from tools. |
+| [Guardrail Composition](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/13_guardrail_composition) | Chaining, parallel execution, and metrics. |
+| [Production Chatbot](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/16_production_chatbot) | Complete chatbot with multimodal tools, guardrails, and persistence. |

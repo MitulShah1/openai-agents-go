@@ -30,8 +30,10 @@ func main() {
 		log.Fatalf("Failed to create SQLite session: %v", err)
 	}
 	defer func() {
-		if err := sqliteSession.Close(); err != nil {
-			log.Printf("Error closing SQLite session: %v", err)
+		if sess, ok := sqliteSession.(*session.SQLiteSession); ok {
+			if err := sess.Close(); err != nil {
+				log.Printf("Error closing SQLite session: %v", err)
+			}
 		}
 	}()
 
@@ -48,7 +50,8 @@ func main() {
 	}
 	result, err := runner.Run(context.Background(), agent, messages1, agents.WithSession(sqliteSession, userID))
 	if err != nil {
-		log.Fatalf("Run failed: %v", err)
+		log.Printf("Run failed: %v", err)
+		return
 	}
 	fmt.Printf("  Agent: %s\n", result.FinalOutput)
 
@@ -59,7 +62,8 @@ func main() {
 	}
 	result, err = runner.Run(context.Background(), agent, messages2, agents.WithSession(sqliteSession, userID))
 	if err != nil {
-		log.Fatalf("Run failed: %v", err)
+		log.Printf("Run failed: %v", err)
+		return
 	}
 	fmt.Printf("  Agent: %s\n", result.FinalOutput)
 
@@ -67,11 +71,14 @@ func main() {
 	fmt.Println("\n=== Example 2: SQLite In-Memory Backend ===")
 	memSession, err := session.NewSQLite(":memory:")
 	if err != nil {
-		log.Fatalf("Failed to create in-memory session: %v", err)
+		log.Printf("Failed to create in-memory session: %v", err)
+		return
 	}
 	defer func() {
-		if err := memSession.Close(); err != nil {
-			log.Printf("Error closing in-memory session: %v", err)
+		if sess, ok := memSession.(*session.SQLiteSession); ok {
+			if err := sess.Close(); err != nil {
+				log.Printf("Error closing in-memory session: %v", err)
+			}
 		}
 	}()
 
@@ -82,7 +89,8 @@ func main() {
 	}
 	result, err = runner.Run(context.Background(), agent, messages3, agents.WithSession(memSession, tempUserID))
 	if err != nil {
-		log.Fatalf("Run failed: %v", err)
+		log.Printf("Run failed: %v", err)
+		return
 	}
 	fmt.Printf("  Agent: %s\n", result.FinalOutput)
 
@@ -95,7 +103,8 @@ func main() {
 	}
 	fileSession, err := session.Create("file", config)
 	if err != nil {
-		log.Fatalf("Failed to create file session: %v", err)
+		log.Printf("Failed to create file session: %v", err)
+		return
 	}
 
 	registryUserID := "registry_user"
@@ -105,7 +114,8 @@ func main() {
 	}
 	result, err = runner.Run(context.Background(), agent, messages4, agents.WithSession(fileSession, registryUserID))
 	if err != nil {
-		log.Fatalf("Run failed: %v", err)
+		log.Printf("Run failed: %v", err)
+		return
 	}
 	fmt.Printf("  Agent: %s\n", result.FinalOutput)
 
@@ -115,28 +125,32 @@ func main() {
 	// Get session history
 	messages, err := sqliteSession.Get(context.Background(), userID)
 	if err != nil {
-		log.Fatalf("Failed to get session: %v", err)
+		log.Printf("Failed to get session: %v", err)
+		return
 	}
 	fmt.Printf("  Session history for %s: %d messages\n", userID, len(messages))
 
 	// Clear session
 	err = sqliteSession.Clear(context.Background(), userID)
 	if err != nil {
-		log.Fatalf("Failed to clear session: %v", err)
+		log.Printf("Failed to clear session: %v", err)
+		return
 	}
 	fmt.Printf("  Cleared session for %s\n", userID)
 
 	// Verify cleared
 	messages, err = sqliteSession.Get(context.Background(), userID)
 	if err != nil {
-		log.Fatalf("Failed to get session: %v", err)
+		log.Printf("Failed to get session: %v", err)
+		return
 	}
 	fmt.Printf("  Session history after clear: %d messages\n", len(messages))
 
 	// Delete session
 	err = sqliteSession.Delete(context.Background(), userID)
 	if err != nil {
-		log.Fatalf("Failed to delete session: %v", err)
+		log.Printf("Failed to delete session: %v", err)
+		return
 	}
 	fmt.Printf("  Deleted session for %s\n", userID)
 

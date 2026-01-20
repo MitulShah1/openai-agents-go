@@ -17,9 +17,9 @@ The session framework enables:
 | Memory | Testing, development | None | v0.2.0 |
 | File | Single-server production | None | v0.2.0 |
 | Conversations API | Cloud, distributed | OpenAI API key | v0.2.2 |
-| SQLite | Coming soon | None (pure Go) | v0.3.0 |
-| Redis | Coming soon | Redis client | v0.3.0 |
-| PostgreSQL | Coming soon | PostgreSQL driver | v0.3.0 |
+| SQLite | Single-server persistence | None (pure Go) | v0.3.0 |
+| Redis | Scalable/Distributed | Redis client | v0.3.5 |
+| PostgreSQL | Enterprise/Compliance | PostgreSQL driver | v0.3.5 |
 
 ## Quick Start
 
@@ -89,7 +89,26 @@ if err != nil {
 
 // Cloud-based persistence via OpenAI
 // Distributed-ready
+// Cloud-based persistence via OpenAI
+// Distributed-ready
 // Automatic synchronization
+```
+
+### SQLite Session (New in v0.3.0)
+
+Best for robust single-server persistence without external database servers:
+
+```go
+import "github.com/MitulShah1/openai-agents-go/session"
+
+sess, err := session.NewSQLite("./sessions.db")
+if err != nil {
+    panic(err)
+}
+
+// Uses modernc.org/sqlite (Pure Go, CGO-free)
+// Automatic schema migration
+// Thread-safe connection pooling
 ```
 
 ## Complete Example
@@ -150,23 +169,29 @@ All backends implement the `Session` interface:
 
 ```go
 type Session interface {
-    // Load conversation history for a session ID
-    Load(sessionID string) ([]openai.ChatCompletionMessageParamUnion, error)
+    // Get retrieves all messages for a session ID
+    Get(ctx context.Context, sessionID string) ([]openai.ChatCompletionMessageParamUnion, error)
     
-    // Save conversation history for a session ID
-    Save(sessionID string, messages []openai.ChatCompletionMessageParamUnion) error
+    // Append adds messages to a session
+    Append(ctx context.Context, sessionID string, messages []openai.ChatCompletionMessageParamUnion) error
+    
+    // Clear removes all messages from a session
+    Clear(ctx context.Context, sessionID string) error
+    
+    // Delete removes a session completely
+    Delete(ctx context.Context, sessionID string) error
 }
 ```
 
 ## How Sessions Work
 
-1. **Before agent run**: Runner calls `session.Load(sessionID)` to get history
+1. **Before agent run**: Runner calls `session.Get(ctx, sessionID)` to get history
 2. **History prepended**: Loaded messages are added before new messages
 3. **Agent executes**: With full context from previous interactions
-4. **After completion**: Runner calls `session.Save(sessionID, allMessages)` to persist
+4. **After completion**: Runner calls `session.Append(ctx, sessionID, newMessages)` to persist
 
 ```
-User Message → Load History → [History + New Message] → Agent → Save Updated History
+User Message → Get History → [History + New Message] → Agent → Append New History
 ```
 
 ## Choosing a Backend
@@ -229,6 +254,44 @@ if err != nil {
 }
 ```
 
+## Session Utilities (New in v0.3.0)
+
+Enhance any session backend with transparent compression and encryption.
+
+### Compression
+
+Reduce storage size by compressing message history using GZIP.
+
+```go
+// Wrap any session with compression
+sess = session.WithCompression(baseSession)
+```
+
+### Encryption
+
+Secure your conversation history with AES-GCM encryption.
+
+```go
+key := []byte("your-32-byte-secret-key-12345678")
+// Wrap session with encryption (requires 16, 24, or 32 byte key)
+sess = session.WithEncryption(baseSession, key)
+```
+
+### Composition
+
+Utilities can be composed. For "Compress then Encrypt" strategy (recommended):
+
+```go
+// Data -> Compress -> Encrypt -> Store
+store, _ := session.NewSQLite("chats.db")
+
+// 1. Encryption wraps the store (Inner)
+encrypted := session.WithEncryption(store, key)
+
+// 2. Compression wraps the encrypted session (Outer)
+finalSession := session.WithCompression(encrypted)
+```
+
 ## Advanced Topics
 
 ### Manual Session Control
@@ -237,13 +300,15 @@ You can manually load/save sessions:
 
 ```go
 // Load manually
-history, err := sess.Load("user-123")
+history, err := sess.Get(context.Background(), "user-123")
 
 // Modify history
 history = append(history, openai.UserMessage("New message"))
 
-// Save manually
-err = sess.Save("user-123", history)
+// Append manually (or use Append to add just new messages)
+err = sess.Append(context.Background(), "user-123", []openai.ChatCompletionMessageParamUnion{
+    openai.UserMessage("New message"),
+})
 ```
 
 ### Session Migration

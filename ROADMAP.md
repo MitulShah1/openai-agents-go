@@ -61,48 +61,47 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 **Timeline**: 3-4 weeks  
 **Status**: In Planning  
-**Target Date**: Q1 2026  
-**Dependencies**: Optional backends (SQLite, Redis, PostgreSQL drivers)
+**Target Date**: Jan 2026
+**Dependencies**: Optional backends (SQLite)
 
 #### Features
 
 **Multimodal Tool Output Support**:
-- ⏳ Update ToolCall type for multimodal responses
-- ⏳ Add helper methods for content extraction
-- ⏳ Examples demonstrating image/file outputs
+- ✅ Update ToolCall type for multimodal responses
+- ✅ Add helper methods for content extraction
+- ✅ Examples demonstrating image/file outputs
 
 **Guardrail Composition** (Advanced Features):
-- ⏳ **Chaining Support**: Combine multiple guardrails
+- ✅ **Chaining Support**: Combine multiple guardrails
   - Sequential mode (short-circuit on failure)
   - Parallel mode (collect all results)
   - StopOnFirst mode (early exit on pass)
-- ⏳ **Async Validation**: Timeout and cancellation support
+- ✅ **Async Validation**: Timeout and cancellation support
   - Context-aware execution
   - Graceful degradation
-- ⏳ **Metrics Collection**: Guardrail telemetry
+- ✅ **Metrics Collection**: Guardrail telemetry
   - Success/failure counters
   - Tripwire statistics
   - Average latency tracking
 
 **Database Session Backends** (Production-Ready Persistence):
-- ⏳ **Plugin Registry System**: Backend registration and discovery
-- ⏳ **SQLite Backend**: File-based database (built-in)
+- ✅ **Plugin Registry System**: Backend registration and discovery
+- ✅ **SQLite Backend**: File-based database (built-in)
   - Pure Go implementation (`modernc.org/sqlite`)
   - SQL schema with indexes
   - Connection pooling and migrations
-- ⏳ **Redis Plugin**: Distributed/scalable (external package)
-  - Connection pooling and retry logic
-  - TTL/expiry support
-  - Clustering support
-- ⏳ **PostgreSQL Plugin**: Enterprise-grade (external package)
-  - JSONB column type for messages
-  - Full-text search capability
-  - Partitioning support
+- ⏳ **Redis Plugin**: Distributed/scalable (deferred to v0.3.5)
+- ⏳ **PostgreSQL Plugin**: Enterprise-grade (deferred to v0.3.5)
 - ⏳ **Session Utilities**:
-  - Pagination/limit support
-  - Compression (gzip)
-  - Encryption wrapper
-  - Migration tools
+  - Pagination/limit support (deferred)
+
+### v0.3.5 - Tracing, Observability & Advanced Backends 🔍📈
+
+**Timeline**: 2 weeks
+**Status**: Planned
+**Target Date**: Feb 2026
+
+#### Features
 
 **Tracing & Observability**:
 - ⏳ **Tracing Framework**: Distributed tracing
@@ -114,7 +113,10 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
   - Request counts (by agent, model, status)
   - Latency percentiles (p50, p95, p99)
   - Token usage and cost tracking
-  - Error rates and guardrail statistics
+
+**Additional Database Backends**:
+- ⏳ **Redis Plugin**: Distributed/scalable (external package)
+- ⏳ **PostgreSQL Plugin**: Enterprise-grade (external package)
 
 **Testing & Quality**:
 - ⏳ Benchmark tests for performance tracking
@@ -346,9 +348,9 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-19  
-**Current Version**: v0.2.3 ✅  
-**Next Focus**: v0.3.0 - Database Backends, Tracing & Composition  
+**Last Updated**: 2026-01-20
+**Current Version**: v0.3.0 (Finalizing)
+**Next Focus**: v0.3.5 - Tracing & Observability  
 **SDK Version**: openai-go/v3 v3.16.0
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed release history.

@@ -193,7 +193,7 @@ func TestConversationsSession_AppendAndGet(t *testing.T) {
 
 	session := NewConversationsSession(client)
 	ctx := context.Background()
-	sessionID := "test-session"
+	sessionID := testSessionID
 
 	// 1. Append (Create)
 	msgs := []openai.ChatCompletionMessageParamUnion{

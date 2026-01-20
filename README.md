@@ -40,9 +40,12 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 - ✅ **Usage Tracking**: Monitor token consumption and costs
 - ✅ **Error Handling**: Comprehensive error types for debugging
 - ✅ **Type Safety**: Full Go type safety with generics support
+- ✅ **Multimodal Tools**: Return images and files from tools (v0.3.0)
+- ✅ **Guardrail Composition**: Chain guardrails with sequential/parallel execution, async validation, and metrics (v0.3.0)
+- ✅ **Database Sessions**: SQLite support for production-ready persistence (v0.3.0)
 - 🔮 **Streaming** (Coming in v0.4.0 - see [ROADMAP.md](./ROADMAP.md))
-- 🔮 **Tracing & Observability** (Coming in v0.3.0)
-- 🔮 **Database Session Backends** (SQLite, Redis, PostgreSQL - Coming in v0.3.0)
+- 🔮 **Tracing & Observability** (Coming in v0.3.5)
+- 🔮 **Adanced DB Backends** (Redis, PostgreSQL - Coming in v0.3.5)
 
 ---
 
@@ -256,6 +259,18 @@ cd examples/10_advanced_v02 && go run main.go
 
 # Cloud-based Conversations session (v0.2.2)
 cd examples/11_conversations_session && go run main.go
+
+# Multimodal tools (Image/File) (v0.3.0)
+cd examples/12_multimodal_tools && go run main.go
+
+# Guardrail composition & async (v0.3.0)
+cd examples/13_guardrail_composition && go run main.go
+
+# Session backends (SQLite) (v0.3.0)
+cd examples/14_session_backends && go run main.go
+
+# Production chatbot (v0.3.0)
+cd examples/16_production_chatbot && go run main.go
 ```
 
 ---

@@ -84,9 +84,12 @@ go get github.com/MitulShah1/openai-agents-go@latest
 | Context Variables | ✅ Complete | v0.1.0 |
 | Usage Tracking | ✅ Complete | v0.1.0 |
 | Error Handling | ✅ Enhanced | v0.2.3 |
+| Multimodal Support | ✅ Complete | v0.3.0 |
+| Guardrail Composition | ✅ Complete | v0.3.0 |
+| Database Sessions | ✅ Complete | v0.3.0 |
+| Session Encryption | ✅ Complete | v0.3.0 |
+| Tracing & Observability | 🔮 Planned | v0.3.5 |
 | Streaming | 🔮 Planned | v0.4.0 |
-| Tracing & Observability | 🔮 Planned | v0.3.0 |
-| Database Session Backends | 🔮 Planned | v0.3.0 |
 
 See the [CHANGELOG](https://github.com/MitulShah1/openai-agents-go/blob/main/CHANGELOG.md) for detailed release notes.
 
