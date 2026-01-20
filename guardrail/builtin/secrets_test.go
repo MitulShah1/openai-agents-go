@@ -3,10 +3,7 @@ package builtin
 import (
 	"context"
 	"regexp"
-	"strings"
 	"testing"
-
-	"github.com/MitulShah1/openai-agents-go/guardrail"
 )
 
 func TestSecretsGuardrail_APIKeys(t *testing.T) {
@@ -15,20 +12,19 @@ func TestSecretsGuardrail_APIKeys(t *testing.T) {
 
 	t.Run("detects generic API key", func(t *testing.T) {
 		t.Skip("Skipped: GitHub secret scanning blocks realistic test data")
-		// This test would use: api_key is sk_test_XXXXX...
-		// Pattern works correctly for real secrets in production
 	})
 
 	t.Run("detects Google API key", func(t *testing.T) {
 		t.Skip("Skipped: GitHub secret scanning blocks realistic test data")
-		// This test would use: AIzaSyXXXXX...
-		// Pattern works correctly for real secrets in production
 	})
 
 	t.Run("clean text passes", func(t *testing.T) {
-		err := guard.Validate(ctx, "This is clean text without secrets")
+		result, err := guard.Func(ctx, "This is clean text without secrets")
 		if err != nil {
-			t.Errorf("unexpected error for clean text: %v", err)
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if !result.Passed {
+			t.Errorf("expected clean text to pass, got: %s", result.Message)
 		}
 	})
 }
@@ -38,31 +34,27 @@ func TestSecretsGuardrail_AWS(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("detects AWS access key", func(t *testing.T) {
-		err := guard.Validate(ctx, "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE")
-		if err == nil {
-			t.Error("expected error for AWS access key")
+		result, err := guard.Func(ctx, "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE")
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected AWS access key to fail validation")
 		}
 	})
 
 	t.Run("detects AWS secret key", func(t *testing.T) {
 		t.Skip("Skipped: GitHub secret scanning blocks realistic test data")
-		// This test would use: aws_secret_key: wJalrXUtnFEMI/K7MDENG/...
-		// Pattern works correctly for real secrets in production
 	})
 }
 
 func TestSecretsGuardrail_GitHub(t *testing.T) {
-
 	t.Run("detects GitHub personal access token", func(t *testing.T) {
 		t.Skip("Skipped: GitHub secret scanning blocks realistic test data")
-		// This test would use: ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-		// Pattern works correctly for real secrets in production
 	})
 
 	t.Run("detects GitHub OAuth token", func(t *testing.T) {
 		t.Skip("Skipped: GitHub secret scanning blocks realistic test data")
-		// This test would use: gho_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-		// Pattern works correctly for real secrets in production
 	})
 }
 
@@ -71,24 +63,28 @@ func TestSecretsGuardrail_Tokens(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("detects Bearer token", func(t *testing.T) {
-		err := guard.Validate(ctx, "Authorization: Bearer abcdef1234567890abcdef1234567890")
-		if err == nil {
-			t.Error("expected error for Bearer token")
+		result, err := guard.Func(ctx, "Authorization: Bearer abcdef1234567890abcdef1234567890")
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected Bearer token to fail validation")
 		}
 	})
 
 	t.Run("detects JWT token", func(t *testing.T) {
 		jwt := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-		err := guard.Validate(ctx, jwt)
-		if err == nil {
-			t.Error("expected error for JWT token")
+		result, err := guard.Func(ctx, jwt)
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected JWT token to fail validation")
 		}
 	})
 
 	t.Run("detects Slack token", func(t *testing.T) {
 		t.Skip("Skipped: GitHub secret scanning blocks realistic test data")
-		// This test would use: xoxb-1234567890-1234567890-XXXXXXXXXXXXXXXXXXXXXXXX
-		// Pattern works correctly for real secrets in production
 	})
 }
 
@@ -97,24 +93,33 @@ func TestSecretsGuardrail_Passwords(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("detects password in URL", func(t *testing.T) {
-		err := guard.Validate(ctx, "postgres://user:my_secret_password@localhost:5432/db")
-		if err == nil {
-			t.Error("expected error for password in URL")
+		result, err := guard.Func(ctx, "postgres://user:my_secret_password@localhost:5432/db")
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected password in URL to fail validation")
 		}
 	})
 
 	t.Run("detects password assignment", func(t *testing.T) {
-		err := guard.Validate(ctx, "password=MySuperSecret123!")
-		if err == nil {
-			t.Error("expected error for password assignment")
+		result, err := guard.Func(ctx, "password=MySuperSecret123!")
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected password assignment to fail validation")
 		}
 	})
 
 	t.Run("short password not detected", func(t *testing.T) {
 		// Passwords under 8 characters are not flagged
-		err := guard.Validate(ctx, "pwd=short")
+		result, err := guard.Func(ctx, "pwd=short")
 		if err != nil {
-			t.Errorf("unexpected error for short password: %v", err)
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if !result.Passed {
+			t.Errorf("short password should pass validation, got: %v", result.Message)
 		}
 	})
 }
@@ -124,16 +129,22 @@ func TestSecretsGuardrail_PrivateKeys(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("detects private key", func(t *testing.T) {
-		err := guard.Validate(ctx, "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC...")
-		if err == nil {
-			t.Error("expected error for private key")
+		result, err := guard.Func(ctx, "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC...")
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected private key to fail validation")
 		}
 	})
 
 	t.Run("detects RSA private key", func(t *testing.T) {
-		err := guard.Validate(ctx, "-----BEGIN RSA PRIVATE KEY-----")
-		if err == nil {
-			t.Error("expected error for RSA private key")
+		result, err := guard.Func(ctx, "-----BEGIN RSA PRIVATE KEY-----")
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected RSA private key to fail validation")
 		}
 	})
 }
@@ -152,16 +163,22 @@ func TestSecretsGuardrail_CustomPatterns(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("detects custom secret", func(t *testing.T) {
-		err := guard.Validate(ctx, "My secret: CUSTOM_SECRET_ABCD1234EFGH5678")
-		if err == nil {
-			t.Error("expected error for custom secret")
+		result, err := guard.Func(ctx, "My secret: CUSTOM_SECRET_ABCD1234EFGH5678")
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected custom secret to fail validation")
 		}
 	})
 
 	t.Run("still detects default patterns", func(t *testing.T) {
-		err := guard.Validate(ctx, "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE")
-		if err == nil {
-			t.Error("expected error for default pattern")
+		result, err := guard.Func(ctx, "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE")
+		if err != nil {
+			t.Fatalf("unexpected execution error: %v", err)
+		}
+		if result.Passed {
+			t.Error("expected default pattern to fail validation")
 		}
 	})
 }
@@ -171,27 +188,24 @@ func TestSecretsGuardrail_Tripwire(t *testing.T) {
 		Tripwire: true,
 	})
 
-	if !guard.IsTripwire() {
-		t.Error("guardrail should be marked as tripwire")
-	}
-
 	ctx := context.Background()
-	err := guard.Validate(ctx, "api_key: sk_test_1234567890abcdef1234")
-	if err == nil {
-		t.Error("expected tripwire error")
+	result, err := guard.Func(ctx, "api_key: sk_test_1234567890abcdef1234")
+	if err != nil {
+		t.Fatalf("unexpected execution error: %v", err)
 	}
-
-	// Check it's the right error type
-	if _, ok := err.(*guardrail.InputGuardrailTripwireError); !ok {
-		t.Errorf("expected InputGuardrailTripwireError, got %T", err)
+	if result.Passed {
+		t.Error("expected tripwire to fail validation")
+	}
+	if !result.TripwireTriggered {
+		t.Error("expected TripwireTriggered to be true")
 	}
 }
 
 func TestSecretsGuardrail_Name(t *testing.T) {
 	guard := NewSecretsGuardrail(SecretsConfig{})
 
-	if guard.Name() != "secrets" {
-		t.Errorf("expected name 'secrets', got '%s'", guard.Name())
+	if guard.Name != "secrets" {
+		t.Errorf("expected name 'secrets', got '%s'", guard.Name)
 	}
 }
 
@@ -205,14 +219,12 @@ func TestSecretsGuardrail_MultipleSecrets(t *testing.T) {
 		password=MySecretPassword123!
 	`
 
-	err := guard.Validate(ctx, input)
-	if err == nil {
-		t.Error("expected error for multiple secrets")
+	result, err := guard.Func(ctx, input)
+	if err != nil {
+		t.Fatalf("unexpected execution error: %v", err)
 	}
-
-	// Should mention multiple detections
-	if !strings.Contains(err.Error(), "secrets detected") {
-		t.Errorf("error should mention secrets detected: %v", err)
+	if result.Passed {
+		t.Error("expected multiple secrets to fail validation")
 	}
 }
 
@@ -231,9 +243,12 @@ func TestSecretsGuardrail_CaseSensitivity(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := guard.Validate(ctx, tc.input)
-			if err == nil {
-				t.Errorf("expected error for %s", tc.name)
+			result, err := guard.Func(ctx, tc.input)
+			if err != nil {
+				t.Fatalf("unexpected execution error: %v", err)
+			}
+			if result.Passed {
+				t.Errorf("expected %s to fail validation", tc.name)
 			}
 		})
 	}
