@@ -1,11 +1,13 @@
 package runner
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/openai/openai-go/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 // ToolExecutor defines the interface for executing tools
@@ -33,71 +35,125 @@ func TruncateToolCallIDs(message *openai.ChatCompletionMessage) {
 // HandleToolCalls executes tool calls and returns the results
 // Returns: tool messages, recorded tool calls, and next agent (if handoff occurred)
 func HandleToolCalls(
+	ctx context.Context,
 	toolCalls []openai.ChatCompletionMessageToolCallUnion,
 	toolMap ToolMap,
 	contextParams map[string]any,
 	isHandoffFunc func(result any) (any, bool),
+	parallel bool,
 ) ([]openai.ChatCompletionMessageParamUnion, []ToolCallResult, any) {
-	messages := make([]openai.ChatCompletionMessageParamUnion, 0, len(toolCalls))
-	recordedToolCalls := make([]ToolCallResult, 0, len(toolCalls))
+	// Pre-allocate results slice to ensure order preservation
+	results := make([]ToolCallResult, len(toolCalls))
+	messages := make([]openai.ChatCompletionMessageParamUnion, len(toolCalls))
+	var recordedToolCalls []ToolCallResult
 	var nextAgent any
 
-	for _, toolCall := range toolCalls {
-		toolStart := time.Now()
-		toolName := toolCall.Function.Name
-		args := toolCall.Function.Arguments
+	if parallel && len(toolCalls) > 1 {
+		// Parallel execution
+		g, ctx := errgroup.WithContext(ctx)
 
-		tool, found := toolMap[toolName]
-		var result any
-		var err error
+		for i, tc := range toolCalls {
+			i, tc := i, tc // capture loop variables
+			g.Go(func() error {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 
-		if !found {
-			// Provide helpful error with available tools
-			available := make([]string, 0, len(toolMap))
-			for name := range toolMap {
-				available = append(available, name)
-			}
-			result = fmt.Sprintf("Error: Tool %s not found. Available tools: %v", toolName, available)
-			err = fmt.Errorf("tool %s not found (available: %v)", toolName, available)
-		} else {
-			result, err = tool.Execute(args, contextParams)
-			if err != nil {
-				// Use strings.Builder for efficient string concatenation
-				var sb strings.Builder
-				sb.WriteString("Error executing tool ")
-				sb.WriteString(toolName)
-				sb.WriteString(": ")
-				sb.WriteString(err.Error())
-				result = sb.String()
-			}
+				res, msg, _ := executeSingleTool(tc, toolMap, contextParams, isHandoffFunc)
+				results[i] = res
+				messages[i] = msg
+
+				return nil
+			})
 		}
 
-		// Record tool call
-		recordedToolCalls = append(recordedToolCalls, ToolCallResult{
-			ToolName:  toolName,
-			Arguments: args,
-			Result:    result,
-			Error:     err,
-			Duration:  time.Since(toolStart),
-		})
-
-		// Check for Handoff
-		if isHandoffFunc != nil {
-			if extractedAgent, ok := isHandoffFunc(result); ok {
-				nextAgent = extractedAgent
-				// Note: We'll need to get the agent name from outside
-				result = "Transferred to agent" // Will be updated by caller
+		if err := g.Wait(); err != nil {
+			// Handle cancellation?
+			return nil, nil, nil
+		}
+	} else {
+		// Sequential execution
+		for i, tc := range toolCalls {
+			res, msg, next := executeSingleTool(tc, toolMap, contextParams, isHandoffFunc)
+			results[i] = res
+			messages[i] = msg
+			if next != nil {
+				nextAgent = next
 			}
 		}
+	}
 
-		// Add tool output to history
-		toolCallID := toolCall.ID
-		if len(toolCallID) > MaxToolCallIDLength {
-			toolCallID = toolCallID[:MaxToolCallIDLength]
+	// Re-construct recordedToolCalls and check for handoffs from results
+	for _, res := range results {
+		recordedToolCalls = append(recordedToolCalls, res)
+		// Check for handoff if we didn't capture it in sequential loop
+		if parallel && isHandoffFunc != nil {
+			if extracted, ok := isHandoffFunc(res.Result); ok {
+				nextAgent = extracted
+			}
 		}
-		resultStr := fmt.Sprintf("%v", result)
-		messages = append(messages, openai.ToolMessage(resultStr, toolCallID))
 	}
 
 	return messages, recordedToolCalls, nextAgent
+}
+
+// executeSingleTool helper to isolate execution logic
+func executeSingleTool(
+	toolCall openai.ChatCompletionMessageToolCallUnion,
+	toolMap ToolMap,
+	contextParams map[string]any,
+	isHandoffFunc func(result any) (any, bool),
+) (ToolCallResult, openai.ChatCompletionMessageParamUnion, any) {
+	toolStart := time.Now()
+	toolName := toolCall.Function.Name
+	args := toolCall.Function.Arguments
+
+	tool, found := toolMap[toolName]
+	var result any
+	var err error
+
+	if !found {
+		available := make([]string, 0, len(toolMap))
+		for name := range toolMap {
+			available = append(available, name)
+		}
+		result = fmt.Sprintf("Error: Tool %s not found. Available tools: %v", toolName, available)
+		err = fmt.Errorf("tool %s not found (available: %v)", toolName, available)
+	} else {
+		result, err = tool.Execute(args, contextParams)
+		if err != nil {
+			var sb strings.Builder
+			sb.WriteString("Error executing tool ")
+			sb.WriteString(toolName)
+			sb.WriteString(": ")
+			sb.WriteString(err.Error())
+			result = sb.String()
+		}
+	}
+
+	// Record tool call
+	record := ToolCallResult{
+		ToolName:  toolName,
+		Arguments: args,
+		Result:    result,
+		Error:     err,
+		Duration:  time.Since(toolStart),
+	}
+
+	var nextAgent any
+	if isHandoffFunc != nil {
+		if extractedAgent, ok := isHandoffFunc(result); ok {
+			nextAgent = extractedAgent
+			result = "Transferred to agent"
+		}
+	}
+
+	toolCallID := toolCall.ID
+	if len(toolCallID) > MaxToolCallIDLength {
+		toolCallID = toolCallID[:MaxToolCallIDLength]
+	}
+	resultStr := fmt.Sprintf("%v", result)
+	msg := openai.ToolMessage(resultStr, toolCallID)
+
+	return record, msg, nextAgent
 }

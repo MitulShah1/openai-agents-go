@@ -1,4 +1,4 @@
-package builtin
+package content
 
 import (
 	"context"
@@ -46,8 +46,8 @@ func WithRegexMessage(msg string) RegexOption {
 	}
 }
 
-// NewRegexGuardrail creates a guardrail that validates input against a regex pattern.
-func NewRegexGuardrail(pattern string, opts ...RegexOption) *guardrail.Guardrail {
+// NewRegex creates a guardrail that validates input against a regex pattern.
+func NewRegex(pattern string, opts ...RegexOption) *guardrail.Guardrail {
 	compiled := regexp.MustCompile(pattern)
 
 	config := &RegexConfig{

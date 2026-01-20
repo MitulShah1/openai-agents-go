@@ -265,10 +265,12 @@ func (r *Runner) executeAgentLoop(
 
 		// Handle tool calls
 		toolMessages, recordedToolCalls, nextAgent := r.handleToolCalls(
+			ctx,
 			message.ToolCalls,
 			toolMap,
 			contextParams,
 			currentAgent,
+			config.ParallelToolCalls != nil && *config.ParallelToolCalls,
 		)
 
 		step.ToolCalls = recordedToolCalls
@@ -405,17 +407,21 @@ func (r *Runner) convertResponseFormat(format any) (openai.ChatCompletionNewPara
 
 // handleToolCalls executes tool calls and returns results
 func (r *Runner) handleToolCalls(
+	ctx context.Context,
 	toolCalls []openai.ChatCompletionMessageToolCallUnion,
 	toolMap runner.ToolMap,
 	contextParams ContextVariables,
 	_ *Agent,
+	parallel bool,
 ) ([]openai.ChatCompletionMessageParamUnion, []ToolCall, *Agent) {
 	// Use the internal tool handler
 	messages, results, nextAgentAny := runner.HandleToolCalls(
+		ctx,
 		toolCalls,
 		toolMap,
 		contextParams,
 		r.isHandoffFunc,
+		parallel,
 	)
 
 	// Convert results to public ToolCall type

@@ -12,7 +12,8 @@ import (
 
 	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/guardrail"
-	"github.com/MitulShah1/openai-agents-go/guardrail/builtin"
+	"github.com/MitulShah1/openai-agents-go/guardrail/content"
+	"github.com/MitulShah1/openai-agents-go/guardrail/security"
 	"github.com/MitulShah1/openai-agents-go/session"
 )
 
@@ -38,33 +39,33 @@ func main() {
 	// Configure input guardrails for safety
 	agent.InputGuardrails = []*guardrail.Guardrail{
 		// Protect against PII leakage
-		builtin.NewPIIGuardrail(
-			builtin.WithEmailDetection(true),
-			builtin.WithPhoneDetection(true),
-			builtin.WithSSNDetection(true),
-			builtin.WithCreditCardDetection(true),
-			builtin.WithTripwire(false), // Log but don't block
+		security.NewPII(
+			security.WithEmailDetection(true),
+			security.WithPhoneDetection(true),
+			security.WithSSNDetection(true),
+			security.WithCreditCardDetection(true),
+			security.WithTripwire(false), // Log but don't block
 		),
 
 		// Block malicious URLs
-		builtin.NewURLFilterGuardrail(
-			builtin.WithBlocklist("*.malware.com", "phishing.net"),
-			builtin.WithURLTripwire(true),
+		security.NewURLFilter(
+			security.WithBlocklist("*.malware.com", "phishing.net"),
+			security.WithURLTripwire(true),
 		),
 	}
 
 	// Configure output guardrails
 	agent.OutputGuardrails = []*guardrail.Guardrail{
 		// Ensure agent never leaks PII
-		builtin.NewPIIGuardrail(
-			builtin.WithTripwire(true), // Strict for outputs
+		security.NewPII(
+			security.WithTripwire(true), // Strict for outputs
 		),
 
 		// Ensure professional responses (no profanity)
-		builtin.NewRegexGuardrail(
+		content.NewRegex(
 			`\b(damn|hell|crap)\b`,
-			builtin.WithMustMatch(false),
-			builtin.WithRegexMessage("Response contains unprofessional language"),
+			content.WithMustMatch(false),
+			content.WithRegexMessage("Response contains unprofessional language"),
 		),
 	}
 

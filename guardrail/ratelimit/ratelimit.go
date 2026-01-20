@@ -1,4 +1,5 @@
-package builtin
+// Package ratelimit provides rate limiting guardrails and middleware.
+package ratelimit
 
 import (
 	"context"
@@ -113,15 +114,15 @@ func (tb *TokenBucket) consume() bool {
 	return false
 }
 
-// RateLimitGuardrail implements rate limiting for multi-agent distributed systems.
-type RateLimitGuardrail struct {
+// Guardrail implements rate limiting for multi-agent distributed systems.
+type Guardrail struct {
 	limiter  RateLimiter               // Pluggable backend (in-memory or distributed)
 	keyFunc  func(input string) string // Function to extract rate limit key
 	tripwire bool                      // If true, halt execution on rate limit
 }
 
-// RateLimitConfig configures the rate limit guardrail.
-type RateLimitConfig struct {
+// Config configures the rate limit guardrail.
+type Config struct {
 	// Rate is the number of tokens per time window
 	Rate int
 	// Burst is the maximum burst size
@@ -136,8 +137,8 @@ type RateLimitConfig struct {
 	Tripwire bool
 }
 
-// NewRateLimitGuardrail creates a new rate limiting guardrail.
-func NewRateLimitGuardrail(config RateLimitConfig) *RateLimitGuardrail {
+// New creates a new rate limiting guardrail.
+func New(config Config) *Guardrail {
 	// Default to global key
 	keyFunc := config.KeyFunc
 	if keyFunc == nil {
@@ -152,7 +153,7 @@ func NewRateLimitGuardrail(config RateLimitConfig) *RateLimitGuardrail {
 		limiter = NewInMemoryRateLimiter(config.Rate, config.Burst, config.Window)
 	}
 
-	return &RateLimitGuardrail{
+	return &Guardrail{
 		limiter:  limiter,
 		keyFunc:  keyFunc,
 		tripwire: config.Tripwire,
@@ -160,12 +161,12 @@ func NewRateLimitGuardrail(config RateLimitConfig) *RateLimitGuardrail {
 }
 
 // Name returns the guardrail name.
-func (g *RateLimitGuardrail) Name() string {
+func (g *Guardrail) Name() string {
 	return "rate_limit"
 }
 
 // Validate checks if the input passes the rate limit.
-func (g *RateLimitGuardrail) Validate(ctx context.Context, input string) error {
+func (g *Guardrail) Validate(ctx context.Context, input string) error {
 	key := g.keyFunc(input)
 	allowed, err := g.limiter.Allow(ctx, key)
 	if err != nil {
@@ -187,12 +188,12 @@ func (g *RateLimitGuardrail) Validate(ctx context.Context, input string) error {
 }
 
 // IsTripwire returns whether this guardrail halts execution on failure.
-func (g *RateLimitGuardrail) IsTripwire() bool {
+func (g *Guardrail) IsTripwire() bool {
 	return g.tripwire
 }
 
 // Close cleans up the rate limiter resources.
-func (g *RateLimitGuardrail) Close() error {
+func (g *Guardrail) Close() error {
 	if g.limiter != nil {
 		return g.limiter.Close()
 	}

@@ -1,4 +1,4 @@
-package builtin
+package moderation
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 )
 
-// SeverityLevel represents the severity of profanity.
+// SeverityLevel represents the severity of detected profanity.
 type SeverityLevel int
 
 const (
@@ -42,8 +42,8 @@ type ProfanityConfig struct {
 	Tripwire bool
 }
 
-// NewProfanityGuardrail creates a new profanity detection guardrail.
-func NewProfanityGuardrail(config ProfanityConfig) *guardrail.Guardrail {
+// NewProfanity creates a new profanity detection guardrail.
+func NewProfanity(config ProfanityConfig) *guardrail.Guardrail {
 	wordList := config.WordList
 	if wordList == nil {
 		wordList = getDefaultWordList()

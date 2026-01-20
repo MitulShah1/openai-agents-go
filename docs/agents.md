@@ -111,4 +111,4 @@ agent.InputGuardrails = []*guardrail.Guardrail{piiGuardrail}
 // ...
 ```
 
-See [Guardrails](guardrails.md) for implementation details.
+See [Guardrails](guardrails/index.md) for implementation details.

@@ -200,13 +200,15 @@ Protect your agents with input/output validation:
 package main
 
 import (
-    "github.com/MitulShah1/openai-agents-go/guardrail/builtin"
+    "github.com/MitulShah1/openai-agents-go/guardrail/security"
 )
 
 func main() {
     // 1. Create guardrails
-    piiGuardrail := builtin.NewPIIGuardrail("No PII allowed", true)
-    urlGuardrail := builtin.NewURLGuardrail("No URLs", []string{}, []string{}, true)
+    piiGuardrail := security.NewPII(security.WithTripwire(true))
+    urlGuardrail := security.NewURLFilter(
+        security.WithURLTripwire(true),
+    )
 
     // 2. Run agent with guardrails
     result, err := runner.Run(
@@ -298,7 +300,7 @@ Now that you've learned the basics, explore more advanced topics:
 
 - **[Agents](agents.md)** - Deep dive into agent configuration
 - **[Tools](tools.md)** - Advanced tool patterns and custom tools
-- **[Guardrails](guardrails.md)** - Comprehensive input/output validation
+- **[Guardrails](guardrails/index.md)** - Comprehensive input/output validation
 - **[Sessions](sessions/index.md)** - Persistent conversation management
 - **[Structured Outputs](structured_outputs.md)** - Complex JSON schemas
 

@@ -1,4 +1,5 @@
-package builtin
+// Package moderation provides AI content moderation guardrails.
+package moderation
 
 import (
 	"context"
@@ -9,7 +10,7 @@ import (
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 )
 
-// InjectionPattern represents a type of prompt injection attack.
+// InjectionPattern represents a pattern for detecting prompt injection attempts.
 type InjectionPattern struct {
 	Name        string
 	Pattern     *regexp.Regexp
@@ -34,8 +35,8 @@ type PromptInjectionConfig struct {
 	Tripwire bool
 }
 
-// NewPromptInjectionGuardrail creates a new prompt injection detection guardrail.
-func NewPromptInjectionGuardrail(config PromptInjectionConfig) *PromptInjectionGuardrail {
+// NewInjection creates a new prompt injection detection guardrail.
+func NewInjection(config PromptInjectionConfig) *PromptInjectionGuardrail {
 	patterns := getDefaultInjectionPatterns()
 
 	if len(config.CustomPatterns) > 0 {

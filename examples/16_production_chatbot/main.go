@@ -13,7 +13,9 @@ import (
 
 	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/guardrail"
-	"github.com/MitulShah1/openai-agents-go/guardrail/builtin"
+	"github.com/MitulShah1/openai-agents-go/guardrail/content"
+	"github.com/MitulShah1/openai-agents-go/guardrail/moderation"
+	"github.com/MitulShah1/openai-agents-go/guardrail/security"
 	"github.com/MitulShah1/openai-agents-go/session"
 )
 
@@ -45,16 +47,16 @@ func main() {
 	// - No secrets (PII logic)
 	// - All wrapped with metrics tracking
 	inputGuardrail := guardrail.NewChain().
-		Add(guardrail.WithMetrics(builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{
-			Mode:     builtin.CountModeCharacters,
+		Add(guardrail.WithMetrics(content.NewLength(content.Config{
+			Mode:     content.CountModeCharacters,
 			Min:      5,
 			Max:      2000,
 			Tripwire: true,
 		}), metrics)).
-		Add(guardrail.WithMetrics(builtin.NewProfanityGuardrail(builtin.ProfanityConfig{
+		Add(guardrail.WithMetrics(moderation.NewProfanity(moderation.ProfanityConfig{
 			Tripwire: true,
 		}), metrics)).
-		Add(guardrail.WithMetrics(builtin.NewSecretsGuardrail(builtin.SecretsConfig{
+		Add(guardrail.WithMetrics(security.NewSecrets(security.SecretsConfig{
 			Tripwire: true,
 		}), metrics)).
 		WithStrategy(guardrail.Sequential).

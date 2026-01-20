@@ -1,5 +1,5 @@
-// Package builtin provides ready-to-use guardrail implementations.
-package builtin
+// Package security provides security and privacy guardrails (PII, secrets, URL filtering).
+package security
 
 import (
 	"context"
@@ -104,8 +104,8 @@ func WithCustomPattern(name string, pattern *regexp.Regexp) PIIOption {
 	}
 }
 
-// NewPIIGuardrail creates a guardrail that detects personally identifiable information.
-func NewPIIGuardrail(opts ...PIIOption) *guardrail.Guardrail {
+// NewPII creates a guardrail that detects personally identifiable information.
+func NewPII(opts ...PIIOption) *guardrail.Guardrail {
 	config := &PIIConfig{
 		Tripwire:         true, // Default to blocking
 		DetectEmail:      true,

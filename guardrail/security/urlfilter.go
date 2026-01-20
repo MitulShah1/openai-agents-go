@@ -1,7 +1,8 @@
-package builtin
+package security
 
 import (
 	"context"
+
 	"net/url"
 	"strings"
 
@@ -46,8 +47,8 @@ func WithAllowlist(patterns ...string) URLFilterOption {
 	}
 }
 
-// NewURLFilterGuardrail creates a guardrail that filters URLs based on block/allow lists.
-func NewURLFilterGuardrail(opts ...URLFilterOption) *guardrail.Guardrail {
+// NewURLFilter creates a guardrail that filters URLs based on block/allow lists.
+func NewURLFilter(opts ...URLFilterOption) *guardrail.Guardrail {
 	config := &URLFilterConfig{
 		Tripwire: true,
 	}

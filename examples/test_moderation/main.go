@@ -12,6 +12,7 @@ import (
 	"github.com/openai/openai-go/v3/option"
 
 	"github.com/MitulShah1/openai-agents-go/guardrail"
+	"github.com/MitulShah1/openai-agents-go/guardrail/moderation"
 )
 
 func main() {
@@ -56,15 +57,15 @@ func main() {
 	// Test 1: Default configuration (all categories, 0.5 threshold)
 	fmt.Println("--- Test 1: Default Configuration (threshold: 0.5) ---")
 	fmt.Println()
-	guard := guardrail.NewModerationGuardrail(&client)
+	guard := moderation.NewOpenAI(&client)
 	runTests(ctx, guard, testCases)
 
 	// Test 2: Stricter threshold
 	fmt.Println()
 	fmt.Println("--- Test 2: Stricter Threshold (0.3) ---")
 	fmt.Println()
-	strictGuard := guardrail.NewModerationGuardrail(&client,
-		guardrail.WithModerationThreshold(0.3),
+	strictGuard := moderation.NewOpenAI(&client,
+		moderation.WithModerationThreshold(0.3),
 	)
 	runTests(ctx, strictGuard, testCases[:2]) // Only test safe content
 
@@ -72,12 +73,12 @@ func main() {
 	fmt.Println()
 	fmt.Println("--- Test 3: Only Hate and Violence Categories ---")
 	fmt.Println()
-	specificGuard := guardrail.NewModerationGuardrail(&client,
-		guardrail.WithModerationCategories(
-			guardrail.CategoryHate,
-			guardrail.CategoryHateThreatening,
-			guardrail.CategoryViolence,
-			guardrail.CategoryViolenceGraphic,
+	specificGuard := moderation.NewOpenAI(&client,
+		moderation.WithModerationCategories(
+			moderation.CategoryHate,
+			moderation.CategoryHateThreatening,
+			moderation.CategoryViolence,
+			moderation.CategoryViolenceGraphic,
 		),
 	)
 	runTests(ctx, specificGuard, testCases)
@@ -86,8 +87,8 @@ func main() {
 	fmt.Println()
 	fmt.Println("--- Test 4: Tripwire Mode (halts on violation) ---")
 	fmt.Println()
-	tripwireGuard := guardrail.NewModerationGuardrail(&client,
-		guardrail.WithModerationTripwire(true),
+	tripwireGuard := moderation.NewOpenAI(&client,
+		moderation.WithModerationTripwire(true),
 	)
 	fmt.Println("Testing with unsafe content (tripwire should activate)...")
 	result, err := tripwireGuard.Func(ctx, testCases[2].input)

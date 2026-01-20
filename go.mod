@@ -2,7 +2,11 @@ module github.com/MitulShah1/openai-agents-go
 
 go 1.24.11
 
-require github.com/openai/openai-go/v3 v3.16.0
+require (
+	github.com/openai/openai-go/v3 v3.16.0
+	golang.org/x/sync v0.19.0
+	modernc.org/sqlite v1.44.2
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -19,5 +23,4 @@ require (
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.44.2 // indirect
 )

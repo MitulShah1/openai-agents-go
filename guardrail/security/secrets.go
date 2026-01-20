@@ -1,4 +1,4 @@
-package builtin
+package security
 
 import (
 	"context"
@@ -53,8 +53,8 @@ type SecretsConfig struct {
 	Tripwire bool
 }
 
-// NewSecretsGuardrail creates a new secrets detection guardrail.
-func NewSecretsGuardrail(config SecretsConfig) *guardrail.Guardrail {
+// NewSecrets creates a new secrets detection guardrail.
+func NewSecrets(config SecretsConfig) *guardrail.Guardrail {
 	patterns := getDefaultSecretPatterns()
 
 	// Add custom patterns

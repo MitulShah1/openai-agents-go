@@ -14,75 +14,74 @@ type Guardrail interface {
 
 ## Built-in Guardrails
 
-### PII Detection
+### PII Detection (security)
 ```go
-func NewPIIGuardrail(name string, isTripwire bool) Guardrail
+func NewPII(opts ...PIIOption) *guardrail.Guardrail
 ```
 
 Detects: emails, phones, SSNs, credit cards
 
-### URL Filtering
+### URL Filtering (security)
 ```go
-func NewURLGuardrail(name string, blocklist, allowlist []string, isTripwire bool) Guardrail
+func NewURLFilter(opts ...URLFilterOption) *guardrail.Guardrail
 ```
 
-### Custom Regex
+### Regex (content)
 ```go
-func NewRegexGuardrail(name string, patterns []string, isTripwire bool) Guardrail
+func NewRegex(pattern string, opts ...RegexOption) *guardrail.Guardrail
 ```
 
-### Moderation API
+### Moderation API (moderation - OpenAI)
 ```go
-func NewModerationGuardrail(name string, client *openai.Client, thresholds map[string]float64, isTripwire bool) Guardrail
+func NewOpenAI(client *openai.Client, opts ...Option) *guardrail.Guardrail
 ```
 
-### Content Length
+### Content Length (content)
 ```go
-func NewContentLengthGuardrail(name string, maxLength int, mode CountingMode, isTripwire bool) Guardrail
+func NewLength(config Config) *guardrail.Guardrail
 
-type CountingMode int
+type CountMode string
 const (
-    CountCharacters CountingMode = iota
-    CountWords
-    CountLines
+    CountModeCharacters CountMode = "characters"
+    CountModeWords      CountMode = "words"
+    CountModeLines      CountMode = "lines"
 )
 ```
 
-### Rate Limiting
+### Rate Limiting (ratelimit)
 ```go
-func NewRateLimitGuardrail(name string, limit int, window time.Duration, backend Backend, keyFunc KeyFunc, isTripwire bool) Guardrail
+func New(config Config) *guardrail.Guardrail
 
-type Backend interface {
-    Allow(key string, limit int, window time.Duration) (bool, error)
+type RateLimiter interface {
+    Allow(ctx context.Context, key string) (bool, error)
+    Reset(ctx context.Context, key string) error
+    Close() error
 }
-
-type KeyFunc func(text string, isInput bool) string
 ```
 
-### Profanity Detection
+### Profanity Detection (moderation)
 ```go
-func NewProfanityGuardrail(name string, isTripwire bool) Guardrail
-func NewProfanityGuardrailWithWords(name string, words map[string]Severity, isTripwire bool) Guardrail
+func NewProfanity(config ProfanityConfig) *guardrail.Guardrail
 
-type Severity int
+type SeverityLevel string
 const (
-    SeverityLow Severity = iota
-    SeverityMedium
-    SeverityHigh
+    SeverityLow    SeverityLevel = "low"
+    SeverityMedium SeverityLevel = "medium"
+    SeverityHigh   SeverityLevel = "high"
 )
 ```
 
-### Secrets Detection
+### Secrets Detection (security)
 ```go
-func NewSecretsGuardrail(name string, isTripwire bool) Guardrail
+func NewSecrets(config SecretsConfig) *guardrail.Guardrail
 ```
 
-### Prompt Injection Detection
+### Prompt Injection Detection (moderation)
 ```go
-func NewPromptInjectionGuardrail(name string, isTripwire bool) Guardrail
+func NewInjection(config PromptInjectionConfig) *guardrail.Guardrail
 ```
 
 ## See Also
 
-- [Guardrails Guide](../../guardrails.md)
+- [Guardrails Guide](../../guardrails/index.md)
 - [Examples](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/08_guardrails_demo)

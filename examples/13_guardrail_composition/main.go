@@ -13,7 +13,9 @@ import (
 
 	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/guardrail"
-	"github.com/MitulShah1/openai-agents-go/guardrail/builtin"
+	"github.com/MitulShah1/openai-agents-go/guardrail/content"
+	"github.com/MitulShah1/openai-agents-go/guardrail/moderation"
+	"github.com/MitulShah1/openai-agents-go/guardrail/security"
 )
 
 func main() {
@@ -34,8 +36,8 @@ func main() {
 	fmt.Println("Guardrails run in order and stop at the first failure")
 
 	sequentialChain := guardrail.NewChain().
-		Add(builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{Min: 10, Max: 500})).
-		Add(builtin.NewProfanityGuardrail(builtin.ProfanityConfig{Tripwire: true})).
+		Add(content.NewLength(content.Config{Min: 10, Max: 500})).
+		Add(moderation.NewProfanity(moderation.ProfanityConfig{Tripwire: true})).
 		WithStrategy(guardrail.Sequential).
 		WithName("sequential_validation").
 		Build()
@@ -59,9 +61,9 @@ func main() {
 	fmt.Println("All guardrails run concurrently, results are aggregated")
 
 	parallelChain := guardrail.NewChain().
-		Add(builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{Min: 5, Max: 1000})).
-		Add(builtin.NewURLFilterGuardrail()).
-		Add(builtin.NewSecretsGuardrail(builtin.SecretsConfig{Tripwire: true})).
+		Add(content.NewLength(content.Config{Min: 5, Max: 1000})).
+		Add(security.NewURLFilter()).
+		Add(security.NewSecrets(security.SecretsConfig{Tripwire: true})).
 		WithStrategy(guardrail.Parallel).
 		WithName("parallel_validation").
 		Build()
@@ -86,8 +88,8 @@ func main() {
 
 	// Create multiple guardrails where at least one should pass
 	bypassChain := guardrail.NewChain().
-		Add(builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{Min: 1, Max: 10})).  // This will likely fail
-		Add(builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{Min: 1, Max: 500})). // This should pass
+		Add(content.NewLength(content.Config{Min: 1, Max: 10})).  // This will likely fail
+		Add(content.NewLength(content.Config{Min: 1, Max: 500})). // This should pass
 		WithStrategy(guardrail.StopOnFirstPass).
 		WithName("bypass_validation").
 		Build()
@@ -112,7 +114,7 @@ func main() {
 
 	// Wrap a guardrail with timeout
 	timeoutGuard := guardrail.WithTimeout(
-		builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{Min: 5, Max: 500}),
+		content.NewLength(content.Config{Min: 5, Max: 500}),
 		100*time.Millisecond,
 	)
 
@@ -135,7 +137,7 @@ func main() {
 	fmt.Println("Allows execution to continue with warning on timeout")
 
 	gracefulGuard := guardrail.WithTimeoutGraceful(
-		builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{Min: 5, Max: 500}),
+		content.NewLength(content.Config{Min: 5, Max: 500}),
 		50*time.Millisecond,
 	)
 
@@ -162,7 +164,7 @@ func main() {
 
 	// Wrap guardrails with metrics
 	metricsGuard := guardrail.WithMetrics(
-		builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{Min: 5, Max: 500}),
+		content.NewLength(content.Config{Min: 5, Max: 500}),
 		metrics,
 	)
 
@@ -195,10 +197,10 @@ func main() {
 	fmt.Println("Complete validation pipeline with metrics tracking")
 
 	productionChain := guardrail.NewChain().
-		Add(guardrail.WithMetrics(builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{Min: 10, Max: 1000}), metrics)).
-		Add(guardrail.WithMetrics(builtin.NewProfanityGuardrail(builtin.ProfanityConfig{}), metrics)).
-		Add(guardrail.WithMetrics(builtin.NewSecretsGuardrail(builtin.SecretsConfig{}), metrics)).
-		Add(guardrail.WithMetrics(builtin.NewURLFilterGuardrail(), metrics)).
+		Add(guardrail.WithMetrics(content.NewLength(content.Config{Min: 10, Max: 1000}), metrics)).
+		Add(guardrail.WithMetrics(moderation.NewProfanity(moderation.ProfanityConfig{}), metrics)).
+		Add(guardrail.WithMetrics(security.NewSecrets(security.SecretsConfig{}), metrics)).
+		Add(guardrail.WithMetrics(security.NewURLFilter(), metrics)).
 		WithStrategy(guardrail.Sequential).
 		WithName("production_validation").
 		Build()

@@ -1,4 +1,5 @@
-package builtin
+// Package content provides content validation guardrails (length, regex).
+package content
 
 import (
 	"context"
@@ -20,8 +21,8 @@ const (
 	CountModeLines CountMode = "lines"
 )
 
-// ContentLengthConfig configures the content length guardrail.
-type ContentLengthConfig struct {
+// Config configures the content length guardrail.
+type Config struct {
 	// Mode determines how to count content (characters, words, or lines)
 	Mode CountMode
 	// Min is the minimum allowed count (0 = no minimum)
@@ -32,8 +33,8 @@ type ContentLengthConfig struct {
 	Tripwire bool
 }
 
-// NewContentLengthGuardrail creates a new content length guardrail.
-func NewContentLengthGuardrail(config ContentLengthConfig) *guardrail.Guardrail {
+// NewLength creates a new content length guardrail.
+func NewLength(config Config) *guardrail.Guardrail {
 	mode := config.Mode
 	if mode == "" {
 		mode = CountModeCharacters // Default to character counting
