@@ -213,3 +213,72 @@ func TestRunIntegration(t *testing.T) {
 	}
 }
 */
+
+func TestRunAsync_ReturnsImmediately(t *testing.T) {
+	client := &openai.Client{}
+	runner := NewRunner(client)
+	agent := NewAgent("TestAgent")
+
+	// Simulate a slow operation via hook
+	agent.OnBeforeRun = func(_ context.Context, _ *Agent) error {
+		time.Sleep(100 * time.Millisecond)
+		return nil
+	}
+
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	ctx := context.Background()
+	start := time.Now()
+
+	// This should return immediately
+	ch := runner.RunAsync(ctx, agent, messages)
+	duration := time.Since(start)
+
+	if duration > 50*time.Millisecond {
+		t.Errorf("RunAsync blocked for %v, expected immediate return", duration)
+	}
+
+	// But eventually it should finish (with error because no API key/client logic)
+	// Actually, Run will fail fast with default client?
+	// Or it might try to make a request and fail.
+
+	// Let's rely on ErrNoMessages check which happens early?
+	// No, messages are provided.
+	// It will proceed to `execute` -> `OnBeforeRun` -> `executeInputGuardrails` -> `LoadHistory` -> `executeAgentLoop` -> `prepareRequest` -> `Client.Chat.Completions.New` -> ERROR.
+
+	select {
+	case res := <-ch:
+		if res.Error == nil {
+			// We actually expect an error from the LLM call because we have no API key/mock
+			// But that's fine, we just want to ensure it finished.
+			t.Log("RunAsync finished successfully (unexpectedly?)")
+		} else {
+			t.Logf("RunAsync finished with expected error: %v", res.Error)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Error("RunAsync timed out waiting for result")
+	}
+}
+
+func TestRunAsync_CapturesResult(t *testing.T) {
+	client := &openai.Client{}
+	runner := NewRunner(client)
+	agent := NewAgent("TestAgent")
+
+	// No messages -> Should return ErrNoMessages immediately
+	messages := []openai.ChatCompletionMessageParamUnion{}
+	ctx := context.Background()
+
+	ch := runner.RunAsync(ctx, agent, messages)
+
+	res := <-ch
+	if !errors.Is(res.Error, ErrNoMessages) {
+		t.Errorf("expected ErrNoMessages, got %v", res.Error)
+	}
+
+	if res.Result != nil {
+		t.Error("expected nil Result on error")
+	}
+}

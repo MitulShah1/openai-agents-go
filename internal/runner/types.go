@@ -15,10 +15,13 @@ const (
 
 // ExecutionContext holds the state during agent execution
 type ExecutionContext struct {
-	CurrentAgent *interface{} // Will be *agents.Agent but avoiding circular import
+	// CurrentAgent is the agent currently executing.
+	// It is typed as *interface{} to avoid a circular dependency with the agents package.
+	// In practice, this always holds a *agents.Agent.
+	CurrentAgent *any
 	History      []openai.ChatCompletionMessageParamUnion
-	Usage        interface{}   // Will be agents.Usage
-	Steps        []interface{} // Will be []agents.Step
+	Usage        any   // Will be agents.Usage
+	Steps        []any // Will be []agents.Step
 	TurnCount    int
 	LastMessage  openai.ChatCompletionMessage
 }

@@ -4,13 +4,15 @@ package agents
 import (
 	"context"
 
+	"github.com/openai/openai-go/v3"
+
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
 )
 
 const (
 	// DefaultModel is the default OpenAI model used for agents
-	DefaultModel = "gpt-4o"
+	DefaultModel = openai.ChatModelGPT4o
 
 	// DefaultInstructions is the default instruction for agents
 	DefaultInstructions = "You are a helpful agent."

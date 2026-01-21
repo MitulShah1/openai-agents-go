@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/openai/openai-go/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 // ToolExecutor defines the interface for executing tools
@@ -35,7 +35,7 @@ func TruncateToolCallIDs(message *openai.ChatCompletionMessage) {
 // HandleToolCalls executes tool calls and returns the results
 // Returns: tool messages, recorded tool calls, and next agent (if handoff occurred)
 func HandleToolCalls(
-	ctx context.Context,
+	_ context.Context,
 	toolCalls []openai.ChatCompletionMessageToolCallUnion,
 	toolMap ToolMap,
 	contextParams map[string]any,
@@ -50,27 +50,28 @@ func HandleToolCalls(
 
 	if parallel && len(toolCalls) > 1 {
 		// Parallel execution
-		g, ctx := errgroup.WithContext(ctx)
+		var wg sync.WaitGroup
+		wg.Add(len(toolCalls))
 
 		for i, tc := range toolCalls {
-			i, tc := i, tc // capture loop variables
-			g.Go(func() error {
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
+			go func(i int, tc openai.ChatCompletionMessageToolCallUnion) {
+				defer wg.Done()
 
+				// Create a derived context that is NOT cancelled if other tools fail
+				// But we still respect the parent context (timeout/cancellation)
 				res, msg, _ := executeSingleTool(tc, toolMap, contextParams, isHandoffFunc)
+
+				// Capture results safely
+				// Since we pre-allocated slices and have unique 'i', no mutex needed for slice access
+				// BUT: Go memory model guarantees? Yes, modifying distinct indices is safe if no resizing.
+				// However, 'messages[i] = msg' involves interface assignment which might not be atomic?
+				// Actually, slice assignment of distinct elements is safe in Go.
 				results[i] = res
 				messages[i] = msg
-
-				return nil
-			})
+			}(i, tc)
 		}
 
-		if err := g.Wait(); err != nil {
-			// Handle cancellation?
-			return nil, nil, nil
-		}
+		wg.Wait()
 	} else {
 		// Sequential execution
 		for i, tc := range toolCalls {

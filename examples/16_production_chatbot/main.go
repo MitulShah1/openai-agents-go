@@ -100,7 +100,7 @@ func main() {
 
 	// 5. Setup Agent
 	agent := agents.NewAgent("ProductionBot")
-	agent.Model = "gpt-4o-mini"
+	agent.Model = openai.ChatModelGPT4oMini
 	agent.Instructions = `You are a capable production assistant.
 	- You can generate charts using the generate_chart tool.
 	- Your inputs are validated for safety.

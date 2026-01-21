@@ -27,8 +27,8 @@ import (
     "os"
 
     agents "github.com/MitulShah1/openai-agents-go"
-    "github.com/openai/openai-go"
-    "github.com/openai/openai-go/option"
+    "github.com/openai/openai-go/v3"
+    "github.com/openai/openai-go/v3/option"
 )
 
 func main() {
@@ -39,7 +39,7 @@ func main() {
     // 2. Create an agent
     agent := agents.NewAgent("Assistant")
     agent.Instructions = "You are a helpful assistant who answers questions concisely"
-    agent.Model = "gpt-4" // Optional: defaults to gpt-4o
+    agent.Model = openai.ChatModelGPT4o // Optional: defaults to gpt-4o
 
     // 3. Create user message
     messages := []openai.ChatCompletionMessageParamUnion{

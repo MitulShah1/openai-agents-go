@@ -18,6 +18,11 @@ type Tool struct {
 	// Callback is the function to execute when the tool is called.
 	// It receives the arguments as a map and context variables.
 	Callback func(args map[string]any, ctx ContextVariables) (any, error)
+
+	// IsHandoffTool indicates this tool performs an agent handoff.
+	// When true, the Callback is expected to return *Agent.
+	// This field is set automatically by the handoff package.
+	IsHandoffTool bool
 }
 
 // ContentType represents the type of content in a tool response.

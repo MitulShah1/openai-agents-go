@@ -29,7 +29,7 @@ func main() {
 
 	agent := agents.NewAgent("helpful_assistant")
 	agent.Instructions = "You are a helpful assistant."
-	agent.Model = "gpt-4o-mini"
+	agent.Model = openai.ChatModelGPT4oMini
 
 	// Example 1: Sequential Chain (fail-fast)
 	fmt.Println("=== Example 1: Sequential Chain ===")

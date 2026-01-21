@@ -24,7 +24,7 @@ func main() {
 	// Create an agent with multimodal tool capabilities
 	agent := agents.NewAgent("multimodal_assistant")
 	agent.Instructions = "You are a helpful assistant with access to tools that can return images and files."
-	agent.Model = "gpt-4o-mini"
+	agent.Model = openai.ChatModelGPT4oMini
 
 	// Tool 1: Generate placeholder image URL
 	generateImageTool := agents.FunctionTool(

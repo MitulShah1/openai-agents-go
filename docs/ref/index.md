@@ -180,7 +180,7 @@ func WithGuardrails(guardrails []Guardrail) RunOption
 ```go
 agent := agents.NewAgent("MyAgent")
 agent.Instructions = "You are helpful"
-agent.Model = "gpt-4"
+agent.Model = openai.ChatModelGPT4o
 ```
 
 ### Running an Agent
