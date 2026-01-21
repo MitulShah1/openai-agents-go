@@ -1,11 +1,10 @@
-// Package function provides helpers to create type-safe tools from Go functions.
-package function
+// Package tools provides primitives for defining and using tools.
+package tools
 
 import (
 	"encoding/json"
 	"fmt"
 
-	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
 )
 
@@ -18,18 +17,18 @@ func FromFunc[T any](
 	functionName string,
 	description string,
 	fn func(args T) (any, error),
-) agents.Tool {
+) Tool {
 	var zero T
 	schema := jsonschema.GenerateSchema(zero)
 
 	// Convert schema to map needed by Tool
 	paramsMap, _ := schema.ToMap()
 
-	return agents.Tool{
+	return Tool{
 		Name:        functionName,
 		Description: description,
 		Parameters:  paramsMap,
-		Callback: func(argsMap map[string]any, _ agents.ContextVariables) (any, error) {
+		Callback: func(argsMap map[string]any, _ ContextVariables) (any, error) {
 			// Convert generic map to typed struct
 			var args T
 
@@ -48,16 +47,3 @@ func FromFunc[T any](
 		},
 	}
 }
-
-// Runnable is a function that takes arguments and returns a result
-type Runnable[T any] func(T) (any, error)
-
-// Example usage:
-//
-// type WeatherArgs struct {
-//     City string `json:"city" jsonschema:"description=The city name"`
-// }
-//
-// tool := function.FromFunc("get_weather", "Get weather", func(args WeatherArgs) (any, error) {
-//     return "Sunny", nil
-// })

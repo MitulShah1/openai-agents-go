@@ -13,6 +13,7 @@ import (
 
 	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/handoff"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // Agent definitions
@@ -101,8 +102,8 @@ func configureAgents() {
 	).ToTool()
 
 	// Register tools
-	triageAgent.Tools = []agents.Tool{toSales, toSupport}
-	salesAgent.Tools = []agents.Tool{toSupportFromSales}
+	triageAgent.Tools = []tools.Tool{toSales, toSupport}
+	salesAgent.Tools = []tools.Tool{toSupportFromSales}
 	// Support agent is a leaf node, no tools
 }
 

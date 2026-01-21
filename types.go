@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/openai/openai-go/v3"
+
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // Result is the output of running an agent.
@@ -77,4 +79,4 @@ type ToolCall struct {
 }
 
 // ContextVariables is a map of variables that can be passed to functions.
-type ContextVariables map[string]any
+type ContextVariables = tools.ContextVariables

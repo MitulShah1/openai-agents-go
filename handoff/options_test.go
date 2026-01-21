@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	agents "github.com/MitulShah1/openai-agents-go"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 func TestWithToolName(t *testing.T) {
@@ -326,15 +327,11 @@ func TestIsHandoffToolMarker(t *testing.T) {
 		t.Error("Expected IsHandoffTool to be true for handoff-generated tools")
 	}
 
-	// Regular tool should not have this marker
-	regularTool := agents.FunctionTool(
-		"regular_tool",
-		"A regular tool",
-		map[string]any{},
-		func(map[string]any, agents.ContextVariables) (any, error) {
-			return "result", nil
-		},
-	)
+	// Regular tool should	// Test enabling with a real tool
+	target := agents.NewAgent("TargetAgent")
+	handoffTool := New(target).ToTool()
+	regularTool := tools.New("test", "desc", nil, func(_ map[string]any, _ agents.ContextVariables) (any, error) { return nil, nil })
+	agent.Tools = []tools.Tool{handoffTool, regularTool}
 
 	if regularTool.IsHandoffTool {
 		t.Error("Expected IsHandoffTool to be false for regular tools")

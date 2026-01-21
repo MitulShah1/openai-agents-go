@@ -8,6 +8,7 @@ import (
 
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 const (
@@ -34,7 +35,7 @@ type Agent struct {
 	Instructions any
 
 	// Tools is a list of tools available to the agent.
-	Tools []Tool
+	Tools []tools.Tool
 
 	// ParallelToolCalls determines if tools can be called in parallel.
 	// Can be overridden by RunConfig.
@@ -89,4 +90,10 @@ func (a *Agent) GetInstructions(ctx context.Context) string {
 	default:
 		return DefaultInstructions
 	}
+}
+
+// IsHandoff checks if the result is an Agent, indicating a handoff.
+func IsHandoff(result any) (*Agent, bool) {
+	a, ok := result.(*Agent)
+	return a, ok
 }

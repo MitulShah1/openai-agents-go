@@ -23,7 +23,7 @@ supportAgent := agents.NewAgent("Support")
 transferToSupport := handoff.New(supportAgent).ToTool()
 
 // Register the tool with the source agent
-triageAgent.Tools = []agents.Tool{transferToSupport}
+triageAgent.Tools = []tools.Tool{transferToSupport}
 ```
 
 ## Configuration Options

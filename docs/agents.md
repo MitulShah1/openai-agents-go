@@ -7,7 +7,10 @@ The `Agent` is the core entity in the SDK. It encapsulates an LLM model, instruc
 At its simplest, an agent only needs a name and instructions:
 
 ```go
-import agents "github.com/MitulShah1/openai-agents-go"
+import (
+    agents "github.com/MitulShah1/openai-agents-go"
+    "github.com/MitulShah1/openai-agents-go/tools"
+)
 
 agent := agents.NewAgent("Assistant")
 agent.Instructions = "You are a helpful AI assistant."
@@ -15,12 +18,12 @@ agent.Instructions = "You are a helpful AI assistant."
 
 ## Agent Attributes
 
-| Field | Type | But | Description |
-|-------|------|-----|-------------|
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
 | `Name` | `string` | Required | The name of the agent. Used for logging and tool identification. |
 | `Model` | `string` | Optional | The OpenAI model to use. Defaults to `gpt-4o`. |
 | `Instructions` | `string` \| `func` | Required | The system prompt or instructions for the agent. |
-| `Tools` | `[]Tool` | Optional | A list of tools the agent can use. |
+| `Tools` | `[]tools.Tool` | Optional | A list of tools the agent can use. |
 | `ResponseFormat`| `*jsonschema.ResponseFormat` | Optional | Schema for [Structured Outputs](structured_outputs.md). |
 | `Temperature` | `*float64` | Optional | Sampling temperature (0.0 - 2.0). |
 | `MaxTokens` | `*int` | Optional | Max tokens for generated response. |
@@ -55,7 +58,7 @@ agent.Instructions = func(ctx context.Context) string {
 Agents can be equipped with tools to interact with external systems.
 
 ```go
-agent.Tools = []agents.Tool{
+agent.Tools = []tools.Tool{
     weatherTool,
     databaseTool,
 }
@@ -68,20 +71,20 @@ When an agent decides to call a tool, the `Runner` executes the corresponding Go
 Agents can "hand off" the conversation to another agent. This is the basis for multi-agent orchestration. A handoff occurs when a **Tool returns an Agent object**.
 
 ```go
+import (
+    "github.com/MitulShah1/openai-agents-go/handoff"
+    "github.com/MitulShah1/openai-agents-go/tools"
+)
+
 // Define a specialized agent
 salesAgent := agents.NewAgent("Sales")
 salesAgent.Instructions = "You process sales orders."
 
 // Define a tool that performs the handoff
-transferTool := agents.FunctionTool("transfer_to_sales", "Transfer to sales department", nil, 
-    func(args map[string]any, ctx agents.ContextVariables) (any, error) {
-        // Returning *Agent triggers the handoff
-        return salesAgent, nil
-    },
-)
+transferTool := handoff.New(salesAgent).ToTool()
 
 // Equip the main agent with the transfer tool
-mainAgent.Tools = []agents.Tool{transferTool}
+mainAgent.Tools = []tools.Tool{transferTool}
 ```
 
 ## Lifecycle Hooks

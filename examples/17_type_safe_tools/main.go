@@ -11,7 +11,7 @@ import (
 	"github.com/openai/openai-go/v3/option"
 
 	agents "github.com/MitulShah1/openai-agents-go"
-	"github.com/MitulShah1/openai-agents-go/function"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // WeatherArgs defines the arguments for the weather tool
@@ -29,7 +29,7 @@ func main() {
 	client := openai.NewClient(option.WithAPIKey(apiKey))
 
 	// Define a strongly-typed tool using a Go function and struct
-	weatherTool := function.FromFunc("get_weather", "Get current weather", func(args WeatherArgs) (any, error) {
+	weatherTool := tools.FromFunc("get_weather", "Get current weather", func(args WeatherArgs) (any, error) {
 		unit := args.Unit
 		if unit == "" {
 			unit = "celsius"
@@ -41,7 +41,7 @@ func main() {
 	agent := agents.NewAgent("WeatherBot")
 	agent.Model = openai.ChatModelGPT4o
 	agent.Instructions = "You are a helpful weather assistant."
-	agent.Tools = []agents.Tool{weatherTool}
+	agent.Tools = []tools.Tool{weatherTool}
 
 	runner := agents.NewRunner(&client)
 

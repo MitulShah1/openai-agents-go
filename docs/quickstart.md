@@ -70,7 +70,8 @@ import (
     "fmt"
 
     agents "github.com/MitulShah1/openai-agents-go"
-    "github.com/openai/openai-go"
+    "github.com/MitulShah1/openai-agents-go/tools"
+    "github.com/openai/openai-go/v3"
 )
 
 func main() {
@@ -78,7 +79,7 @@ func main() {
     runner := agents.NewRunner(&client)
 
     // 1. Define a tool function
-    weatherTool := agents.FunctionTool(
+    weatherTool := tools.New(
         "get_weather",
         "Get the current weather for a city",
         map[string]any{
@@ -91,7 +92,7 @@ func main() {
             },
             "required": []string{"city"},
         },
-        func(args map[string]any, ctx agents.ContextVariables) (any, error) {
+        func(args map[string]any, ctx tools.ContextVariables) (any, error) {
             city := args["city"].(string)
             // In real app, call weather API here
             return fmt.Sprintf("The weather in %s is sunny, 72°F", city), nil
@@ -101,7 +102,7 @@ func main() {
     // 2. Add tool to agent
     agent := agents.NewAgent("Weather Agent")
     agent.Instructions = "You help users check the weather"
-    agent.Tools = []agents.Tool{weatherTool}
+    agent.Tools = []tools.Tool{weatherTool}
 
     // 3. Run agent with tool
     messages := []openai.ChatCompletionMessageParamUnion{
@@ -123,19 +124,21 @@ package main
 
 import (
     agents "github.com/MitulShah1/openai-agents-go"
+    "github.com/MitulShah1/openai-agents-go/handoff"
+    "github.com/MitulShah1/openai-agents-go/tools"
 )
 
 func main() {
     // 1. Create specialized agent
     weatherAgent := agents.NewAgent("Weather Specialist")
     weatherAgent.Instructions = "You are an expert at weather information"
-    weatherAgent.Tools = []agents.Tool{weatherTool} // from previous example
+    weatherAgent.Tools = []tools.Tool{weatherTool} // from previous example
 
     // 2. Create main agent that can hand off
     mainAgent := agents.NewAgent("Main Assistant")
     mainAgent.Instructions = "You coordinate with specialists. Transfer weather questions to the weather specialist."
-    mainAgent.Tools = []agents.Tool{
-        agents.HandoffTool(weatherAgent, "Transfer to weather specialist for weather questions"),
+    mainAgent.Tools = []tools.Tool{
+        handoff.New(weatherAgent).ToTool(),
     }
 
     // 3. Run - handoffs happen automatically

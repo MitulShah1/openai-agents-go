@@ -11,6 +11,7 @@ import (
 
 	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/handoff"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // This example demonstrates agent handoffs - transferring a conversation from one agent to another.
@@ -45,8 +46,8 @@ func main() {
 	).ToTool()
 
 	// Assign tools to agents
-	salesAgent.Tools = []agents.Tool{transferToSupport}
-	supportAgent.Tools = []agents.Tool{transferToSales}
+	salesAgent.Tools = []tools.Tool{transferToSupport}
+	supportAgent.Tools = []tools.Tool{transferToSales}
 
 	// Start with sales agent
 	messages := []openai.ChatCompletionMessageParamUnion{

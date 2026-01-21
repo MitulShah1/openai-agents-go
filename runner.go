@@ -13,6 +13,7 @@ import (
 	"github.com/MitulShah1/openai-agents-go/internal/runner"
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
 	"github.com/MitulShah1/openai-agents-go/session"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // Runner manages the execution of agents.
@@ -313,7 +314,7 @@ func (r *Runner) prepareTools(agent *Agent) ([]openai.ChatCompletionToolUnionPar
 
 // toolAdapter adapts a Tool to implement runner.ToolExecutor
 type toolAdapter struct {
-	tool *Tool
+	tool *tools.Tool
 }
 
 // Execute implements runner.ToolExecutor

@@ -8,6 +8,7 @@ import (
 	"github.com/openai/openai-go/v3"
 
 	agents "github.com/MitulShah1/openai-agents-go"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // ToTool converts the Handoff into an agents.Tool that can be registered with an agent.
@@ -21,13 +22,13 @@ import (
 // Example:
 //
 //	handoffTool := handoff.New(supportAgent).ToTool()
-//	triageAgent.Tools = []agents.Tool{handoffTool}
-func (h *Handoff) ToTool() agents.Tool {
+//	triageAgent.Tools = []tools.Tool{handoffTool}
+func (h *Handoff) ToTool() tools.Tool {
 	toolName := h.getToolName()
 	description := h.getDescription()
 
 	// Create the tool with a callback that executes the handoff
-	tool := agents.Tool{
+	tool := tools.Tool{
 		Name:          toolName,
 		Description:   description,
 		IsHandoffTool: true, // Mark as handoff tool
@@ -39,7 +40,7 @@ func (h *Handoff) ToTool() agents.Tool {
 					"description": "A brief summary of the conversation so far to provide context to the next agent",
 				},
 			},
-			"required": []any{},
+			"required": []string{},
 		},
 		Callback: h.createCallback(),
 	}

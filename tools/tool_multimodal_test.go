@@ -1,4 +1,4 @@
-package agents
+package tools
 
 import (
 	"testing"
@@ -152,8 +152,7 @@ func TestContentString(t *testing.T) {
 }
 
 func TestToolWithMultimodalCallback(t *testing.T) {
-	// Test that tools can return Content objects
-	tool := FunctionTool(
+	tool := New(
 		"image_generator",
 		"Generates an image",
 		map[string]any{
@@ -183,7 +182,8 @@ func TestToolWithMultimodalCallback(t *testing.T) {
 
 func TestToolBackwardCompatibility(t *testing.T) {
 	// Test that tools can still return strings (backward compatibility)
-	tool := FunctionTool(
+	// Test that tools can still return strings (backward compatibility)
+	tool := New(
 		"old_tool",
 		"Legacy tool returning string",
 		map[string]any{"type": "object"},

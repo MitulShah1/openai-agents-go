@@ -1,16 +1,16 @@
-package agents
+package tools
 
 import (
 	"errors"
 	"testing"
 )
 
-func TestFunctionToolCreation(t *testing.T) {
+func TestToolCreation(t *testing.T) {
 	callback := func(_ map[string]any, _ ContextVariables) (any, error) {
 		return "result", nil
 	}
 
-	tool := FunctionTool(
+	tool := New(
 		"test_tool",
 		"A test tool",
 		map[string]any{"type": "object"},
@@ -30,7 +30,7 @@ func TestFunctionToolCreation(t *testing.T) {
 	}
 }
 
-func TestFunctionToolPanic(t *testing.T) {
+func TestToolPanic(t *testing.T) {
 	tests := []struct {
 		name        string
 		toolName    string
@@ -73,7 +73,7 @@ func TestFunctionToolPanic(t *testing.T) {
 				}
 			}()
 
-			FunctionTool(tt.toolName, "desc", nil, tt.callback)
+			New(tt.toolName, "desc", nil, tt.callback)
 		})
 	}
 }
@@ -160,28 +160,6 @@ func TestToolExecuteNilCallback(t *testing.T) {
 	expectedMsg := "tool test_tool has no callback function"
 	if err.Error() != expectedMsg {
 		t.Errorf("expected error %q, got %q", expectedMsg, err.Error())
-	}
-}
-
-func TestIsHandoff(t *testing.T) {
-	agent := NewAgent("SupportAgent")
-
-	// Test with agent pointer
-	result, ok := IsHandoff(agent)
-	if !ok {
-		t.Error("expected IsHandoff to return true for agent pointer")
-	}
-	if result != agent {
-		t.Error("expected IsHandoff to return the same agent")
-	}
-
-	// Test with non-agent value
-	result, ok = IsHandoff("not an agent")
-	if ok {
-		t.Error("expected IsHandoff to return false for non-agent value")
-	}
-	if result != nil {
-		t.Error("expected IsHandoff to return nil for non-agent value")
 	}
 }
 
