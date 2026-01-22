@@ -14,6 +14,8 @@ import (
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
 	"github.com/MitulShah1/openai-agents-go/session"
 	"github.com/MitulShah1/openai-agents-go/tools"
+	"github.com/MitulShah1/openai-agents-go/tracing"
+	"github.com/MitulShah1/openai-agents-go/tracing/schema"
 )
 
 // Runner manages the execution of agents.
@@ -123,6 +125,16 @@ func (r *Runner) execute(
 		config = DefaultRunConfig()
 	}
 
+	// Ensure trace exists (unless already inside a trace)
+	if tracing.FromContext(ctx) == nil && !tracing.IsTracingDisabled() {
+		var tr tracing.Trace
+		var err error
+		// Use functional options from config
+		ctx, tr, err = tracing.GetProvider().StartTrace(ctx, traceOptionsFromRunConfig(config)...)
+		_ = err // Ignore error, SDK continues with or without trace
+		defer tr.End(ctx)
+	}
+
 	// Initialize context variables
 	if contextParams == nil {
 		contextParams = make(ContextVariables)
@@ -219,6 +231,18 @@ func (r *Runner) executeAgentLoop(
 		stepStart := time.Now()
 		turnCount++
 
+		// Create agent span for this iteration (no-op if no current trace)
+		if !tracing.IsTracingDisabled() {
+			var agentSpan tracing.Span
+			var err error
+			ctx, agentSpan, err = tracing.StartAgentSpan(ctx, currentAgent.Name,
+				tracing.WithModel(currentAgent.Model),
+				tracing.WithInstructions(currentAgent.GetInstructions(ctx)))
+			if err == nil {
+				defer agentSpan.End(ctx)
+			}
+		}
+
 		// Prepare tools
 		tools, toolMap := r.prepareTools(currentAgent)
 
@@ -228,10 +252,27 @@ func (r *Runner) executeAgentLoop(
 			return nil, err
 		}
 
-		completion, err := r.Client.Chat.Completions.New(ctx, req)
+		// Start generation span
+		// Note: Sensitive data redaction is handled automatically by the exporter based on trace config
+		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
+
+		completion, err := r.Client.Chat.Completions.New(ctxGen, req)
 		if err != nil {
+			genSpan.RecordError(err)
+			genSpan.End(ctxGen)
 			return nil, fmt.Errorf("LLM call failed: %w", err)
 		}
+
+		genSpan.SetAttributes(map[string]any{
+			"request":  req,
+			"response": completion,
+			"usage": &schema.Usage{
+				PromptTokens:     int(completion.Usage.PromptTokens),
+				CompletionTokens: int(completion.Usage.CompletionTokens),
+				TotalTokens:      int(completion.Usage.TotalTokens),
+			},
+		})
+		genSpan.End(ctxGen)
 
 		// Track usage
 		if completion.Usage.PromptTokens > 0 {
@@ -278,11 +319,17 @@ func (r *Runner) executeAgentLoop(
 		history = append(history, toolMessages...)
 
 		if nextAgent != nil {
+			// Record handoff span (Python parity).
+			if tracing.FromContext(ctx) != nil && nextAgent.Name != "" {
+				ctx2, hs, _ := tracing.StartHandoffSpan(ctx, currentAgent.Name, nextAgent.Name, "")
+				hs.End(ctx2)
+			}
 			currentAgent = nextAgent
 		}
 
 		step.Duration = time.Since(stepStart)
 		steps = append(steps, step)
+
 	}
 
 	// Extract final output
@@ -406,7 +453,7 @@ func (r *Runner) handleToolCalls(
 	toolCalls []openai.ChatCompletionMessageToolCallUnion,
 	toolMap runner.ToolMap,
 	contextParams ContextVariables,
-	_ *Agent,
+	currentAgent *Agent,
 	parallel bool,
 ) ([]openai.ChatCompletionMessageParamUnion, []ToolCall, *Agent) {
 	// Use the internal tool handler
@@ -417,6 +464,7 @@ func (r *Runner) handleToolCalls(
 		contextParams,
 		r.isHandoffFunc,
 		parallel,
+		0, // maxConcurrency (0 = unlimited)
 	)
 
 	// Convert results to public ToolCall type
@@ -436,6 +484,15 @@ func (r *Runner) handleToolCalls(
 	if nextAgentAny != nil {
 		if extractedAgent, ok := nextAgentAny.(*Agent); ok {
 			nextAgent = extractedAgent
+			// Emit handoff span
+			if !tracing.IsTracingDisabled() {
+				fromName := ""
+				if currentAgent != nil {
+					fromName = currentAgent.Name
+				}
+				ctx2, sp, _ := tracing.StartHandoffSpan(ctx, fromName, nextAgent.Name, "")
+				sp.End(ctx2)
+			}
 			// Update the last message to indicate the transfer
 			// The HandleToolCalls function already created the message with truncated ID
 			// We just need to update the content, preserving the already-truncated ID
@@ -479,10 +536,22 @@ func (r *Runner) executeInputGuardrails(
 	// Convert guardrails to internal format
 	guardrails := make([]*runner.Guardrail, len(agent.InputGuardrails))
 	for i, gr := range agent.InputGuardrails {
+		gr := gr
 		guardrails[i] = &runner.Guardrail{
 			Name: gr.Name,
 			Func: func(ctx context.Context, text string) (runner.GuardrailResult, error) {
-				result, err := gr.Func(ctx, text)
+				// Span per guardrail execution (Python parity).
+				ctx2, sp, _ := tracing.StartGuardrailSpan(ctx, gr.Name, "input")
+				result, err := gr.Func(ctx2, text)
+				if err != nil {
+					sp.RecordError(err)
+				}
+				tripped := result.TripwireTriggered
+				sp.SetAttributes(map[string]any{
+					"tripwire_triggered": tripped,
+					"message":            result.Message,
+				})
+				sp.End(ctx2)
 				return runner.GuardrailResult{
 					TripwireTriggered: result.TripwireTriggered,
 					Message:           result.Message,
@@ -522,10 +591,22 @@ func (r *Runner) executeOutputGuardrails(
 	// Convert guardrails to internal format
 	guardrails := make([]*runner.Guardrail, len(agent.OutputGuardrails))
 	for i, gr := range agent.OutputGuardrails {
+		gr := gr
 		guardrails[i] = &runner.Guardrail{
 			Name: gr.Name,
 			Func: func(ctx context.Context, text string) (runner.GuardrailResult, error) {
-				result, err := gr.Func(ctx, text)
+				// Span per guardrail execution (Python parity).
+				ctx2, sp, _ := tracing.StartGuardrailSpan(ctx, gr.Name, "output")
+				result, err := gr.Func(ctx2, text)
+				if err != nil {
+					sp.RecordError(err)
+				}
+				tripped := result.TripwireTriggered
+				sp.SetAttributes(map[string]any{
+					"tripwire_triggered": tripped,
+					"message":            result.Message,
+				})
+				sp.End(ctx2)
 				return runner.GuardrailResult{
 					TripwireTriggered: result.TripwireTriggered,
 					Message:           result.Message,
