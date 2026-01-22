@@ -19,7 +19,7 @@ func TestPrepareRequest(t *testing.T) {
 		parallel := true
 
 		config := &RequestConfig{
-			Model:              "gpt-4o",
+			Model:              openai.ChatModelGPT4o,
 			Temperature:        &temp,
 			MaxTokens:          &maxTokens,
 			ParallelToolCalls:  &parallel,
@@ -31,7 +31,7 @@ func TestPrepareRequest(t *testing.T) {
 			t.Fatalf("PrepareRequest failed: %v", err)
 		}
 
-		if string(params.Model) != "gpt-4o" {
+		if params.Model != openai.ChatModelGPT4o {
 			t.Errorf("expected model gpt-4o, got %v", params.Model)
 		}
 		if params.Temperature.Value != temp {
@@ -45,7 +45,7 @@ func TestPrepareRequest(t *testing.T) {
 	t.Run("with tools and parallel disabled", func(t *testing.T) {
 		parallel := false
 		config := &RequestConfig{
-			Model:             "gpt-4o",
+			Model:             openai.ChatModelGPT4o,
 			ParallelToolCalls: &parallel,
 		}
 
@@ -71,7 +71,7 @@ func TestPrepareRequest(t *testing.T) {
 
 	t.Run("message history concatenation", func(t *testing.T) {
 		config := &RequestConfig{
-			Model:              "gpt-4o",
+			Model:              openai.ChatModelGPT4o,
 			SystemInstructions: "System prompt",
 		}
 
@@ -92,7 +92,7 @@ func TestPrepareRequest(t *testing.T) {
 
 	t.Run("response format", func(t *testing.T) {
 		config := &RequestConfig{
-			Model:          "gpt-4o",
+			Model:          openai.ChatModelGPT4o,
 			ResponseFormat: &jsonschema.ResponseFormat{Type: "json_object"},
 		}
 

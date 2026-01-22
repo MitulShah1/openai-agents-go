@@ -34,6 +34,27 @@ if err != nil {
 fmt.Println(result.FinalOutput)
 ```
 
+
+## Asynchronous Execution
+
+For non-blocking operations, use `RunAsync`. This runs the agent loop in a separate goroutine and returns a channel that receives the result.
+
+```go
+// Start execution immediately
+resultChan := runner.RunAsync(ctx, agent, messages)
+
+// Perform other work while the agent thinks and acts...
+fmt.Println("Agent is running...")
+
+// Wait for the result
+asyncResult := <-resultChan
+if asyncResult.Error != nil {
+    log.Fatal(asyncResult.Error)
+}
+
+fmt.Println("Result:", asyncResult.Result.FinalOutput)
+```
+
 ## The Execution Loop
 
 When `Run()` is called, the runner executes a continuous loop:
@@ -130,3 +151,13 @@ for i, step := range result.Steps {
     fmt.Printf("Step %d [%s]: %v\n", i, step.AgentName, step.ToolCalls)
 }
 ```
+
+## Concurrency Model
+
+The runner is designed for safe concurrent execution:
+
+*   **Thread Safety**: The `Runner` instance is safe for concurrent use. You can share a single `Runner` across multiple goroutines or HTTP requests.
+*   **Parallel Tools**: By default, multiple tool calls in a single turn are executed in parallel.
+    *   This uses `sync.WaitGroup` to ensure all tools complete.
+    *   **Robustness**: If one tool fails, others continue to execute. The runner aggregates all results.
+    *   You can disable this by setting `ParallelToolCalls: false` in `RunConfig` or the `Agent` configuration.

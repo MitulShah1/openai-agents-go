@@ -71,20 +71,22 @@ func main() {
 	fmt.Printf("Turn 2: %s\n\n", result.FinalOutput)
 
 	// ===================================================================
-	// Example 2: File-Based Session (persistent across restarts)
+	// Example 2: SQLite Session (persistent across restarts)
 	// ===================================================================
-	fmt.Println("=== Example 2: File-Based Session ===")
+	fmt.Println("=== Example 2: SQLite Session ===")
 
-	// Create sessions directory
-	sessionsDir := filepath.Join(os.TempDir(), "agent-sessions")
-	fileSession, err := session.NewFileSession(sessionsDir)
+	// Create sessions database
+	dbPath := filepath.Join(os.TempDir(), "sessions.db")
+	sqlSession, err := session.NewSQLite(dbPath)
 	if err != nil {
-		fmt.Printf("Error creating file session: %v\n", err)
+		fmt.Printf("Error creating sqlite session: %v\n", err)
 		return
 	}
 	defer func() {
-		if err := os.RemoveAll(sessionsDir); err != nil {
-			fmt.Printf("Warning: failed to clean up sessions directory: %v\n", err)
+		_ = sqlSession.(*session.SQLiteSession).Close()
+		// Clean up db file for demo purposes
+		if err := os.Remove(dbPath); err != nil {
+			fmt.Printf("Warning: failed to clean up db file: %v\n", err)
 		}
 	}()
 
@@ -98,7 +100,7 @@ func main() {
 		ctx,
 		agent,
 		messages,
-		agents.WithSession(fileSession, sessionID2),
+		agents.WithSession(sqlSession, sessionID2),
 	)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -114,7 +116,7 @@ func main() {
 		ctx,
 		agent,
 		messages,
-		agents.WithSession(fileSession, sessionID2),
+		agents.WithSession(sqlSession, sessionID2),
 	)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -136,7 +138,7 @@ func main() {
 		ctx,
 		agent,
 		messages,
-		agents.WithSession(fileSession, sessionA),
+		agents.WithSession(sqlSession, sessionA),
 	)
 	fmt.Printf("Alice: %s\n", resultA.FinalOutput)
 
@@ -149,7 +151,7 @@ func main() {
 		ctx,
 		agent,
 		messages,
-		agents.WithSession(fileSession, sessionB),
+		agents.WithSession(sqlSession, sessionB),
 	)
 	fmt.Printf("Bob: %s\n", resultB.FinalOutput)
 
@@ -158,10 +160,10 @@ func main() {
 		openai.UserMessage("Where do I work?"),
 	}
 
-	resultA, _ = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, sessionA))
+	resultA, _ = runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, sessionA))
 	fmt.Printf("Alice remembers: %s\n", resultA.FinalOutput)
 
-	resultB, _ = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, sessionB))
+	resultB, _ = runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, sessionB))
 	fmt.Printf("Bob remembers: %s\n\n", resultB.FinalOutput)
 
 	// ===================================================================
@@ -179,14 +181,14 @@ func main() {
 		ctx,
 		agent,
 		messages,
-		agents.WithSession(fileSession, sessionID3),
+		agents.WithSession(sqlSession, sessionID3),
 	); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
 
 	// Get session history
-	history, err := fileSession.Get(ctx, sessionID3)
+	history, err := sqlSession.Get(ctx, sessionID3)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -194,7 +196,7 @@ func main() {
 	fmt.Printf("Session has %d messages\n", len(history))
 
 	// Clear session
-	err = fileSession.Clear(ctx, sessionID3)
+	err = sqlSession.Clear(ctx, sessionID3)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -202,11 +204,11 @@ func main() {
 	fmt.Println("Session cleared")
 
 	// Verify it's empty
-	history, _ = fileSession.Get(ctx, sessionID3)
+	history, _ = sqlSession.Get(ctx, sessionID3)
 	fmt.Printf("After clear: %d messages\n", len(history))
 
 	// Delete session completely
-	err = fileSession.Delete(ctx, sessionID3)
+	err = sqlSession.Delete(ctx, sessionID3)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return

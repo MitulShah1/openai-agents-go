@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -234,15 +235,47 @@ func TestHandleToolCalls(t *testing.T) {
 			wantResultCount: 1,
 			wantNextAgent:   nil,
 		},
+		{
+			name: "parallel execution",
+			toolCalls: []openai.ChatCompletionMessageToolCallUnion{
+				{
+					ID: "call_1",
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
+						Name:      "slow_tool",
+						Arguments: `{}`,
+					},
+				},
+				{
+					ID: "call_2",
+					Function: openai.ChatCompletionMessageFunctionToolCallFunction{
+						Name:      "slow_tool",
+						Arguments: `{}`,
+					},
+				},
+			},
+			toolMap: ToolMap{
+				"slow_tool": &mockToolExecutor{
+					result: "done",
+					err:    nil,
+				},
+			},
+			contextParams:   map[string]any{},
+			isHandoffFunc:   nil,
+			wantMsgCount:    2,
+			wantResultCount: 2,
+			wantNextAgent:   nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			messages, results, nextAgent := HandleToolCalls(
+				context.Background(),
 				tt.toolCalls,
 				tt.toolMap,
 				tt.contextParams,
 				tt.isHandoffFunc,
+				false,
 			)
 
 			if len(messages) != tt.wantMsgCount {
@@ -288,7 +321,7 @@ func TestHandleToolCalls_ErrorMessage(t *testing.T) {
 		},
 	}
 
-	messages, results, _ := HandleToolCalls(toolCalls, toolMap, map[string]any{}, nil)
+	messages, results, _ := HandleToolCalls(context.Background(), toolCalls, toolMap, map[string]any{}, nil, false)
 
 	// Check that error message is properly formatted
 	if len(results) != 1 {

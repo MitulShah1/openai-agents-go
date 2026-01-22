@@ -39,7 +39,7 @@ func main() {
 
 	agent := agents.NewAgent("helpful_assistant")
 	agent.Instructions = "You are a helpful assistant. Keep responses concise."
-	agent.Model = "gpt-4o-mini"
+	agent.Model = openai.ChatModelGPT4oMini
 
 	userID := "user123"
 

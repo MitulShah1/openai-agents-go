@@ -95,6 +95,24 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 - ⏳ **Session Utilities**:
   - Pagination/limit support (deferred)
 
+### v0.3.1 - Idiomatic Go Improvements 🚀
+**Focus**: Developer Experience, Type Safety & Performance  
+**Status**: In Progress  
+
+#### Features
+- ✅ **Type-Safe Tooling**: Generic-based tool registration (no more `map[string]any`)
+  - Struct tag support for schema generation
+  - Automatic argument unmarshaling
+- ✅ **Concurrency Patterns**: 
+  - Worker pools for parallel tool execution
+  - `errgroup` integration for coordinated cancellation
+- ✅ **Performance**:
+  - `sync.Pool` optimizations for intense allocations
+  - Benchmarking suite to establish baselines
+- ✅ **Refactoring**:
+  - Interface-based design for `Agent` and `Tool` components
+  - Generic `Result` types
+
 ### v0.3.5 - Tracing, Observability & Advanced Backends 🔍📈
 
 **Timeline**: 2 weeks

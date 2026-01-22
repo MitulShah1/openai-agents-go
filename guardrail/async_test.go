@@ -32,7 +32,7 @@ func TestWithTimeout(t *testing.T) {
 		expectTimeout bool
 	}{
 		{
-			name:          "completes within timeout",
+			name:          "completes_within_timeout",
 			guardrail:     slowGuardrail(50*time.Millisecond, true),
 			timeout:       200 * time.Millisecond,
 			input:         "test input",
@@ -40,7 +40,7 @@ func TestWithTimeout(t *testing.T) {
 			expectTimeout: false,
 		},
 		{
-			name:          "exceeds timeout",
+			name:          "exceeds_timeout",
 			guardrail:     slowGuardrail(200*time.Millisecond, true),
 			timeout:       50 * time.Millisecond,
 			input:         "test input",
@@ -48,7 +48,7 @@ func TestWithTimeout(t *testing.T) {
 			expectTimeout: true,
 		},
 		{
-			name:          "fast failing guardrail",
+			name:          "fast_failing_guardrail",
 			guardrail:     slowGuardrail(10*time.Millisecond, false),
 			timeout:       100 * time.Millisecond,
 			input:         "test input",
@@ -91,7 +91,7 @@ func TestWithTimeoutGraceful(t *testing.T) {
 		expectWarn bool
 	}{
 		{
-			name:       "completes within timeout",
+			name:       "completes_within_timeout",
 			guardrail:  slowGuardrail(50*time.Millisecond, true),
 			timeout:    200 * time.Millisecond,
 			input:      "test input",
@@ -99,7 +99,7 @@ func TestWithTimeoutGraceful(t *testing.T) {
 			expectWarn: false,
 		},
 		{
-			name:       "timeout triggers graceful pass",
+			name:       "timeout_triggers_graceful_pass",
 			guardrail:  slowGuardrail(200*time.Millisecond, true),
 			timeout:    50 * time.Millisecond,
 			input:      "test input",
@@ -133,7 +133,7 @@ func TestWithTimeoutGraceful(t *testing.T) {
 }
 
 func TestWithContext(t *testing.T) {
-	t.Run("context cancellation propagates", func(t *testing.T) {
+	t.Run("context_cancellation_propagates", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		slowGuard := slowGuardrail(200*time.Millisecond, true)
@@ -156,7 +156,7 @@ func TestWithContext(t *testing.T) {
 		}
 	})
 
-	t.Run("normal completion without cancellation", func(t *testing.T) {
+	t.Run("normal_completion_without_cancellation", func(t *testing.T) {
 		ctx := context.Background()
 
 		fastGuard := slowGuardrail(10*time.Millisecond, true)
@@ -175,7 +175,7 @@ func TestWithContext(t *testing.T) {
 }
 
 func TestTimeoutChaining(t *testing.T) {
-	t.Run("timeout on multiple guardrails in chain", func(t *testing.T) {
+	t.Run("timeout_on_multiple_guardrails_in_chain", func(t *testing.T) {
 		fast := slowGuardrail(10*time.Millisecond, true)
 		slow := slowGuardrail(200*time.Millisecond, true)
 
@@ -192,7 +192,7 @@ func TestTimeoutChaining(t *testing.T) {
 		}
 	})
 
-	t.Run("graceful timeout in chain allows continuation", func(t *testing.T) {
+	t.Run("graceful_timeout_in_chain_allows_continuation", func(t *testing.T) {
 		fast := slowGuardrail(10*time.Millisecond, true)
 		slow := slowGuardrail(200*time.Millisecond, true)
 
@@ -215,7 +215,7 @@ func TestTimeoutChaining(t *testing.T) {
 }
 
 func TestContextWithDeadline(t *testing.T) {
-	t.Run("respects context deadline", func(t *testing.T) {
+	t.Run("respects_context_deadline", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 		defer cancel()
 

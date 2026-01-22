@@ -1,5 +1,4 @@
-// Package main demonstrates a production-ready chatbot combining all v0.3.0 features.
-// Features: SQLite persistence, Guardrail composition with metrics, Multimodal tool outputs.
+// Package main demonstrates a production-ready chatbot with guardrails and tools.
 package main
 
 import (
@@ -13,15 +12,19 @@ import (
 
 	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/guardrail"
-	"github.com/MitulShah1/openai-agents-go/guardrail/builtin"
+	"github.com/MitulShah1/openai-agents-go/guardrail/content"
+	"github.com/MitulShah1/openai-agents-go/guardrail/moderation"
+	"github.com/MitulShah1/openai-agents-go/guardrail/security"
 	"github.com/MitulShah1/openai-agents-go/session"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 func main() {
 	// 1. Setup OpenAI Client
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		log.Fatal("OPENAI_API_KEY environment variable is required")
+		fmt.Println("Please set OPENAI_API_KEY environment variable.")
+		return
 	}
 	client := openai.NewClient(option.WithAPIKey(apiKey))
 
@@ -45,67 +48,69 @@ func main() {
 	// - No secrets (PII logic)
 	// - All wrapped with metrics tracking
 	inputGuardrail := guardrail.NewChain().
-		Add(guardrail.WithMetrics(builtin.NewContentLengthGuardrail(builtin.ContentLengthConfig{
-			Mode:     builtin.CountModeCharacters,
+		Add(guardrail.WithMetrics(content.NewLength(content.Config{
+			Mode:     content.CountModeCharacters,
 			Min:      5,
 			Max:      2000,
 			Tripwire: true,
 		}), metrics)).
-		Add(guardrail.WithMetrics(builtin.NewProfanityGuardrail(builtin.ProfanityConfig{
+		Add(guardrail.WithMetrics(moderation.NewProfanity(moderation.ProfanityConfig{
 			Tripwire: true,
 		}), metrics)).
-		Add(guardrail.WithMetrics(builtin.NewSecretsGuardrail(builtin.SecretsConfig{
+		Add(guardrail.WithMetrics(security.NewSecrets(security.SecretsConfig{
 			Tripwire: true,
 		}), metrics)).
 		WithStrategy(guardrail.Sequential).
 		WithName("chatbot_input_validation").
 		Build()
 
-	// 4. Setup Multimodal Tools
-	// Example tool: Generate a chart (returns an image)
-	chartTool := agents.FunctionTool(
-		"generate_chart",
-		"Generates a sales chart for a given year",
+	// 4. Define Tools
+	// Product search tool (returns rich text/images)
+	searchTool := tools.New(
+		"search_products",
+		"Search for products by name or category",
 		map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"year": map[string]any{
-					"type":        "integer",
-					"description": "Year to generate chart for",
-				},
-				"title": map[string]any{
-					"type":        "string",
-					"description": "Chart title",
-				},
+				"query": map[string]any{"type": "string"},
 			},
-			"required": []string{"year"},
 		},
 		func(args map[string]any, _ agents.ContextVariables) (any, error) {
-			year := int(args["year"].(float64))
-			title := "Sales Chart"
-			if t, ok := args["title"].(string); ok {
-				title = t
+			query := args["query"].(string)
+			// Simulate database search
+			if query == "shoes" {
+				// Return an image content
+				return tools.ImageContent("https://example.com/shoes.jpg", "medium"), nil
 			}
-
-			// In a real app, this would generate a real image.
-			// Here we use a placeholder service.
-			url := fmt.Sprintf("https://via.placeholder.com/800x400.png?text=%s+%d", title, year)
-
-			// Return rich content (Image)
-			return agents.ImageContent(url, "high"), nil
+			return fmt.Sprintf("Found 5 results for %s", query), nil
 		},
 	)
 
-	// 5. Setup Agent
-	agent := agents.NewAgent("ProductionBot")
-	agent.Model = "gpt-4o-mini"
-	agent.Instructions = `You are a capable production assistant.
-	- You can generate charts using the generate_chart tool.
-	- Your inputs are validated for safety.
-	- Your memory is persistent.`
-	agent.Tools = []agents.Tool{chartTool}
+	// Order status tool
+	orderTool := tools.New(
+		"get_order_status",
+		"Get status of an order",
+		map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"order_id": map[string]any{"type": "string"},
+			},
+		},
+		func(_ map[string]any, _ agents.ContextVariables) (any, error) {
+			return "Order #123 is Shipped", nil
+		},
+	)
+
+	// 5. Define Agent
+	agent := agents.NewAgent("ShopBot")
+	agent.Model = openai.ChatModelGPT4o
+	agent.Instructions = `You are ShopBot, a helpful e-commerce assistant.
+Use tools to find products and check orders.
+If you find a product image, display it appropriately.`
+	agent.Tools = []tools.Tool{searchTool, orderTool}
 	// Attach guardrails to the agent
 	agent.InputGuardrails = []*guardrail.Guardrail{inputGuardrail}
+	// Note: We are not setting OutputGuardrails for this simple demo to avoid complexity with content filtering.
 
 	// 6. Create Runner
 	runner := agents.NewRunner(&client)
@@ -120,7 +125,7 @@ func main() {
 	fmt.Println("=== Production Chatbot Demo ===")
 
 	// Turn 1: User asks for a chart
-	userMsg1 := "Can you show me the sales chart for 2024?"
+	userMsg1 := "Can you show me the running shoes?"
 	fmt.Printf("\nUser: %s\n", userMsg1)
 
 	result1, err := runner.Run(ctx, agent,
@@ -134,7 +139,7 @@ func main() {
 	fmt.Printf("Bot:  %s\n", result1.FinalOutput)
 
 	// Turn 2: User follows up (testing memory)
-	userMsg2 := "What about for 2025?"
+	userMsg2 := "What about hiking boots?"
 	fmt.Printf("\nUser: %s\n", userMsg2)
 
 	result2, err := runner.Run(ctx, agent,

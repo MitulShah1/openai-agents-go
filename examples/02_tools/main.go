@@ -12,6 +12,7 @@ import (
 	"github.com/openai/openai-go/v3/option"
 
 	agents "github.com/MitulShah1/openai-agents-go"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // This example demonstrates how to use tools with agents.
@@ -27,7 +28,7 @@ func main() {
 	runner := agents.NewRunner(&client)
 
 	// Define a weather tool
-	getWeather := agents.FunctionTool(
+	getWeather := tools.New(
 		"get_weather",
 		"Get the current weather in a given location",
 		map[string]any{
@@ -63,7 +64,7 @@ func main() {
 	)
 
 	// Define a time tool
-	getTime := agents.FunctionTool(
+	getTime := tools.New(
 		"get_current_time",
 		"Get the current time in a given timezone",
 		map[string]any{
@@ -89,7 +90,7 @@ func main() {
 	// Create agent with multiple tools
 	agent := agents.NewAgent("ToolsAgent")
 	agent.Instructions = "You are a helpful assistant with access to weather and time information. Use the tools to answer user questions."
-	agent.Tools = []agents.Tool{getWeather, getTime}
+	agent.Tools = []tools.Tool{getWeather, getTime}
 
 	// Run with a question that requires tool usage
 	messages := []openai.ChatCompletionMessageParamUnion{

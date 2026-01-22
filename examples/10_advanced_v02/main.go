@@ -12,7 +12,8 @@ import (
 
 	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/guardrail"
-	"github.com/MitulShah1/openai-agents-go/guardrail/builtin"
+	"github.com/MitulShah1/openai-agents-go/guardrail/content"
+	"github.com/MitulShah1/openai-agents-go/guardrail/security"
 	"github.com/MitulShah1/openai-agents-go/session"
 )
 
@@ -38,46 +39,47 @@ func main() {
 	// Configure input guardrails for safety
 	agent.InputGuardrails = []*guardrail.Guardrail{
 		// Protect against PII leakage
-		builtin.NewPIIGuardrail(
-			builtin.WithEmailDetection(true),
-			builtin.WithPhoneDetection(true),
-			builtin.WithSSNDetection(true),
-			builtin.WithCreditCardDetection(true),
-			builtin.WithTripwire(false), // Log but don't block
+		security.NewPII(
+			security.WithEmailDetection(true),
+			security.WithPhoneDetection(true),
+			security.WithSSNDetection(true),
+			security.WithCreditCardDetection(true),
+			security.WithTripwire(false), // Log but don't block
 		),
 
 		// Block malicious URLs
-		builtin.NewURLFilterGuardrail(
-			builtin.WithBlocklist("*.malware.com", "phishing.net"),
-			builtin.WithURLTripwire(true),
+		security.NewURLFilter(
+			security.WithBlocklist("*.malware.com", "phishing.net"),
+			security.WithURLTripwire(true),
 		),
 	}
 
 	// Configure output guardrails
 	agent.OutputGuardrails = []*guardrail.Guardrail{
 		// Ensure agent never leaks PII
-		builtin.NewPIIGuardrail(
-			builtin.WithTripwire(true), // Strict for outputs
+		security.NewPII(
+			security.WithTripwire(true), // Strict for outputs
 		),
 
 		// Ensure professional responses (no profanity)
-		builtin.NewRegexGuardrail(
+		content.NewRegex(
 			`\b(damn|hell|crap)\b`,
-			builtin.WithMustMatch(false),
-			builtin.WithRegexMessage("Response contains unprofessional language"),
+			content.WithMustMatch(false),
+			content.WithRegexMessage("Response contains unprofessional language"),
 		),
 	}
 
-	// Setup persistent file-based session
-	sessionsDir := filepath.Join(os.TempDir(), "production-sessions")
-	fileSession, err := session.NewFileSession(sessionsDir)
+	// Setup persistent SQLite session
+	dbPath := filepath.Join(os.TempDir(), "production-sessions.db")
+	sqlSession, err := session.NewSQLite(dbPath)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
 	defer func() {
-		if err := os.RemoveAll(sessionsDir); err != nil {
-			fmt.Printf("Warning: failed to clean up sessions directory: %v\n", err)
+		_ = sqlSession.(*session.SQLiteSession).Close()
+		if err := os.Remove(dbPath); err != nil {
+			fmt.Printf("Warning: failed to clean up db file: %v\n", err)
 		}
 	}()
 
@@ -94,7 +96,7 @@ func main() {
 	messages := []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What products do you offer?"),
 	}
-	result, err := runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
+	result, err := runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -106,7 +108,7 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("How much does the first one cost?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -118,7 +120,7 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("My email is customer@example.com, can you send me details?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, userID))
 	if err != nil {
 		// Guardrail blocked the request
 		fmt.Printf("⚠️  Safety Alert: %v\n", err)
@@ -133,7 +135,7 @@ func main() {
 	messages = []openai.ChatCompletionMessageParamUnion{
 		openai.UserMessage("What's your return policy?"),
 	}
-	result, err = runner.Run(ctx, agent, messages, agents.WithSession(fileSession, userID))
+	result, err = runner.Run(ctx, agent, messages, agents.WithSession(sqlSession, userID))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -142,9 +144,9 @@ func main() {
 
 	// Show session management
 	fmt.Println("=== Session Management ===")
-	history, _ := fileSession.Get(ctx, userID)
+	history, _ := sqlSession.Get(ctx, userID)
 	fmt.Printf("Session '%s' has %d messages stored\n", userID, len(history))
-	fmt.Printf("Conversation persisted to: %s/%s.json\n\n", sessionsDir, userID)
+	fmt.Printf("Conversation persisted to: %s (session_id: %s)\n\n", dbPath, userID)
 
 	// Show usage tracking
 	fmt.Println("=== Usage Tracking ===")

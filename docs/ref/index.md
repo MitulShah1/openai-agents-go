@@ -17,7 +17,10 @@ github.com/MitulShah1/openai-agents-go
 │   ├── FileSession
 │   └── ConversationsSession
 ├── guardrail/          # Guardrail framework
-│   └── builtin/       # Built-in guardrails
+│   ├── content/       # Content validation
+│   ├── moderation/    # Content moderation
+│   ├── ratelimit/     # Rate limiting
+│   └── security/      # Security checks
 └── internal/           # Internal packages
     └── jsonschema/    # JSON schema builder
 ```
@@ -38,6 +41,8 @@ type Agent struct {
     ResponseFormat  any
     OnBeforeRun     func(context.Context, *Agent) error
     OnAfterRun      func(context.Context, *Agent, *Result) error
+    InputGuardrails []*guardrail.Guardrail
+    OutputGuardrails []*guardrail.Guardrail
 }
 ```
 
@@ -121,11 +126,11 @@ type Guardrail interface {
     IsTripwire() bool
 }
 
-// Built-in guardrails
-func NewPIIGuardrail(name string, isTripwire bool) Guardrail
-func NewModerationGuardrail(name string, client *openai.Client, thresholds map[string]float64, isTripwire bool) Guardrail
-func NewRateLimitGuardrail(name string, limit int, window time.Duration, backend Backend, keyFunc KeyFunc, isTripwire bool) Guardrail
-// ... and 6 more
+// Built-in guardrails (subpackages)
+func security.NewPII(opts ...PIIOption) *guardrail.Guardrail
+func moderation.NewOpenAI(client *openai.Client, opts ...Option) *guardrail.Guardrail
+func ratelimit.New(config Config) *guardrail.Guardrail
+// ... and more in content, security, moderation, ratelimit
 ```
 
 [View Guardrails documentation →](guardrails/index.md)
@@ -175,7 +180,7 @@ func WithGuardrails(guardrails []Guardrail) RunOption
 ```go
 agent := agents.NewAgent("MyAgent")
 agent.Instructions = "You are helpful"
-agent.Model = "gpt-4"
+agent.Model = openai.ChatModelGPT4o
 ```
 
 ### Running an Agent
@@ -195,7 +200,7 @@ agent.Tools = []agents.Tool{tool}
 ### Using Guardrails
 ```go
 guardrails := []agents.Guardrail{
-    builtin.NewPIIGuardrail("PII", true),
+    security.NewPII(security.WithTripwire(true)),
 }
 result, err := runner.Run(ctx, agent, messages, nil, agents.WithGuardrails(guardrails))
 ```

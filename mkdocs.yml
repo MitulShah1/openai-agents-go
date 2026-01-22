@@ -74,7 +74,13 @@ nav:
       - Running Agents: running_agents.md
       - Tools: tools.md
       - Structured Outputs: structured_outputs.md
-      - Guardrails: guardrails.md
+      - Guardrails:
+          - Overview: guardrails/index.md
+          - Security: guardrails/security.md
+          - Moderation: guardrails/moderation.md
+          - Content: guardrails/content.md
+          - Rate Limiting: guardrails/ratelimit.md
+          - Composition: guardrails/composition.md
       - Sessions:
           - Overview: sessions/index.md
   - API Reference:

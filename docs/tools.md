@@ -13,7 +13,12 @@ Tools are functions that agents can discover and call during execution. The SDK 
 The most common type of tool wraps a Go function:
 
 ```go
-weatherTool := agents.FunctionTool(
+import (
+    "fmt"
+    "github.com/MitulShah1/openai-agents-go/tools"
+)
+
+weatherTool := tools.New(
     "get_weather",
     "Get the current weather for a city",
     map[string]any{
@@ -26,7 +31,7 @@ weatherTool := agents.FunctionTool(
         },
         "required": []string{"city"},
     },
-    func(args map[string]any, ctx agents.ContextVariables) (any, error) {
+    func(args map[string]any, ctx tools.ContextVariables) (any, error) {
         city := args["city"].(string)
         // Call weather API
         return fmt.Sprintf("Weather in %s is sunny", city), nil
@@ -39,7 +44,9 @@ weatherTool := agents.FunctionTool(
 Transfer control to another agent:
 
 ```go
-handoff := agents.HandoffTool(specialistAgent, "Transfer to specialist")
+import "github.com/MitulShah1/openai-agents-go/handoff"
+
+transferTool := handoff.New(specialistAgent).ToTool()
 ```
 
 ### Multimodal Tool (New in v0.3.0)
@@ -47,15 +54,15 @@ handoff := agents.HandoffTool(specialistAgent, "Transfer to specialist")
 Return rich content like images and files that multimodal models (e.g., GPT-4o) can process:
 
 ```go
-cameraTool := agents.FunctionTool(
+cameraTool := tools.New(
     "get_camera_feed",
     "Get snapshot from security camera",
     /* ... params ... */,
-    func(args map[string]any, ctx agents.ContextVariables) (any, error) {
+    func(args map[string]any, ctx tools.ContextVariables) (any, error) {
         // Return structured content
-        return []agents.Content{
-            agents.TextContent("Here is the latest snapshot:"),
-            agents.ImageContent("https://example.com/snap.jpg", "high"),
+        return []tools.Content{
+            tools.TextContent("Here is the latest snapshot:"),
+            tools.ImageContent("https://example.com/snap.jpg", "high"),
         }, nil
     },
 )
@@ -66,9 +73,11 @@ cameraTool := agents.FunctionTool(
 All tools implement the `Tool` interface:
 
 ```go
-type Tool interface {
-    ToParam() openai.ChatCompletionToolParam
-    Execute(args string, ctx ContextVariables) (any, error)
+type Tool struct {
+	Name        string
+	Description string
+	Parameters  map[string]any
+	Callback    func(args map[string]any, ctx ContextVariables) (any, error)
 }
 ```
 
