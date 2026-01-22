@@ -35,6 +35,20 @@ Future    │ v1.1.0+ - Advanced Integrations
 
 For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
+#### v0.3.5 - Handoff Parity & Idiomatic Go (2026-01-22) ✅
+- **Handoff Parity**: Full feature parity with Python SDK
+  - Input filtering, history nesting, dynamic enablement
+- **Refactoring**: 
+  - Implementation of Idiomatic Go patterns
+  - Improved type safety and error handling
+  - Removal of legacy retry logic in favor of robust error types
+
+#### v0.3.0 - Database Backends, Tracing & Composition (2026-01-20) ✅
+- **Multimodal Tool Outputs**: Rich responses (text, images, files)
+- **Guardrail Composition**: Chain builder with seq/parallel execution
+- **Database Sessions**: SQLite backend with connection pooling
+- **Metrics Collection**: Guardrail telemetry (P95/P99)
+
 #### v0.2.3 - Enhanced Guardrails & Error Handling (2026-01-19) ✅
 - 9+ production-ready guardrails (PII, Moderation, Rate Limiting, Profanity, Secrets, Prompt Injection, etc.)
 - Production-grade error handling with 4 retry strategies
@@ -57,65 +71,8 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
-### v0.3.0 - Database Backends, Tracing & Composition 📊🔍⛓️
-
-**Timeline**: 3-4 weeks  
-**Status**: In Planning  
-**Target Date**: Jan 2026
-**Dependencies**: Optional backends (SQLite)
-
-#### Features
-
-**Multimodal Tool Output Support**:
-- ✅ Update ToolCall type for multimodal responses
-- ✅ Add helper methods for content extraction
-- ✅ Examples demonstrating image/file outputs
-
-**Guardrail Composition** (Advanced Features):
-- ✅ **Chaining Support**: Combine multiple guardrails
-  - Sequential mode (short-circuit on failure)
-  - Parallel mode (collect all results)
-  - StopOnFirst mode (early exit on pass)
-- ✅ **Async Validation**: Timeout and cancellation support
-  - Context-aware execution
-  - Graceful degradation
-- ✅ **Metrics Collection**: Guardrail telemetry
-  - Success/failure counters
-  - Tripwire statistics
-  - Average latency tracking
-
-**Database Session Backends** (Production-Ready Persistence):
-- ✅ **Plugin Registry System**: Backend registration and discovery
-- ✅ **SQLite Backend**: File-based database (built-in)
-  - Pure Go implementation (`modernc.org/sqlite`)
-  - SQL schema with indexes
-  - Connection pooling and migrations
-- ⏳ **Redis Plugin**: Distributed/scalable (deferred to v0.3.5)
-- ⏳ **PostgreSQL Plugin**: Enterprise-grade (deferred to v0.3.5)
-- ⏳ **Session Utilities**:
-  - Pagination/limit support (deferred)
-
-### v0.3.1 - Idiomatic Go Improvements 🚀
-**Focus**: Developer Experience, Type Safety & Performance  
-**Status**: In Progress  
-
-#### Features
-- ✅ **Type-Safe Tooling**: Generic-based tool registration (no more `map[string]any`)
-  - Struct tag support for schema generation
-  - Automatic argument unmarshaling
-- ✅ **Concurrency Patterns**: 
-  - Worker pools for parallel tool execution
-  - `errgroup` integration for coordinated cancellation
-- ✅ **Performance**:
-  - `sync.Pool` optimizations for intense allocations
-  - Benchmarking suite to establish baselines
-- ✅ **Refactoring**:
-  - Interface-based design for `Agent` and `Tool` components
-  - Generic `Result` types
-
-### v0.3.5 - Tracing, Observability & Advanced Backends 🔍📈
-
-**Timeline**: 2 weeks
+### v0.4.0 - Tracing, Streaming & Performance 📊🚀
+**Timeline**: 3-4 weeks
 **Status**: Planned
 **Target Date**: Feb 2026
 
@@ -123,184 +80,47 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 **Tracing & Observability**:
 - ⏳ **Tracing Framework**: Distributed tracing
-  - Basic tracing with spans
-  - Console trace processor
-  - OpenTelemetry integration (optional)
-  - Automatic tracing (LLM, tools, sessions, guardrails)
+  - OpenTelemetry integration
+  - Automatic tracing (LLM, tools, sessions)
 - ⏳ **Metrics Collection**: Production monitoring
-  - Request counts (by agent, model, status)
-  - Latency percentiles (p50, p95, p99)
-  - Token usage and cost tracking
-
-**Additional Database Backends**:
-- ⏳ **Redis Plugin**: Distributed/scalable (external package)
-- ⏳ **PostgreSQL Plugin**: Enterprise-grade (external package)
-
-**Testing & Quality**:
-- ⏳ Benchmark tests for performance tracking
-- ⏳ Integration tests with real API
-
-#### Use Cases
-- Production deployments with database persistence
-- High-scale distributed systems (Redis)
-- Complex validation workflows (chaining guardrails)
-- Enterprise deployments (PostgreSQL, full observability)
-- Performance optimization (metrics and tracing)
-- Enterprise applications (PostgreSQL)
-- Multi-server/containerized environments
-- Long-term conversation storage and analytics
-- GDPR compliance with encryption
-- Observability and debugging with tracing
-
----
-
-### v0.4.0 - Streaming & Advanced Performance 🚀⚡
-
-**Timeline**: 3 weeks  
-**Status**: Planned  
-**Target Date**: Q2 2026  
-**Dependencies**: Same as v0.3.0
-
-#### Features
+  - Request counts, latency, token usage
 
 **Streaming Support**:
 - ⏳ **Token-by-token Streaming**: Real-time response generation
-  - Channel-based streaming API
   - Server-Sent Events (SSE) support
-  - Stream cancellation and error handling
   - Streaming with tool calls
-  - Progress callbacks
-- ⏳ **Streaming Examples**: Comprehensive demonstrations
 
 **Performance Optimizations**:
-- ⏳ **Parallel Tool Execution**: Concurrent tool calling
-  - Worker pool for parallel calls
-  - Dependency graphs for order-aware execution
-  - Per-tool timeouts and cancellation
-  - Circuit breaker pattern
+- ⏳ **Parallel Tool Execution**: Worker pools
 - ⏳ **Caching Layer**: Response and result caching
-  - LLM response caching (with TTL)
-  - Tool result caching (configurable)
-  - Guardrail validation caching
-  - Cache backends: In-memory (LRU), Redis, File
-  - Semantic caching for similar prompts
 
-**Advanced Features**:
-- ⏳ **Advanced Handoff Patterns**:
-  - Conditional handoffs
-  - Parallel agent execution
-  - Sequential agent chains
-  - Agent voting/consensus
-- ⏳ **Performance Benchmarks**: Published metrics
-- ⏳ **Additional Guardrails** (Optional):
-  - Sentiment analysis guardrail
-  - Language detection guardrail
-  - SQL injection detection
-  - Data Loss Prevention (DLP) patterns
-  - Conditional guardrails (context-based)
-
-**Documentation & Examples**:
-- ⏳ 15+ comprehensive examples
-- ⏳ Performance tuning guide
-- ⏳ Architecture documentation
-- ⏳ Migration guides
-
-#### Use Cases
-- Real-time conversational agents
-- High-performance production systems
-- Complex multi-agent workflows
-- Cost optimization through caching
-- Advanced content moderation
-- Low-latency user experiences
+**Advanced Backends**:
+- ⏳ **Redis Plugin**: Distributed/scalable
+- ⏳ **PostgreSQL Plugin**: Enterprise-grade
 
 ---
 
 ### v1.0.0 - Stable Release 🎯
-
-**Timeline**: 2 weeks  
-**Status**: Planned  
-**Target Date**: Q2 2026  
-**Dependencies**: Same as v0.4.0
+**Timeline**: Q2 2026
+**Status**: Planned
 
 #### Goals
 - ✅ API stability guarantees
 - ✅ 90%+ test coverage
 - ✅ Performance benchmarks published
 - ✅ Migration guides for all versions
-- ✅ Comprehensive documentation
-- ✅ Production-ready examples
-- ✅ Community feedback incorporated
-- ✅ Security audit completed
-
-#### Deliverables
-- Stable v1.0.0 release
-- Full API documentation
-- Migration guides (all versions)
-- Performance benchmarks
-- Security audit report
-- Production deployment guide
-- Contributing guidelines
-- Code of conduct
 
 ---
 
 ### v1.1.0+ - Advanced Integrations 🔮
-
-**Timeline**: Post-v1.0 (Based on community demand)  
+**Timeline**: Post-v1.0
 **Status**: Future Planning
 
 #### Planned Features
-
-**OpenAI API Features** (SDK v3 Integrations):
-- 🔮 **Batch API Support**: Cost-effective batch processing
-  - Create, monitor, and cancel batch jobs
-  - Batch result retrieval and processing
-  - 50% cost savings for non-urgent requests
-  - Custom output handlers
-- 🔮 **Realtime API**: WebSocket-based real-time interactions
-  - Low-latency speech-to-speech experiences
-  - Voice input/output streaming
-  - Function calling in realtime sessions
-  - Event-based programming model
-  - Voice agent examples
-
-**Advanced Features**:
-- 🔮 **RAG (Retrieval Augmented Generation)**: Knowledge integration
-  - Vector store integrations (OpenAI, Pinecone, Weaviate)
-  - Document processing utilities
-  - Retrieval strategies (similarity, hybrid, reranking)
-  - In-memory HNSW support
-- 🔮 **Multi-Agent Orchestration**: Complex workflows
-  - Orchestration patterns (sequential, parallel, hierarchical)
-  - Debate/discussion patterns
-  - Reflection and self-critique
-  - Workflow definition (DAG-based)
-  - Conditional routing
-- 🔮 **MCP (Model Context Protocol)**: Dynamic tool discovery
-  - Integration with MCP servers
-  - Runtime tool registration
-  - Plugin architecture
-- 🔮 **Advanced Metrics**: Full observability
-  - Prometheus exporter
-  - OpenTelemetry full integration
-  - Grafana dashboard templates
-  - Custom metric collectors
-
-**Additional Backends & Tools**:
-- 🔮 **MySQL Session Backend**: Alternative to PostgreSQL
-- 🔮 **Fine-tuned Model Support**: Custom model integration
-- 🔮 **CLI Tool**: Interactive agent testing and prototyping
-- 🔮 **AI-Powered Guardrails**: Advanced security
-  - Hallucination detection
-  - NSFW content detection
-  - Jailbreak attempt detection
-  - (Requires external APIs)
-
-**Developer Experience**:
-- 🔮 **Enhanced Examples**: 20+ advanced scenarios
-- 🔮 **Video Tutorials**: Getting started guides
-- 🔮 **Community Templates**: Starter projects
-- 🔮 **Plugin Marketplace**: Community extensions
+- Batch API Support
+- Realtime API (Voice)
+- RAG Integration
+- MCP Support
 
 ---
 
@@ -318,7 +138,6 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 - Integration tests with real API (opt-in)
 - Benchmark tests for performance tracking
 - Fuzz tests for critical parsers
-- Property-based testing where applicable
 
 ### Documentation Requirements
 - API documentation (godoc)
@@ -366,9 +185,7 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-20
-**Current Version**: v0.3.0 (Finalizing)
-**Next Focus**: v0.3.5 - Tracing & Observability  
+**Last Updated**: 2026-01-22
+**Current Version**: v0.3.5
+**Next Focus**: v0.4.0 - Tracing & Streaming
 **SDK Version**: openai-go/v3 v3.16.0
-
-See [CHANGELOG.md](./CHANGELOG.md) for detailed release history.

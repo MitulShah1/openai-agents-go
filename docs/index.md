@@ -88,7 +88,8 @@ go get github.com/MitulShah1/openai-agents-go@latest
 | Guardrail Composition | ✅ Complete | v0.3.0 |
 | Database Sessions | ✅ Complete | v0.3.0 |
 | Session Encryption | ✅ Complete | v0.3.0 |
-| Tracing & Observability | 🔮 Planned | v0.3.5 |
+| Handoff Parity | ✅ Complete | v0.3.5 |
+| Tracing & Observability | 🔮 Planned | v0.4.0 |
 | Streaming | 🔮 Planned | v0.4.0 |
 
 See the [CHANGELOG](https://github.com/MitulShah1/openai-agents-go/blob/main/CHANGELOG.md) for detailed release notes.

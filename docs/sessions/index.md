@@ -18,8 +18,8 @@ The session framework enables:
 | File | Single-server production | None | v0.2.0 |
 | Conversations API | Cloud, distributed | OpenAI API key | v0.2.2 |
 | SQLite | Single-server persistence | None (pure Go) | v0.3.0 |
-| Redis | Scalable/Distributed | Redis client | v0.3.5 |
-| PostgreSQL | Enterprise/Compliance | PostgreSQL driver | v0.3.5 |
+| Redis | Scalable/Distributed | Redis client | v0.4.0 |
+| PostgreSQL | Enterprise/Compliance | PostgreSQL driver | v0.4.0 |
 
 ## Quick Start
 
@@ -203,8 +203,8 @@ User Message → Get History → [History + New Message] → Agent → Append Ne
 | Single-server app | File Session |
 | Multi-server app | Conversations API |
 | Cloud deployment | Conversations API |
-| High scalability | Redis (v0.3.0) |
-| Enterprise | PostgreSQL (v0.3.0) |
+| High scalability | Redis (v0.4.0) |
+| Enterprise | PostgreSQL (v0.4.0) |
 
 ## Best Practices
 
