@@ -2,7 +2,6 @@ package tracing
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -36,9 +35,10 @@ func GetProvider() Provider {
 	return p
 }
 
-// provider implements the Provider interface.
-type provider struct {
-	processors []processor.Processor
+// defaultProvider implements the Provider interface with multi-processor support.
+type defaultProvider struct {
+	multi     *multiProcessor
+	tracePool sync.Pool
 }
 
 // NewProvider creates a new trace provider with the given processors.
@@ -47,12 +47,26 @@ func NewProvider(processors ...processor.Processor) Provider {
 	if IsTracingDisabled() {
 		return NewNoopProvider()
 	}
-	return &provider{
-		processors: processors,
+	dp := &defaultProvider{
+		multi: newMultiProcessor(processors...),
 	}
+	dp.tracePool.New = func() any {
+		return &trace{}
+	}
+	return dp
 }
 
-func (p *provider) StartTrace(ctx context.Context, opts ...TraceOption) (context.Context, Trace, error) {
+// AddProcessor adds a processor to the provider.
+func (p *defaultProvider) AddProcessor(proc processor.Processor) {
+	p.multi.AddProcessor(proc)
+}
+
+// SetProcessors replaces all processors.
+func (p *defaultProvider) SetProcessors(processors []processor.Processor) {
+	p.multi.SetProcessors(processors)
+}
+
+func (p *defaultProvider) StartTrace(ctx context.Context, opts ...TraceOption) (context.Context, Trace, error) {
 	cfg := &traceConfig{
 		workflowName:         "Agent Workflow",
 		includeSensitiveData: IncludeSensitiveDataDefault(),
@@ -68,14 +82,6 @@ func (p *provider) StartTrace(ctx context.Context, opts ...TraceOption) (context
 
 	// Validation
 	if cfg.traceID != "" && !internal.IsValidTraceID(cfg.traceID) {
-		return NewNoopProvider().StartTrace(ctx)
-		// We return the no-op trace AND the error so the user sees the error
-		// but the flow continues safely.
-	}
-	// Note: We need to return error explicitly if we want users to know.
-	// But above call returns (ctx, trace, nil).
-	// Let's refactor:
-	if cfg.traceID != "" && !internal.IsValidTraceID(cfg.traceID) {
 		startCtx, startTrace, _ := NewNoopProvider().StartTrace(ctx)
 		return startCtx, startTrace, fmt.Errorf("invalid trace ID: %s", cfg.traceID)
 	}
@@ -89,44 +95,34 @@ func (p *provider) StartTrace(ctx context.Context, opts ...TraceOption) (context
 		cfg.traceID = internal.GenTraceID()
 	}
 
-	t := &trace{
-		id:                   cfg.traceID,
-		workflowName:         cfg.workflowName,
-		groupID:              cfg.groupID,
-		metadata:             cfg.metadata,
-		includeSensitiveData: cfg.includeSensitiveData,
-		exportAPIKey:         cfg.exportAPIKey,
-		startedAt:            time.Now().UTC(),
-		processors:           p.processors,
-	}
+	// Get trace from pool and initialize
+	t := p.tracePool.Get().(*trace)
+	t.id = cfg.traceID
+	t.workflowName = cfg.workflowName
+	t.groupID = cfg.groupID
+	t.metadata = cfg.metadata
+	t.includeSensitiveData = cfg.includeSensitiveData
+	t.exportAPIKey = cfg.exportAPIKey
+	t.startedAt = time.Now().UTC()
+	t.processors = p.multi.GetProcessors()
+	t.pool = &p.tracePool
 
 	export := schema.TraceExport{
 		Object:       "trace",
 		ID:           t.id,
 		WorkflowName: t.workflowName,
-		GroupID:      t.groupID,
+		GroupID:      cfg.groupID,
 		Metadata:     t.metadata,
 	}
 
-	// Notify processors
-	for _, pr := range p.processors {
-		pr.OnTraceStart(export, t.exportAPIKey)
-	}
+	// Notify processors via multi-processor
+	p.multi.OnTraceStart(export, t.exportAPIKey)
 
 	return ContextWithTrace(ctx, t), t, nil
 }
 
-func (p *provider) Shutdown(ctx context.Context) error {
-	var errs []error
-	for _, pr := range p.processors {
-		if err := pr.Shutdown(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if len(errs) > 0 {
-		return errors.Join(errs...)
-	}
-	return nil
+func (p *defaultProvider) Shutdown(ctx context.Context) error {
+	return p.multi.Shutdown(ctx)
 }
 
 // Helper functions for env vars

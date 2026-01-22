@@ -17,4 +17,7 @@ func init() {
 	exp := exporter.NewBackendExporter()
 	proc := processor.NewBatch(exp)
 	SetProvider(NewProvider(proc))
+
+	// Initialize signal handler for graceful shutdown
+	initSignalHandler()
 }

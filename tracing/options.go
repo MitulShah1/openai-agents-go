@@ -81,6 +81,11 @@ func WithName(name string) SpanOption {
 	}
 }
 
+// WithSpanName is an alias for WithName for consistency with factory functions.
+func WithSpanName(name string) SpanOption {
+	return WithName(name)
+}
+
 // WithModel sets the model (for agent, generation spans).
 func WithModel(model string) SpanOption {
 	return func(c *spanConfig) {
@@ -189,6 +194,36 @@ func WithHandoff(fromAgent, toAgent, reason string) SpanOption {
 		}
 		c.attributes["from_agent"] = fromAgent
 		c.attributes["to_agent"] = toAgent
+		c.attributes["reason"] = reason
+	}
+}
+
+// WithFromAgent sets the from_agent attribute for handoff spans.
+func WithFromAgent(agent string) SpanOption {
+	return func(c *spanConfig) {
+		if c.attributes == nil {
+			c.attributes = make(map[string]any)
+		}
+		c.attributes["from_agent"] = agent
+	}
+}
+
+// WithToAgent sets the to_agent attribute for handoff spans.
+func WithToAgent(agent string) SpanOption {
+	return func(c *spanConfig) {
+		if c.attributes == nil {
+			c.attributes = make(map[string]any)
+		}
+		c.attributes["to_agent"] = agent
+	}
+}
+
+// WithReason sets the reason attribute for handoff spans.
+func WithReason(reason string) SpanOption {
+	return func(c *spanConfig) {
+		if c.attributes == nil {
+			c.attributes = make(map[string]any)
+		}
 		c.attributes["reason"] = reason
 	}
 }

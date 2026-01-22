@@ -21,6 +21,8 @@ type trace struct {
 	startedAt            time.Time
 
 	processors []processor.Processor
+	pool       *sync.Pool // Pool to return to when done
+	spanPool   sync.Pool  // Pool for span objects
 
 	mu sync.RWMutex
 }
@@ -44,30 +46,61 @@ func (t *trace) StartSpan(ctx context.Context, spanType schema.SpanType, opts ..
 		spanType = schema.SpanTypeCustom
 	}
 
-	s := &span{
-		id:        internal.GenSpanID(),
-		traceID:   t.id,
-		spanType:  spanType,
-		startedAt: time.Now().UTC(),
-		attrs:     cfg.attributes,
-		name:      cfg.name,
-		trace:     t,
+	// Initialize span pool if needed
+	if t.spanPool.New == nil {
+		t.spanPool.New = func() any {
+			return &span{}
+		}
 	}
 
-	// Get parent span ID from context if available
-	if parent := keyFromContext(ctx); parent != nil {
-		s.parentID = parent.ID()
+	// Get span from pool and initialize
+	s := t.spanPool.Get().(*span)
+	s.id = internal.GenSpanID()
+	s.traceID = t.id
+	s.spanType = spanType
+	s.startedAt = time.Now().UTC()
+	s.name = cfg.name
+	s.trace = t
+	s.pool = &t.spanPool
+	s.endedAt = time.Time{} // Reset
+	s.err = nil             // Reset
+
+	// Initialize or reset attributes
+	if cfg.attributes != nil {
+		if s.attrs == nil {
+			s.attrs = make(map[string]any, len(cfg.attributes))
+		} else {
+			// Clear existing attributes
+			for k := range s.attrs {
+				delete(s.attrs, k)
+			}
+		}
+		for k, v := range cfg.attributes {
+			s.attrs[k] = v
+		}
+	} else if s.attrs != nil {
+		// Clear attributes if none provided
+		for k := range s.attrs {
+			delete(s.attrs, k)
+		}
 	}
 
-	// Notify processors might go here if we wanted span start events,
-	// but the schema only has onSpanEnd.
+	// Automatically detect parent span from context
+	if parentSpan := SpanFromContext(ctx); parentSpan != nil {
+		s.parentID = parentSpan.ID()
+	} else {
+		s.parentID = "" // Reset
+	}
 
-	return context.WithValue(ctx, spanKey, s), s, nil
+	// Store the new span in context for automatic parent detection
+	return ContextWithSpan(ctx, s), s, nil
 }
 
 func (t *trace) End(_ context.Context) {
 	t.mu.RLock()
-	defer t.mu.RUnlock()
+	processors := t.processors
+	exportAPIKey := t.exportAPIKey
+	t.mu.RUnlock()
 
 	export := schema.TraceExport{
 		Object:       "trace",
@@ -77,8 +110,16 @@ func (t *trace) End(_ context.Context) {
 		Metadata:     t.metadata,
 	}
 
-	for _, p := range t.processors {
-		p.OnTraceEnd(export, t.exportAPIKey)
+	for _, p := range processors {
+		p.OnTraceEnd(export, exportAPIKey)
+	}
+
+	// Return trace to pool
+	if t.pool != nil {
+		// Clear fields to prevent memory leaks
+		t.processors = nil
+		t.metadata = nil
+		t.pool.Put(t)
 	}
 }
 
@@ -97,6 +138,7 @@ type span struct {
 	err     error
 
 	trace *trace
+	pool  *sync.Pool // Pool to return to when done
 }
 
 func (s *span) ID() string {
@@ -130,9 +172,8 @@ func (s *span) SetAttributes(attrs map[string]any) {
 
 func (s *span) End(_ context.Context) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	if !s.endedAt.IsZero() {
+		s.mu.Unlock()
 		return // Already ended
 	}
 	s.endedAt = time.Now().UTC()
@@ -158,9 +199,23 @@ func (s *span) End(_ context.Context) {
 		Error:     spanErr,
 	}
 
+	processors := s.trace.processors
+	exportAPIKey := s.trace.exportAPIKey
+	pool := s.pool
+	s.mu.Unlock()
+
 	// Notify processors
-	for _, p := range s.trace.processors {
-		p.OnSpanEnd(export, s.trace.exportAPIKey)
+	for _, p := range processors {
+		p.OnSpanEnd(export, exportAPIKey)
+	}
+
+	// Return span to pool
+	if pool != nil {
+		// Clear fields to prevent memory leaks
+		s.trace = nil
+		s.err = nil
+		// Keep attrs map but it will be cleared on next use
+		pool.Put(s)
 	}
 }
 
@@ -240,17 +295,6 @@ func getString(m map[string]any, k string) string {
 func getUsage(m map[string]any, k string) *schema.Usage {
 	if v, ok := m[k].(*schema.Usage); ok {
 		return v
-	}
-	return nil
-}
-
-// spanKey is used for internal span context propagation if needed,
-// though we use the main trace context mostly.
-var spanKey = contextKey{} // Reusing type from context.go logic but distinct key
-
-func keyFromContext(ctx context.Context) Span {
-	if s, ok := ctx.Value(spanKey).(Span); ok {
-		return s
 	}
 	return nil
 }
