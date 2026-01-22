@@ -11,7 +11,8 @@ import (
 
 	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/guardrail"
-	"github.com/MitulShah1/openai-agents-go/guardrail/builtin"
+	"github.com/MitulShah1/openai-agents-go/guardrail/content"
+	"github.com/MitulShah1/openai-agents-go/guardrail/security"
 )
 
 // This example demonstrates how to use guardrails to validate agent inputs and outputs.
@@ -32,33 +33,33 @@ func main() {
 	// Add input guardrails - validate user input before processing
 	agent.InputGuardrails = []*guardrail.Guardrail{
 		// Detect PII in user input
-		builtin.NewPIIGuardrail(
-			builtin.WithTripwire(true), // Halt if PII detected
-			builtin.WithEmailDetection(true),
-			builtin.WithPhoneDetection(true),
-			builtin.WithSSNDetection(true),
+		security.NewPII(
+			security.WithTripwire(true), // Halt if PII detected
+			security.WithEmailDetection(true),
+			security.WithPhoneDetection(true),
+			security.WithSSNDetection(true),
 		),
 
 		// Block URLs from untrusted domains
-		builtin.NewURLFilterGuardrail(
-			builtin.WithBlocklist("evil.com", "*.malicious.org"),
-			builtin.WithURLTripwire(true),
+		security.NewURLFilter(
+			security.WithBlocklist("evil.com", "*.malicious.org"),
+			security.WithURLTripwire(true),
 		),
 
 		// Block forbidden keywords
-		builtin.NewRegexGuardrail(
+		content.NewRegex(
 			`\b(password|secret|token)\b`,
-			builtin.WithMustMatch(false), // Pattern must NOT match
-			builtin.WithRegexTripwire(true),
-			builtin.WithRegexMessage("Please don't share sensitive credentials"),
+			content.WithMustMatch(false), // Pattern must NOT match
+			content.WithRegexTripwire(true),
+			content.WithRegexMessage("Please don't share sensitive credentials"),
 		),
 	}
 
 	// Add output guardrails - validate agent responses
 	agent.OutputGuardrails = []*guardrail.Guardrail{
 		// Ensure agent doesn't leak PII in responses
-		builtin.NewPIIGuardrail(
-			builtin.WithTripwire(true),
+		security.NewPII(
+			security.WithTripwire(true),
 		),
 	}
 

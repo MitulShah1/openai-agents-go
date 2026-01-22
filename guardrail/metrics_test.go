@@ -8,7 +8,7 @@ import (
 )
 
 func TestInMemoryMetrics(t *testing.T) {
-	t.Run("track success and failure", func(t *testing.T) {
+	t.Run("track_success_and_failure", func(t *testing.T) {
 		metrics := NewInMemoryMetrics()
 		guard := NewGuardrail("test_guard", func(_ context.Context, input string) (*Result, error) {
 			if input == "pass" {
@@ -47,7 +47,7 @@ func TestInMemoryMetrics(t *testing.T) {
 		}
 	})
 
-	t.Run("track duration statistics", func(t *testing.T) {
+	t.Run("track_duration_statistics", func(t *testing.T) {
 		metrics := NewInMemoryMetrics()
 		guard := NewGuardrail("timing_guard", func(_ context.Context, _ string) (*Result, error) {
 			// Simulate varying execution times
@@ -77,7 +77,7 @@ func TestInMemoryMetrics(t *testing.T) {
 		}
 	})
 
-	t.Run("calculate percentiles", func(t *testing.T) {
+	t.Run("calculate_percentiles", func(t *testing.T) {
 		metrics := NewInMemoryMetrics()
 
 		// Create a guardrail with controlled timing
@@ -128,7 +128,7 @@ func TestInMemoryMetrics(t *testing.T) {
 		}
 	})
 
-	t.Run("track multiple guardrails", func(t *testing.T) {
+	t.Run("track_multiple_guardrails", func(t *testing.T) {
 		metrics := NewInMemoryMetrics()
 
 		guard1 := NewGuardrail("guard1", func(_ context.Context, _ string) (*Result, error) {
@@ -163,7 +163,7 @@ func TestInMemoryMetrics(t *testing.T) {
 		}
 	})
 
-	t.Run("handle errors in validation", func(t *testing.T) {
+	t.Run("handle_errors_in_validation", func(t *testing.T) {
 		metrics := NewInMemoryMetrics()
 		guard := NewGuardrail("error_guard", func(_ context.Context, input string) (*Result, error) {
 			if input == "error" {
@@ -196,7 +196,7 @@ func TestInMemoryMetrics(t *testing.T) {
 }
 
 func TestMetricsThreadSafety(t *testing.T) {
-	t.Run("concurrent access is safe", func(t *testing.T) {
+	t.Run("concurrent_access_is_safe", func(t *testing.T) {
 		metrics := NewInMemoryMetrics()
 		guard := NewGuardrail("concurrent_guard", func(_ context.Context, _ string) (*Result, error) {
 			time.Sleep(1 * time.Millisecond)
@@ -233,7 +233,7 @@ func TestMetricsThreadSafety(t *testing.T) {
 }
 
 func TestMetricsWithChain(t *testing.T) {
-	t.Run("track metrics for each guardrail in chain", func(t *testing.T) {
+	t.Run("track_metrics_for_each_guardrail_in_chain", func(t *testing.T) {
 		metrics := NewInMemoryMetrics()
 
 		guard1 := NewGuardrail("chain_guard1", func(_ context.Context, _ string) (*Result, error) {
@@ -276,7 +276,7 @@ func TestMetricsWithChain(t *testing.T) {
 		}
 	})
 
-	t.Run("short-circuit affects metrics", func(t *testing.T) {
+	t.Run("short_circuit_affects_metrics", func(t *testing.T) {
 		metrics := NewInMemoryMetrics()
 
 		guard1 := NewGuardrail("shortcircuit_guard1", func(_ context.Context, _ string) (*Result, error) {
@@ -336,7 +336,7 @@ func (m *MockMetricsCollector) OnError(name string, err error) {
 }
 
 func TestMetricsCollectorInterface(t *testing.T) {
-	t.Run("custom metrics collector", func(t *testing.T) {
+	t.Run("custom_metrics_collector", func(t *testing.T) {
 		var startCount, completeCount, errorCount int
 
 		collector := &MockMetricsCollector{

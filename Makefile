@@ -1,12 +1,6 @@
 # Makefile for openai-agents-go
 
-.PHONY: help lint test build clean fmt
-
-help: ## Show this help message
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo 'Available targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+.PHONY: lint test build clean fmt
 
 lint: ## Run golangci-lint
 	@command -v golangci-lint >/dev/null 2>&1 || { \
@@ -41,5 +35,3 @@ install-tools: ## Install development tools
 	@echo "Installing goimports..."
 	go install golang.org/x/tools/cmd/goimports@latest
 	@echo "Tools installed successfully!"
-
-.DEFAULT_GOAL := help

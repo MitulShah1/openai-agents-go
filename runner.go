@@ -13,6 +13,7 @@ import (
 	"github.com/MitulShah1/openai-agents-go/internal/runner"
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
 	"github.com/MitulShah1/openai-agents-go/session"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // Runner manages the execution of agents.
@@ -265,10 +266,12 @@ func (r *Runner) executeAgentLoop(
 
 		// Handle tool calls
 		toolMessages, recordedToolCalls, nextAgent := r.handleToolCalls(
+			ctx,
 			message.ToolCalls,
 			toolMap,
 			contextParams,
 			currentAgent,
+			config.ParallelToolCalls != nil && *config.ParallelToolCalls,
 		)
 
 		step.ToolCalls = recordedToolCalls
@@ -311,7 +314,7 @@ func (r *Runner) prepareTools(agent *Agent) ([]openai.ChatCompletionToolUnionPar
 
 // toolAdapter adapts a Tool to implement runner.ToolExecutor
 type toolAdapter struct {
-	tool *Tool
+	tool *tools.Tool
 }
 
 // Execute implements runner.ToolExecutor
@@ -340,13 +343,7 @@ func (r *Runner) prepareRequest(
 		RunResponseFormat:      config.ResponseFormat,
 	}
 
-	if config.Debug {
-		fmt.Printf("DEBUG prepareRequest: agent.ResponseFormat=%v, config.ResponseFormat=%v\n",
-			agent.ResponseFormat, config.ResponseFormat)
-		fmt.Printf("DEBUG prepareRequest: merger.AgentResponseFormat=%v, merger.RunResponseFormat=%v\n",
-			merger.AgentResponseFormat, merger.RunResponseFormat)
-		fmt.Printf("DEBUG prepareRequest: merger.GetResponseFormat()=%v\n", merger.GetResponseFormat())
-	}
+	// Debug block removed
 
 	parallelToolCalls := merger.GetParallelToolCalls()
 	requestConfig := &runner.RequestConfig{
@@ -405,17 +402,21 @@ func (r *Runner) convertResponseFormat(format any) (openai.ChatCompletionNewPara
 
 // handleToolCalls executes tool calls and returns results
 func (r *Runner) handleToolCalls(
+	ctx context.Context,
 	toolCalls []openai.ChatCompletionMessageToolCallUnion,
 	toolMap runner.ToolMap,
 	contextParams ContextVariables,
 	_ *Agent,
+	parallel bool,
 ) ([]openai.ChatCompletionMessageParamUnion, []ToolCall, *Agent) {
 	// Use the internal tool handler
 	messages, results, nextAgentAny := runner.HandleToolCalls(
+		ctx,
 		toolCalls,
 		toolMap,
 		contextParams,
 		r.isHandoffFunc,
+		parallel,
 	)
 
 	// Convert results to public ToolCall type
@@ -573,4 +574,39 @@ func extractFinalOutput(lastMessage openai.ChatCompletionMessage) string {
 		return lastMessage.Refusal
 	}
 	return ""
+}
+
+// AsyncResult represents the outcome of an asynchronous run
+type AsyncResult struct {
+	Result *Result
+	Error  error
+}
+
+// RunAsync executes the agent concurrently in a goroutine.
+// It returns a channel that will receive exactly one AsyncResult when execution completes.
+//
+// This enables non-blocking execution patterns, allowing the caller to continue
+// other work while the agent runs, or to manage multiple running agents simultaneously.
+//
+// Example:
+//
+//	resultChan := runner.RunAsync(ctx, agent, messages)
+//	// Do other work...
+//	params := <-resultChan
+//	if params.Error != nil {
+//	    // handle error
+//	}
+func (r *Runner) RunAsync(
+	ctx context.Context,
+	agent *Agent,
+	messages []openai.ChatCompletionMessageParamUnion,
+	opts ...RunOption,
+) <-chan AsyncResult {
+	ch := make(chan AsyncResult, 1)
+	go func() {
+		defer close(ch)
+		res, err := r.Run(ctx, agent, messages, opts...)
+		ch <- AsyncResult{Result: res, Error: err}
+	}()
+	return ch
 }

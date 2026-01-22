@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Handoff Parity**:
+  - New `handoff` package with functional options pattern.
+  - Input filtering support via `WithInputFilter`.
+  - History nesting (summarization) support via `WithHistoryNesting`.
+  - Dynamic enablement via `WithEnabledPredicate`.
+  - Type-safe `isHandoffTool` marker.
+
+### Removed
+- **Error Handling**: Removed `retry.go`, `retry_test.go` and `RetryWithBackoff` functionality.
+- **Example**: Removed `examples/14_error_handling`.
+
 ## [v0.3.0] - 2026-01-20
 
 ### Added

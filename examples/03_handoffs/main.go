@@ -10,6 +10,8 @@ import (
 	"github.com/openai/openai-go/v3/option"
 
 	agents "github.com/MitulShah1/openai-agents-go"
+	"github.com/MitulShah1/openai-agents-go/handoff"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // This example demonstrates agent handoffs - transferring a conversation from one agent to another.
@@ -31,52 +33,21 @@ func main() {
 	supportAgent := agents.NewAgent("TechnicalSupport")
 	supportAgent.Instructions = "You are a technical support agent. Help customers solve technical problems. Be detailed and patient."
 
-	// Create handoff tool for sales agent to transfer to support
-	transferToSupport := agents.FunctionTool(
-		"transfer_to_support",
-		"Transfer the customer to technical support for technical questions",
-		map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"reason": map[string]any{
-					"type":        "string",
-					"description": "The reason for the transfer",
-				},
-			},
-			"required": []any{"reason"},
-		},
-		func(args map[string]any, _ agents.ContextVariables) (any, error) {
-			reason := args["reason"].(string)
-			fmt.Printf("📞 Transferring to support. Reason: %s\n\n", reason)
-			// Return the support agent to trigger handoff
-			return supportAgent, nil
-		},
-	)
+	// Create handoff tools using the new handoff package
+	// This is much cleaner than manually creating FunctionTool!
+	transferToSupport := handoff.New(
+		supportAgent,
+		handoff.WithDescription("Transfer the customer to technical support for technical questions"),
+	).ToTool()
 
-	// Create handoff tool for support agent to transfer back to sales
-	transferToSales := agents.FunctionTool(
-		"transfer_to_sales",
-		"Transfer the customer back to sales for purchase assistance",
-		map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"reason": map[string]any{
-					"type":        "string",
-					"description": "The reason for the transfer",
-				},
-			},
-			"required": []any{"reason"},
-		},
-		func(args map[string]any, _ agents.ContextVariables) (any, error) {
-			reason := args["reason"].(string)
-			fmt.Printf("📞 Transferring to sales. Reason: %s\n\n", reason)
-			return salesAgent, nil
-		},
-	)
+	transferToSales := handoff.New(
+		salesAgent,
+		handoff.WithDescription("Transfer the customer back to sales for purchase assistance"),
+	).ToTool()
 
 	// Assign tools to agents
-	salesAgent.Tools = []agents.Tool{transferToSupport}
-	supportAgent.Tools = []agents.Tool{transferToSales}
+	salesAgent.Tools = []tools.Tool{transferToSupport}
+	supportAgent.Tools = []tools.Tool{transferToSales}
 
 	// Start with sales agent
 	messages := []openai.ChatCompletionMessageParamUnion{
