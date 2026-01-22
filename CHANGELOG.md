@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+## [v0.3.5] - 2026-01-22
+
+### Added
 - **Handoff Parity**:
   - New `handoff` package with functional options pattern.
   - Input filtering support via `WithInputFilter`.
@@ -222,6 +226,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Links
 
+- [v0.3.5](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.3.5)
 - [v0.3.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.3.0)
 - [v0.2.5](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.2.5)
 - [v0.2.3](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.2.3)
@@ -235,8 +240,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Future Releases
 
 See [ROADMAP.md](./ROADMAP.md) for planned features:
-- v0.3.5: Tracing (OpenTelemetry) & Enhanced Metrics
-- v0.4.0: Streaming support, Performance optimizations
+- v0.4.0: Tracing (OpenTelemetry), Metrics & Streaming support
 - v1.0.0: Stable release with API guarantees
 - v1.1.0+: Advanced integrations (Batch API, Realtime API, RAG, MCP)
 
