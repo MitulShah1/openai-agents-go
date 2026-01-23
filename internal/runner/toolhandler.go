@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/openai/openai-go/v3"
+
+	"github.com/MitulShah1/openai-agents-go/tracing"
 )
 
 // ToolExecutor defines the interface for executing tools
@@ -35,12 +37,13 @@ func TruncateToolCallIDs(message *openai.ChatCompletionMessage) {
 // HandleToolCalls executes tool calls and returns the results
 // Returns: tool messages, recorded tool calls, and next agent (if handoff occurred)
 func HandleToolCalls(
-	_ context.Context,
+	ctx context.Context,
 	toolCalls []openai.ChatCompletionMessageToolCallUnion,
 	toolMap ToolMap,
 	contextParams map[string]any,
 	isHandoffFunc func(result any) (any, bool),
 	parallel bool,
+	maxConcurrency int,
 ) ([]openai.ChatCompletionMessageParamUnion, []ToolCallResult, any) {
 	// Pre-allocate results slice to ensure order preservation
 	results := make([]ToolCallResult, len(toolCalls))
@@ -53,13 +56,25 @@ func HandleToolCalls(
 		var wg sync.WaitGroup
 		wg.Add(len(toolCalls))
 
+		// Semaphore for limiting concurrency
+		var sem chan struct{}
+		if maxConcurrency > 0 {
+			sem = make(chan struct{}, maxConcurrency)
+		}
+
 		for i, tc := range toolCalls {
 			go func(i int, tc openai.ChatCompletionMessageToolCallUnion) {
 				defer wg.Done()
 
+				// Acquire semaphore
+				if sem != nil {
+					sem <- struct{}{}
+					defer func() { <-sem }()
+				}
+
 				// Create a derived context that is NOT cancelled if other tools fail
 				// But we still respect the parent context (timeout/cancellation)
-				res, msg, _ := executeSingleTool(tc, toolMap, contextParams, isHandoffFunc)
+				res, msg, _ := executeSingleTool(ctx, tc, toolMap, contextParams, isHandoffFunc)
 
 				// Capture results safely
 				// Since we pre-allocated slices and have unique 'i', no mutex needed for slice access
@@ -75,7 +90,7 @@ func HandleToolCalls(
 	} else {
 		// Sequential execution
 		for i, tc := range toolCalls {
-			res, msg, next := executeSingleTool(tc, toolMap, contextParams, isHandoffFunc)
+			res, msg, next := executeSingleTool(ctx, tc, toolMap, contextParams, isHandoffFunc)
 			results[i] = res
 			messages[i] = msg
 			if next != nil {
@@ -100,13 +115,15 @@ func HandleToolCalls(
 
 // executeSingleTool helper to isolate execution logic
 func executeSingleTool(
+	ctx context.Context,
 	toolCall openai.ChatCompletionMessageToolCallUnion,
 	toolMap ToolMap,
 	contextParams map[string]any,
 	isHandoffFunc func(result any) (any, bool),
 ) (ToolCallResult, openai.ChatCompletionMessageParamUnion, any) {
-	toolStart := time.Now()
 	toolName := toolCall.Function.Name
+
+	toolStart := time.Now()
 	args := toolCall.Function.Arguments
 
 	tool, found := toolMap[toolName]
@@ -121,7 +138,19 @@ func executeSingleTool(
 		result = fmt.Sprintf("Error: Tool %s not found. Available tools: %v", toolName, available)
 		err = fmt.Errorf("tool %s not found (available: %v)", toolName, available)
 	} else {
+		// Start function span
+		// Redaction is handled automatically
+		ctx2, sp, _ := tracing.StartFunctionSpan(ctx, toolName, tracing.WithArguments(args))
 		result, err = tool.Execute(args, contextParams)
+		if err != nil {
+			sp.RecordError(err)
+		}
+
+		sp.SetAttributes(map[string]any{
+			"output": result,
+		})
+		sp.End(ctx2)
+
 		if err != nil {
 			var sb strings.Builder
 			sb.WriteString("Error executing tool ")

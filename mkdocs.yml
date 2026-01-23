@@ -72,6 +72,7 @@ nav:
   - Documentation:
       - Agents: agents.md
       - Running Agents: running_agents.md
+      - Tracing: tracing.md
       - Tools: tools.md
       - Structured Outputs: structured_outputs.md
       - Guardrails:
