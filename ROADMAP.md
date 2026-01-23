@@ -21,8 +21,8 @@ Build a Go SDK that provides:
 Week 1-2  │ v0.1.0 - Core Foundation ✅
 Week 3-4  │ v0.2.0 - Guardrails & Sessions ✅
 Week 4-5  │ v0.2.3 - Enhanced Guardrails & Error Handling ✅
-Week 6-9  │ v0.3.0 - DB Backends, Tracing & Composition
-Week 10-12│ v0.4.0 - Streaming & Performance
+Week 6-9  │ v0.3.0 - DB Backends, Tracing & Composition ✅
+Week 10-12│ v0.4.0 - Streaming & Performance ✅
 Week 13-14│ v1.0.0 - Stable Release
 Future    │ v1.1.0+ - Advanced Integrations
 ```
@@ -34,6 +34,12 @@ Future    │ v1.1.0+ - Advanced Integrations
 ### Completed Releases ✅
 
 For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
+
+#### v0.4.0 - Tracing, Streaming & Performance (2026-01-23) ✅
+- **Parallel Tools**: Idiomatic goroutine-based parallel execution
+- **Tracing**: OpenTelemetry support for agents, tools, and sessions
+- **Streaming**: Token-by-token and object-based streaming
+- **Plugins**: Redis and PostgreSQL backends
 
 #### v0.3.5 - Handoff Parity & Idiomatic Go (2026-01-22) ✅
 - **Handoff Parity**: Full feature parity with Python SDK
@@ -71,32 +77,7 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
-### v0.4.0 - Tracing, Streaming & Performance 📊🚀
-**Timeline**: 3-4 weeks
-**Status**: Planned
-**Target Date**: Feb 2026
 
-#### Features
-
-**Tracing & Observability**:
-- ⏳ **Tracing Framework**: Distributed tracing
-  - OpenTelemetry integration
-  - Automatic tracing (LLM, tools, sessions)
-- ⏳ **Metrics Collection**: Production monitoring
-  - Request counts, latency, token usage
-
-**Streaming Support**:
-- ⏳ **Token-by-token Streaming**: Real-time response generation
-  - Server-Sent Events (SSE) support
-  - Streaming with tool calls
-
-**Performance Optimizations**:
-- ⏳ **Parallel Tool Execution**: Worker pools
-- ⏳ **Caching Layer**: Response and result caching
-
-**Advanced Backends**:
-- ⏳ **Redis Plugin**: Distributed/scalable
-- ⏳ **PostgreSQL Plugin**: Enterprise-grade
 
 ---
 
@@ -185,7 +166,7 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-22
-**Current Version**: v0.3.5
-**Next Focus**: v0.4.0 - Tracing & Streaming
+**Last Updated**: 2026-01-23
+**Current Version**: v0.4.0
+**Next Focus**: v1.0.0 - Stable Release
 **SDK Version**: openai-go/v3 v3.16.0
