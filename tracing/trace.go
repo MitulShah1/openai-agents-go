@@ -46,12 +46,14 @@ func (t *trace) StartSpan(ctx context.Context, spanType schema.SpanType, opts ..
 		spanType = schema.SpanTypeCustom
 	}
 
-	// Initialize span pool if needed
+	// Initialize span pool if needed (with mutex protection to prevent race)
+	t.mu.Lock()
 	if t.spanPool.New == nil {
 		t.spanPool.New = func() any {
 			return &span{}
 		}
 	}
+	t.mu.Unlock()
 
 	// Get span from pool and initialize
 	s := t.spanPool.Get().(*span)
