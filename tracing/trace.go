@@ -54,6 +54,7 @@ func (t *trace) StartSpan(ctx context.Context, spanType schema.SpanType, opts ..
 		}
 	}
 	t.mu.Unlock()
+<<<<<<< HEAD
 
 	// Get span from pool and initialize
 	s := t.spanPool.Get().(*span)
@@ -93,6 +94,8 @@ func (t *trace) StartSpan(ctx context.Context, spanType schema.SpanType, opts ..
 	} else {
 		s.parentID = "" // Reset
 	}
+=======
+>>>>>>> 1c13813 (fix: Resolve data race in tracing and correct version to v0.4.0)
 
 	// Get span from pool and initialize
 	s := t.spanPool.Get().(*span)
