@@ -85,7 +85,86 @@ type Tool struct {
 
 See [Quickstart Guide](quickstart.md#adding-tools) for more details.
 
+## Parallel Tool Execution
+
+By default, agents execute multiple tool calls in parallel using goroutines. This significantly improves performance when the model requests multiple independent tools.
+
+### Enabling/Disabling Parallel Execution
+
+**Agent-level configuration:**
+```go
+agent := agents.NewAgent("my-agent")
+agent.ParallelToolCalls = true  // Default: enabled
+```
+
+**Runtime override:**
+```go
+runner.Run(ctx, agent, messages,
+    agents.WithConfig(&agents.RunConfig{
+        ParallelToolCalls: boolPtr(false), // Sequential execution
+    }),
+)
+```
+
+### Concurrency Limiting
+
+Limit the number of tools running simultaneously to prevent resource exhaustion:
+
+```go
+runner.Run(ctx, agent, messages,
+    agents.WithConfig(&agents.RunConfig{
+        ParallelToolCalls:  boolPtr(true),
+        MaxToolConcurrency: 3, // Max 3 tools at once
+    }),
+)
+```
+
+### Performance Considerations
+
+| Execution Mode | Best For | Performance |
+|----------------|----------|-------------|
+| **Parallel** | I/O-bound tools (API calls, database queries) | ~2-3x faster for independent tools |
+| **Sequential** | Stateful tools with dependencies | Predictable, deterministic order |
+| **Limited Concurrency** | Resource-constrained environments | Balanced performance and resource usage |
+
+### OpenAI API Integration
+
+The `ParallelToolCalls` setting is transmitted to the OpenAI API:
+- `true` - Explicitly enables parallel tool calls (model can request multiple tools)
+- `false` - Restricts to one tool call per turn
+- `nil` - Uses provider default (typically parallel)
+
+### Example: Parallel vs Sequential
+
+```go
+// Parallel execution (default)
+start := time.Now()
+result, _ := runner.Run(ctx, agent, messages)
+parallelDuration := time.Since(start)
+fmt.Printf("Parallel: %v\n", parallelDuration)
+
+// Sequential execution
+start = time.Now()
+result, _ = runner.Run(ctx, agent, messages,
+    agents.WithConfig(&agents.RunConfig{
+        ParallelToolCalls: boolPtr(false),
+    }),
+)
+sequentialDuration := time.Since(start)
+fmt.Printf("Sequential: %v\n", sequentialDuration)
+```
+
+**See the complete example:** [`examples/21_parallel_tools`](../examples/21_parallel_tools/main.go)
+
+### Key Features
+
+- ✅ **Goroutine-based execution** - Lightweight concurrent tool execution
+- ✅ **Order preservation** - Results maintain tool call order despite async execution
+- ✅ **Error isolation** - One tool's error doesn't block others in parallel mode
+- ✅ **Semaphore pattern** - `MaxToolConcurrency` prevents resource exhaustion
+
 ## Related Topics
 
 - [Agents](agents.md)
 - [Quickstart Guide](quickstart.md#adding-tools)
+- [Parallel Tools Example](../examples/21_parallel_tools/main.go)

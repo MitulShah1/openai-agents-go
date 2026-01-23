@@ -276,6 +276,7 @@ func TestHandleToolCalls(t *testing.T) {
 				tt.contextParams,
 				tt.isHandoffFunc,
 				false,
+				0, // maxConcurrency
 			)
 
 			if len(messages) != tt.wantMsgCount {
@@ -321,7 +322,7 @@ func TestHandleToolCalls_ErrorMessage(t *testing.T) {
 		},
 	}
 
-	messages, results, _ := HandleToolCalls(context.Background(), toolCalls, toolMap, map[string]any{}, nil, false)
+	messages, results, _ := HandleToolCalls(context.Background(), toolCalls, toolMap, map[string]any{}, nil, false, 0)
 
 	// Check that error message is properly formatted
 	if len(results) != 1 {

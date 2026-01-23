@@ -43,8 +43,11 @@ func PrepareRequest(
 	// Apply tools configuration
 	if len(tools) > 0 {
 		req.Tools = tools
-		if config.ParallelToolCalls != nil && !*config.ParallelToolCalls {
-			req.ParallelToolCalls = openai.Bool(false)
+		// Three-state logic for parallel_tool_calls:
+		// - If explicitly set (true or false), send to API
+		// - If nil, omit from request (use provider default)
+		if config.ParallelToolCalls != nil {
+			req.ParallelToolCalls = openai.Bool(*config.ParallelToolCalls)
 		}
 	}
 
@@ -100,6 +103,20 @@ func (cm *ConfigMerger) GetParallelToolCalls() bool {
 		return *cm.RunParallelToolCalls
 	}
 	return cm.AgentParallelToolCalls
+}
+
+// GetParallelToolCallsPtr returns a pointer to the effective parallel tool calls setting
+// for API parameter transmission. Returns nil if agent default is true and no override,
+// allowing the API to use its default behavior.
+func (cm *ConfigMerger) GetParallelToolCallsPtr() *bool {
+	// If run config explicitly sets it, use that
+	if cm.RunParallelToolCalls != nil {
+		return cm.RunParallelToolCalls
+	}
+	// If agent has it set to false, return pointer to false
+	// If agent has it set to true (default), return pointer to true
+	val := cm.AgentParallelToolCalls
+	return &val
 }
 
 // GetResponseFormat returns the effective response format setting
