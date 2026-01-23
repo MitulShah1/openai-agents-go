@@ -44,9 +44,9 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 - ✅ **Guardrail Composition**: Chain guardrails with sequential/parallel execution, async validation, and metrics (v0.3.0)
 - ✅ **Database Sessions**: SQLite support for production-ready persistence (v0.3.0)
 - ✅ **Handoff Parity**: Full feature parity with Python SDK (v0.3.5)
-- 🔮 **Streaming** (Coming in v0.4.0 - see [ROADMAP.md](./ROADMAP.md))
-- 🔮 **Tracing & Observability** (Coming in v0.4.0)
-- 🔮 **Advanced DB Backends** (Redis, PostgreSQL - Coming in v0.4.0)
+- ✅ **Streaming**: Token-by-token and object-based streaming (v0.4.0)
+- ✅ **Tracing & Observability**: OpenTelemetry integration (v0.4.0)
+- ✅ **Advanced DB Backends**: Redis, PostgreSQL (v0.4.0)
 
 ---
 
@@ -321,9 +321,9 @@ make check
 | Tools | ✅ | ✅ | ✅ |
 | Handoffs | ✅ | ✅ | ✅ |
 | Structured Outputs | ✅ | ✅ | ✅ |
-| Streaming | ✅ | ✅ | 🔮 Planned |
+| Streaming | ✅ | ✅ | ✅ (v0.4.0) |
 | Guardrails | ✅ | ✅ | ✅ (v0.2.1) |
-| Tracing | ✅ | ✅ | 🔮 Planned |
+| Tracing | ✅ | ✅ | ✅ (v0.4.0) |
 | Voice Agents | ❌ | ✅ | 🔮 Future |
 | **Type Safety** | ⚠️ Runtime | ⚠️ TypeScript | ✅ Compile-time |
 | **Zero Dependencies** | ❌ | ❌ | ✅ (core only) |
