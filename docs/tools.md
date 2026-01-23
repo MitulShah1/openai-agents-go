@@ -154,7 +154,7 @@ sequentialDuration := time.Since(start)
 fmt.Printf("Sequential: %v\n", sequentialDuration)
 ```
 
-**See the complete example:** [`examples/21_parallel_tools`](../examples/21_parallel_tools/main.go)
+**See the complete example:** [`examples/21_parallel_tools`](https://github.com/MitulShah1/openai-agents-go/blob/main/examples/21_parallel_tools/main.go)
 
 ### Key Features
 
@@ -167,4 +167,4 @@ fmt.Printf("Sequential: %v\n", sequentialDuration)
 
 - [Agents](agents.md)
 - [Quickstart Guide](quickstart.md#adding-tools)
-- [Parallel Tools Example](../examples/21_parallel_tools/main.go)
+- [Parallel Tools Example](https://github.com/MitulShah1/openai-agents-go/blob/main/examples/21_parallel_tools/main.go)

@@ -74,6 +74,8 @@ nav:
       - Running Agents: running_agents.md
       - Tracing: tracing.md
       - Tools: tools.md
+      - Handoffs: handoffs.md
+      - Streaming: streaming.md
       - Structured Outputs: structured_outputs.md
       - Guardrails:
           - Overview: guardrails/index.md

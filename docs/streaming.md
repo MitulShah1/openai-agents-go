@@ -153,15 +153,15 @@ for event, err := range result.StreamEvents(ctx) {
 
 ### Example 1: Basic Text Streaming
 
-See [examples/18_streaming_basic](../examples/18_streaming_basic) for a complete example of streaming text responses.
+See [examples/18_streaming_basic]([Example Code](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/18_streaming_basic) for a complete example of streaming text responses.
 
 ### Example 2: Function Argument Streaming
 
-See [examples/19_streaming_function_args](../examples/19_streaming_function_args) for real-time function call argument streaming.
+See [examples/19_streaming_function_args]([Example Code](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/19_streaming_function_args) for real-time function call argument streaming.
 
 ### Example 3: Semantic Event Streaming
 
-See [examples/20_streaming_semantic](../examples/20_streaming_semantic) for high-level progress tracking with semantic events.
+See [examples/20_streaming_semantic]([Example Code](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/20_streaming_semantic) for high-level progress tracking with semantic events.
 
 ## Best Practices
 
