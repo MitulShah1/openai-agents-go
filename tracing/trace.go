@@ -54,48 +54,6 @@ func (t *trace) StartSpan(ctx context.Context, spanType schema.SpanType, opts ..
 		}
 	}
 	t.mu.Unlock()
-<<<<<<< HEAD
-
-	// Get span from pool and initialize
-	s := t.spanPool.Get().(*span)
-	s.id = internal.GenSpanID()
-	s.traceID = t.id
-	s.spanType = spanType
-	s.startedAt = time.Now().UTC()
-	s.name = cfg.name
-	s.trace = t
-	s.pool = &t.spanPool
-	s.endedAt = time.Time{} // Reset
-	s.err = nil             // Reset
-
-	// Initialize or reset attributes
-	if cfg.attributes != nil {
-		if s.attrs == nil {
-			s.attrs = make(map[string]any, len(cfg.attributes))
-		} else {
-			// Clear existing attributes
-			for k := range s.attrs {
-				delete(s.attrs, k)
-			}
-		}
-		for k, v := range cfg.attributes {
-			s.attrs[k] = v
-		}
-	} else if s.attrs != nil {
-		// Clear attributes if none provided
-		for k := range s.attrs {
-			delete(s.attrs, k)
-		}
-	}
-
-	// Automatically detect parent span from context
-	if parentSpan := SpanFromContext(ctx); parentSpan != nil {
-		s.parentID = parentSpan.ID()
-	} else {
-		s.parentID = "" // Reset
-	}
-=======
->>>>>>> 1c13813 (fix: Resolve data race in tracing and correct version to v0.4.0)
 
 	// Get span from pool and initialize
 	s := t.spanPool.Get().(*span)
