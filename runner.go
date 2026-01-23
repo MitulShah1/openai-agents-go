@@ -392,12 +392,11 @@ func (r *Runner) prepareRequest(
 
 	// Debug block removed
 
-	parallelToolCalls := merger.GetParallelToolCalls()
 	requestConfig := &runner.RequestConfig{
 		Model:              agent.Model,
 		Temperature:        merger.GetTemperature(),
 		MaxTokens:          merger.GetMaxTokens(),
-		ParallelToolCalls:  &parallelToolCalls,
+		ParallelToolCalls:  merger.GetParallelToolCallsPtr(),
 		ResponseFormat:     merger.GetResponseFormat(),
 		SystemInstructions: agent.GetInstructions(ctx),
 	}

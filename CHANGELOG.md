@@ -11,6 +11,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [v0.4.0] - 2026-01-23
+
+### Added
+
+**Parallel Tools Integration**:
+- **Three-State API Parameter**: Full parity with Python SDK's `parallel_tool_calls`
+  - `true`: Explicitly enable parallel tool calls (model can request multiple tools)
+  - `false`: Restrict to one tool call per turn
+  - `nil`: Use provider default (typically parallel)
+- **Enhanced ConfigMerger**: New `GetParallelToolCallsPtr()` method for proper API parameter transmission
+- **Goroutine-Based Execution**: Client-side parallel tool execution using goroutines
+  - Semaphore pattern for concurrency limiting via `MaxToolConcurrency`
+  - Order preservation despite async execution
+  - Error isolation (one tool's error doesn't block others)
+- **Comprehensive Test Suite**: 5 new tests in `internal/runner/toolhandler_parallel_test.go`
+  - `TestParallelToolExecution`: Verifies concurrent execution (~100ms for 2 tools)
+  - `TestSequentialToolExecution`: Verifies sequential mode (~100ms total)
+  - `TestConcurrencyLimiting`: Verifies semaphore limits concurrent execution
+  - `TestOrderPreservation`: Verifies results maintain tool call order
+  - `TestParallelErrorHandling`: Verifies error isolation in parallel mode
+- **Example**: `examples/21_parallel_tools/` demonstrating:
+  - Parallel execution (default, ~2s for 3 tools)
+  - Sequential execution (~6s for 3 tools)
+  - Limited concurrency (max 2 tools, ~4s)
+  - Performance comparison showing 3x speedup
+  - Works with or without OpenAI API key (demo mode)
+- **Documentation**: Comprehensive "Parallel Tool Execution" section in `docs/tools.md`
+  - Configuration examples (agent-level and runtime override)
+  - Performance comparison table
+  - API integration details
+  - Best practices and use cases
+
+### Changed
+- **API Parameter Logic**: Enhanced `internal/runner/preparation.go` to support three-state behavior
+- **Runner Integration**: Updated `runner.go` to use `GetParallelToolCallsPtr()` for API requests
+
+### Fixed
+- All linting issues resolved (0 issues)
+- Race detection clean for parallel tools implementation
+
 ## [v0.3.5] - 2026-01-22
 
 ### Added
@@ -226,6 +266,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Links
 
+- [v0.4.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.4.0)
 - [v0.3.5](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.3.5)
 - [v0.3.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.3.0)
 - [v0.2.5](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.2.5)
