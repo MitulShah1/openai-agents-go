@@ -23,7 +23,8 @@ Week 3-4  │ v0.2.0 - Guardrails & Sessions ✅
 Week 4-5  │ v0.2.3 - Enhanced Guardrails & Error Handling ✅
 Week 6-9  │ v0.3.0 - DB Backends, Tracing & Composition ✅
 Week 10-12│ v0.4.0 - Streaming & Performance ✅
-Week 13-14│ v1.0.0 - Stable Release
+Week 13-14│ v0.5.0 - Feature Parity & Extensions
+Week 15-16│ v1.0.0 - Stable Release
 Future    │ v1.1.0+ - Advanced Integrations
 ```
 
@@ -81,6 +82,40 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
+### v0.5.0 - Feature Parity & Extensions 🚀
+**Timeline**: Q1 2026
+**Status**: Planned
+
+#### Goals
+Achieve feature parity with the Python SDK by implementing key missing features:
+
+- **MCP Support**: Model Context Protocol integration for external tool/data connections
+  - MCP server integration
+  - Tool approval functions
+  - Hosted MCP tool support
+  
+- **Computer Use Interface**: Browser and desktop automation capabilities
+  - Computer abstraction (sync and async)
+  - Operations: screenshot, click, scroll, type, keypress, drag, move
+  - Support for mac, windows, ubuntu, and browser environments
+  
+- **Diff Application Logic**: Structured code change application
+  - V4A diff parser
+  - Apply patch editor and tool
+  - Support for create and update modes
+  
+- **Enhanced Session Backends**: Advanced conversation management
+  - Message compaction for long conversations
+  - Redis session backend for distributed deployments
+  - OpenAI Responses compaction-aware sessions
+  
+- **Extensions Framework**: Experimental features and utilities
+  - Handoff filters and prompts
+  - Visualization tools
+  - Experimental integrations
+
+---
+
 ### v1.0.0 - Stable Release 🎯
 **Timeline**: Q2 2026
 **Status**: Planned
@@ -98,10 +133,11 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 **Status**: Future Planning
 
 #### Planned Features
+- Voice API Support (Audio pipeline and processing)
+- Realtime API Support (Websocket-based agent sessions)
 - Batch API Support
-- Realtime API (Voice)
 - RAG Integration
-- MCP Support
+- Advanced MCP Integrations
 
 ---
 
@@ -166,7 +202,7 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-23
+**Last Updated**: 2026-01-24
 **Current Version**: v0.4.0
-**Next Focus**: v1.0.0 - Stable Release
+**Next Focus**: v0.5.0 - Feature Parity & Extensions
 **SDK Version**: openai-go/v3 v3.16.0
