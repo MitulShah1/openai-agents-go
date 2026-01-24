@@ -108,6 +108,18 @@ Achieve feature parity with the Python SDK by implementing key missing features:
   - Message compaction for long conversations
   - Redis session backend for distributed deployments
   - OpenAI Responses compaction-aware sessions
+
+- **Embeddings & Vector Stores**: RAG capabilities via openai-go SDK
+  - Embeddings API integration for semantic search
+  - Vector Stores for managed RAG
+  - File chunking strategies
+  - Semantic search and knowledge retrieval
+
+- **Files API**: File management capabilities
+  - File upload and management
+  - Document processing for agents
+  - File attachments for tools
+  - Content retrieval
   
 - **Extensions Framework**: Experimental features and utilities
   - Handoff filters and prompts
@@ -133,11 +145,33 @@ Achieve feature parity with the Python SDK by implementing key missing features:
 **Status**: Future Planning
 
 #### Planned Features
-- Voice API Support (Audio pipeline and processing)
-- Realtime API Support (Websocket-based agent sessions)
-- Batch API Support
-- RAG Integration
-- Advanced MCP Integrations
+
+**Audio & Voice APIs**:
+- Audio Transcriptions (speech-to-text)
+- Audio Translations (multilingual audio)
+- Audio Speech (text-to-speech)
+- Voice agent capabilities
+- Realtime API (WebSocket-based voice/text sessions)
+
+**Batch Processing**:
+- Batch API for cost-effective bulk operations (50% cost savings)
+- Asynchronous agent processing
+- Bulk evaluations and testing
+
+**Images & Video**:
+- DALL-E image generation tool
+- Image editing and variations
+- Video processing API (when stable)
+
+**Advanced Integrations**:
+- Beta Assistants API (alternative agent backend)
+- Fine-Tuning API (custom agent models)
+- Webhooks (event-driven architectures)
+- Containers API (sandboxed code execution)
+
+**Other Features**:
+- Advanced MCP integrations
+- Graders API (agent evaluation)
 
 ---
 
