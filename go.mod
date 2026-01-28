@@ -5,7 +5,7 @@ go 1.24.11
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/openai/openai-go/v3 v3.16.0
-	modernc.org/sqlite v1.44.2
+	modernc.org/sqlite v1.44.3
 )
 
 require (
