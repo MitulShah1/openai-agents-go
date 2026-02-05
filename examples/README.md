@@ -57,11 +57,21 @@ go run main.go
 
 ---
 
-### 04_lifecycle_hooks - Lifecycle Hooks
+### 04_advanced_handoffs - Advanced Handoffs
+Complex handoff patterns including conditional transfers and data passing.
+
+```bash
+cd examples/04_advanced_handoffs
+go run main.go
+```
+
+---
+
+### 05_lifecycle_hooks - Lifecycle Hooks
 Using OnBeforeRun and OnAfterRun hooks for logging and validation.
 
 ```bash
-cd examples/04_lifecycle_hooks
+cd examples/05_lifecycle_hooks
 go run main.go
 ```
 
@@ -73,11 +83,11 @@ go run main.go
 
 ---
 
-### 05_config_usage - Configuration & Usage Tracking
+### 06_config_usage - Configuration & Usage Tracking
 Advanced RunConfig usage and token tracking.
 
 ```bash
-cd examples/05_config_usage
+cd examples/06_config_usage
 go run main.go
 ```
 
@@ -87,6 +97,166 @@ go run main.go
 - Timeout handling
 - Usage tracking across multiple calls
 - Cost estimation
+
+---
+
+### 07_structured_output - Structured Output
+Parsing agent responses into structured Go types.
+
+```bash
+cd examples/07_structured_output
+go run main.go
+```
+
+---
+
+### 08_complex_schema - Complex Schema
+Handling complex JSON schemas for tools and outputs.
+
+```bash
+cd examples/08_complex_schema
+go run main.go
+```
+
+---
+
+### 09_guardrails_demo - Guardrails
+Implementing safety guardrails for inputs and outputs.
+
+```bash
+cd examples/09_guardrails_demo
+go run main.go
+```
+
+---
+
+### 10_sessions_demo - Sessions
+Managing conversation sessions and state.
+
+```bash
+cd examples/10_sessions_demo
+go run main.go
+```
+
+---
+
+### 11_advanced_v02 - Advanced Features (v0.2)
+Showcase of advanced v0.2 features.
+
+```bash
+cd examples/11_advanced_v02
+go run main.go
+```
+
+---
+
+### 12_conversations_session - Conversation Sessions
+Deep dive into conversation management.
+
+```bash
+cd examples/12_conversations_session
+go run main.go
+```
+
+---
+
+### 13_multimodal_tools - Multimodal Tools
+Using tools with image inputs.
+
+```bash
+cd examples/13_multimodal_tools
+go run main.go
+```
+
+---
+
+### 14_guardrail_composition - Guardrail Composition
+Composing multiple guardrails.
+
+```bash
+cd examples/14_guardrail_composition
+go run main.go
+```
+
+---
+
+### 15_session_backends - Session Backends
+Using different backends (SQLite, etc.) for session storage.
+
+```bash
+cd examples/15_session_backends
+go run main.go
+```
+
+---
+
+### 16_tracing - Tracing
+OpenTelemetry tracing support.
+
+```bash
+cd examples/16_tracing
+go run main.go
+```
+
+---
+
+### 17_production_chatbot - Production Chatbot
+A complete chatbot example suitable for production.
+
+```bash
+cd examples/17_production_chatbot
+go run main.go
+```
+
+---
+
+### 18_type_safe_tools - Type Safe Tools
+Using Go generics for type-safe tool definitions.
+
+```bash
+cd examples/18_type_safe_tools
+go run main.go
+```
+
+---
+
+### 19_streaming_basic - Basic Streaming
+Streaming responses from the agent.
+
+```bash
+cd examples/19_streaming_basic
+go run main.go
+```
+
+---
+
+### 20_streaming_function_args - Streaming Function Args
+Streaming tool calls and arguments.
+
+```bash
+cd examples/20_streaming_function_args
+go run main.go
+```
+
+---
+
+### 21_streaming_semantic - Semantic Streaming
+Advanced streaming features.
+
+```bash
+cd examples/21_streaming_semantic
+go run main.go
+```
+
+---
+
+### 22_parallel_tools - Parallel Tools
+Executing tools in parallel.
+
+```bash
+cd examples/22_parallel_tools
+go run main.go
+```
 
 ---
 
@@ -100,8 +270,9 @@ export OPENAI_API_KEY="sk-..."
 cd examples/01_basic && go run main.go
 cd ../02_tools && go run main.go
 cd ../03_handoffs && go run main.go
-cd ../04_lifecycle_hooks && go run main.go
-cd ../05_config_usage && go run main.go
+cd ../04_advanced_handoffs && go run main.go
+cd ../05_lifecycle_hooks && go run main.go
+cd ../06_config_usage && go run main.go
 ```
 
 ## Common Patterns
