@@ -11,6 +11,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [v0.5.0] - 2026-02-05
+
+### Added
+
+**MCP (Model Context Protocol)**:
+- `pkg/mcp`: Client, server, and tool adapters using mark3labs/mcp-go
+- `ToAgentTool()` adapter to convert MCP tools to SDK tools
+
+**OpenAI API Clients**:
+- `pkg/files`: Files API client (List, Get, Upload, Content) with tests
+- `pkg/embeddings`: Embeddings API client
+- `pkg/vectorstore`: Vector Stores API client (Create, Search placeholder)
+
+**Computer Use**:
+- `pkg/computer`: Sync and async interfaces (Screenshot, Click, Type, Scroll, etc.)
+- `pkg/computer/mock`: MockComputer and AsyncMockComputer for testing
+- `tools/computer_tool.go`: Computer tool for agents with screenshot/click/type actions
+
+**Diff & Patch**:
+- `pkg/diff`: Parser and applicator for unified diffs
+- `tools/apply_patch_tool.go`: Apply-patch tool for agent-driven file edits
+
+**Session & Plugins**:
+- `session/compaction.go`: Message compaction (DefaultCompactor) for context window management
+- `plugins/redis`: Redis session backend with tests
+
+**Tools**:
+- `tools/file_tool.go`: list_files, get_file, get_file_content tools
+- `tools/rag_tool.go`: RAG tool for retrieval-augmented generation
+
+**Structure**:
+- Core packages moved under `pkg/` (computer, diff, embeddings, files, mcp, vectorstore)
+- Examples renumbered to 04–22 (e.g. 03b_advanced_handoffs → 04_advanced_handoffs)
+
+### Changed
+- Examples: directory renumbering (04–22) and `examples/README.md` updates
+- Tools and internal code updated to use new `pkg/` imports
+
+### Fixed
+- **Linting**: Resolved all golangci-lint issues (errcheck, gocritic, revive)
+  - errcheck: `rc.Close()` return handled in files_test and file_tool
+  - gocritic: if-else chain rewritten as switch in pkg/diff/parser
+  - revive: package/exported comments and unused-parameter renames across pkg/
+
 ## [v0.4.0] - 2026-01-23
 
 ### Added
@@ -266,6 +310,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Links
 
+- [v0.5.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.5.0)
 - [v0.4.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.4.0)
 - [v0.3.5](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.3.5)
 - [v0.3.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.3.0)
