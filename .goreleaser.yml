@@ -49,7 +49,7 @@ builds:
       - -X main.date={{.Date}}
 
   - id: structured-output-example
-    main: ./examples/06_structured_output
+    main: ./examples/07_structured_output
     binary: openai-agents-structured-example
     env:
       - CGO_ENABLED=0
