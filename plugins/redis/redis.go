@@ -161,3 +161,38 @@ func (s *Store) Clear(ctx context.Context, sessionID string) error {
 func (s *Store) Delete(ctx context.Context, sessionID string) error {
 	return s.Clear(ctx, sessionID)
 }
+
+// Compact implements OpenAIResponsesCompactionAwareSession.
+// It trims the session history to ensure it fits within limits.
+// Currently implements a basic sliding window approach.
+func (s *Store) Compact(ctx context.Context, sessionID string, maxTokens int) error {
+	// 1. Get all messages
+	msgs, err := s.Get(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if len(msgs) == 0 {
+		return nil
+	}
+
+	// 2. Compact messages using DefaultCompactor (placeholder for now)
+	compactedMsgs := session.DefaultCompactor(msgs, maxTokens)
+
+	// If no change, return
+	if len(compactedMsgs) == len(msgs) {
+		return nil
+	}
+
+	// 3. Update session in Redis (Clear + Append)
+	// We use a transaction (pipeline) to ensure atomicity if possible, but Clear+Append is simplest.
+	// WATCH key? For now, simple overwrite.
+	if err := s.Clear(ctx, sessionID); err != nil {
+		return fmt.Errorf("failed to clear session for compaction: %w", err)
+	}
+
+	if err := s.Append(ctx, sessionID, compactedMsgs); err != nil {
+		return fmt.Errorf("failed to append compacted messages: %w", err)
+	}
+
+	return nil
+}
