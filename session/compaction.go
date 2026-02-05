@@ -25,7 +25,7 @@ type Compactor struct {
 // DefaultCompactor is a simple compactor that truncates old messages if token count exceeds limit.
 // Note: This is a placeholder for the sophisticated logic described in Issue #21.
 // Real implementation requires token counting (tiktoken) and semantic analysis.
-func DefaultCompactor(messages []openai.ChatCompletionMessageParamUnion, maxTokens int) []openai.ChatCompletionMessageParamUnion {
+func DefaultCompactor(messages []openai.ChatCompletionMessageParamUnion, _ int) []openai.ChatCompletionMessageParamUnion {
 	// Simple FIFO sliding window for now
 	// Ideally we keep System message and recent context
 	if len(messages) <= 2 {

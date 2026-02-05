@@ -1,3 +1,4 @@
+// Package files provides a client for the OpenAI Files API.
 package files
 
 import (

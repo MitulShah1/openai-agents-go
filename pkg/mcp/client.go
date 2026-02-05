@@ -23,7 +23,7 @@ func NewClient(serverURL string) *Client {
 }
 
 // Connect establishes a connection to the MCP server.
-func (c *Client) Connect(ctx context.Context) error {
+func (c *Client) Connect(_ context.Context) error {
 	// Stub for connection logic.
 	return fmt.Errorf("transport initialization not implemented for URL: %s", c.serverURL)
 }

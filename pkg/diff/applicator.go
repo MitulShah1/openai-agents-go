@@ -1,3 +1,4 @@
+// Package diff provides diff parsing and application utilities.
 package diff
 
 import (
@@ -10,7 +11,7 @@ import (
 // This function applies ONE diff (set of hunks) to ONE file content.
 // If input contains multiple files, handling is complex.
 // We assume input is the content of ONE file.
-func Apply(input string, diff Diff) (string, error) {
+func Apply(input string, _ Diff) (string, error) {
 	lines := strings.Split(input, "\n")
 	resultLines := make([]string, 0, len(lines))
 

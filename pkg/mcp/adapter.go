@@ -1,3 +1,4 @@
+// Package mcp provides MCP (Model Context Protocol) client, server, and tool adapters.
 package mcp
 
 import (

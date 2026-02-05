@@ -70,6 +70,6 @@ func TestIntegrationFiles(t *testing.T) {
 		// Ensure we don't fail hard if it's just processing
 		t.Logf("failed to get content (might be processing): %v", err)
 	} else {
-		defer rc.Close()
+		defer func() { _ = rc.Close() }()
 	}
 }

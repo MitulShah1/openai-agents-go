@@ -1,3 +1,4 @@
+// Package computer provides interfaces and types for computer interaction (screenshot, click, type, etc.).
 package computer
 
 import (
@@ -7,6 +8,7 @@ import (
 // Button represents a mouse button.
 type Button string
 
+// Mouse button constants.
 const (
 	Left    Button = "left"
 	Right   Button = "right"
@@ -19,6 +21,7 @@ const (
 // Environment represents the operating environment.
 type Environment string
 
+// Environment constants for supported platforms.
 const (
 	EnvMac     Environment = "mac"
 	EnvWindows Environment = "windows"

@@ -35,7 +35,7 @@ func NewListFilesTool(client *files.Client) Tool {
 	return FromFunc(
 		"list_files",
 		"List all files uploaded to OpenAI.",
-		func(args struct{}) (any, error) {
+		func(_ struct{}) (any, error) {
 			ctx := context.Background()
 			return client.List(ctx)
 		},
@@ -69,7 +69,7 @@ func NewGetFileContentTool(client *files.Client) Tool {
 			if err != nil {
 				return nil, err
 			}
-			defer rc.Close()
+			defer func() { _ = rc.Close() }()
 
 			content, err := io.ReadAll(rc)
 			if err != nil {

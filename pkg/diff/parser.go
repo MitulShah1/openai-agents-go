@@ -14,8 +14,9 @@ type Hunk struct {
 // LineType represents the type of a line in a hunk.
 type LineType int
 
+// Line type constants for diff hunks.
 const (
-	Context LineType = iota
+	Context  LineType = iota
 	Addition
 	Deletion
 )
@@ -92,13 +93,14 @@ func Parse(input string) ([]Diff, error) {
 
 		// Parse content lines
 		if currentHunk != nil {
-			if strings.HasPrefix(line, "+") {
+			switch {
+			case strings.HasPrefix(line, "+"):
 				currentHunk.Lines = append(currentHunk.Lines, Line{Type: Addition, Content: line[1:]})
-			} else if strings.HasPrefix(line, "-") {
+			case strings.HasPrefix(line, "-"):
 				currentHunk.Lines = append(currentHunk.Lines, Line{Type: Deletion, Content: line[1:]})
-			} else if strings.HasPrefix(line, " ") {
+			case strings.HasPrefix(line, " "):
 				currentHunk.Lines = append(currentHunk.Lines, Line{Type: Context, Content: line[1:]})
-			} else if line == "" {
+			case line == "":
 				// Empty line often treated as context or ignore?
 				// Context usually has space. Empty string might be empty context line.
 				currentHunk.Lines = append(currentHunk.Lines, Line{Type: Context, Content: ""})

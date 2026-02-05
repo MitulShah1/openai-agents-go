@@ -12,7 +12,7 @@ func TestComputerTool(t *testing.T) {
 		ScreenshotFunc: func() (string, error) {
 			return "base64data", nil
 		},
-		ClickFunc: func(x, y int, button computer.Button) error {
+		ClickFunc: func(_, _ int, _ computer.Button) error {
 			return nil
 		},
 	}

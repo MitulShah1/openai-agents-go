@@ -13,7 +13,7 @@ func NewServer(url string) *Server {
 	return &Server{URL: url}
 }
 
-// Start starts the server (if local) or connects to it (remote).
+// Connect starts the server (if local) or connects to it (remote).
 // For now, assumes remote.
 func (s *Server) Connect(ctx context.Context) (*Client, error) {
 	client := NewClient(s.URL)

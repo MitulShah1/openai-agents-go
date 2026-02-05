@@ -11,6 +11,7 @@ type MockComputer struct {
 	// ... add others as needed
 }
 
+// Screenshot returns a mock base64 image or the result of ScreenshotFunc.
 func (m *MockComputer) Screenshot() (string, error) {
 	if m.ScreenshotFunc != nil {
 		return m.ScreenshotFunc()
@@ -18,6 +19,7 @@ func (m *MockComputer) Screenshot() (string, error) {
 	return "mock_base64_image", nil
 }
 
+// Click delegates to ClickFunc or returns nil.
 func (m *MockComputer) Click(x, y int, button Button) error {
 	if m.ClickFunc != nil {
 		return m.ClickFunc(x, y, button)
@@ -25,14 +27,17 @@ func (m *MockComputer) Click(x, y int, button Button) error {
 	return nil
 }
 
-func (m *MockComputer) DoubleClick(x, y int) error {
+// DoubleClick is a no-op for the mock.
+func (m *MockComputer) DoubleClick(_, _ int) error {
 	return nil
 }
 
-func (m *MockComputer) Scroll(x, y, scrollX, scrollY int) error {
+// Scroll is a no-op for the mock.
+func (m *MockComputer) Scroll(_, _ int, _, _ int) error {
 	return nil
 }
 
+// Type delegates to TypeFunc or returns nil.
 func (m *MockComputer) Type(text string) error {
 	if m.TypeFunc != nil {
 		return m.TypeFunc(text)
@@ -40,10 +45,12 @@ func (m *MockComputer) Type(text string) error {
 	return nil
 }
 
+// Wait is a no-op for the mock.
 func (m *MockComputer) Wait() error {
 	return nil
 }
 
+// Move delegates to MoveFunc or returns nil.
 func (m *MockComputer) Move(x, y int) error {
 	if m.MoveFunc != nil {
 		return m.MoveFunc(x, y)
@@ -51,11 +58,13 @@ func (m *MockComputer) Move(x, y int) error {
 	return nil
 }
 
-func (m *MockComputer) Keypress(keys []string) error {
+// Keypress is a no-op for the mock.
+func (m *MockComputer) Keypress(_ []string) error {
 	return nil
 }
 
-func (m *MockComputer) Drag(path []Point) error {
+// Drag is a no-op for the mock.
+func (m *MockComputer) Drag(_ []Point) error {
 	return nil
 }
 
@@ -64,38 +73,47 @@ type AsyncMockComputer struct {
 	MockComputer
 }
 
-func (m *AsyncMockComputer) Screenshot(ctx context.Context) (string, error) {
+// Screenshot delegates to MockComputer.Screenshot.
+func (m *AsyncMockComputer) Screenshot(_ context.Context) (string, error) {
 	return m.MockComputer.Screenshot()
 }
 
-func (m *AsyncMockComputer) Click(ctx context.Context, x, y int, button Button) error {
+// Click delegates to MockComputer.Click.
+func (m *AsyncMockComputer) Click(_ context.Context, x, y int, button Button) error {
 	return m.MockComputer.Click(x, y, button)
 }
 
-func (m *AsyncMockComputer) DoubleClick(ctx context.Context, x, y int) error {
+// DoubleClick delegates to MockComputer.DoubleClick.
+func (m *AsyncMockComputer) DoubleClick(_ context.Context, x, y int) error {
 	return m.MockComputer.DoubleClick(x, y)
 }
 
-func (m *AsyncMockComputer) Scroll(ctx context.Context, x, y, scrollX, scrollY int) error {
+// Scroll delegates to MockComputer.Scroll.
+func (m *AsyncMockComputer) Scroll(_ context.Context, x, y, scrollX, scrollY int) error {
 	return m.MockComputer.Scroll(x, y, scrollX, scrollY)
 }
 
-func (m *AsyncMockComputer) Type(ctx context.Context, text string) error {
+// Type delegates to MockComputer.Type.
+func (m *AsyncMockComputer) Type(_ context.Context, text string) error {
 	return m.MockComputer.Type(text)
 }
 
-func (m *AsyncMockComputer) Wait(ctx context.Context) error {
+// Wait delegates to MockComputer.Wait.
+func (m *AsyncMockComputer) Wait(_ context.Context) error {
 	return m.MockComputer.Wait()
 }
 
-func (m *AsyncMockComputer) Move(ctx context.Context, x, y int) error {
+// Move delegates to MockComputer.Move.
+func (m *AsyncMockComputer) Move(_ context.Context, x, y int) error {
 	return m.MockComputer.Move(x, y)
 }
 
-func (m *AsyncMockComputer) Keypress(ctx context.Context, keys []string) error {
+// Keypress delegates to MockComputer.Keypress.
+func (m *AsyncMockComputer) Keypress(_ context.Context, keys []string) error {
 	return m.MockComputer.Keypress(keys)
 }
 
-func (m *AsyncMockComputer) Drag(ctx context.Context, path []Point) error {
+// Drag delegates to MockComputer.Drag.
+func (m *AsyncMockComputer) Drag(_ context.Context, path []Point) error {
 	return m.MockComputer.Drag(path)
 }

@@ -1,3 +1,4 @@
+// Package embeddings provides a client for the OpenAI Embeddings API.
 package embeddings
 
 import (

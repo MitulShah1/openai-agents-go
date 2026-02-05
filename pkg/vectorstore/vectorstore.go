@@ -1,3 +1,4 @@
+// Package vectorstore provides a client for the OpenAI Vector Stores API.
 package vectorstore
 
 import (
@@ -56,6 +57,6 @@ func (c *Client) AddFiles(ctx context.Context, vectorStoreID string, fileIDs []s
 // Search is typically performed by an Assistant with the file_search tool enabled,
 // attached to this vector store.
 // This method is a placeholder or would require creating a temporary thread/run.
-func (c *Client) Search(ctx context.Context, vectorStoreID string, query string) (string, error) {
+func (c *Client) Search(_ context.Context, _, _ string) (string, error) {
 	return "", fmt.Errorf("not implemented: vector store search requires assistant integration")
 }
