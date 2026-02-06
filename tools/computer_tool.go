@@ -3,7 +3,7 @@ package tools
 import (
 	"fmt"
 
-	"github.com/MitulShah1/openai-agents-go/pkg/computer"
+	"github.com/MitulShah1/openai-agents-go/computer"
 )
 
 // NewComputerTool creates a tool that allows agents to interact with a computer.

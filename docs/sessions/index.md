@@ -18,8 +18,8 @@ The session framework enables:
 | File | Single-server production | None | v0.2.0 |
 | Conversations API | Cloud, distributed | OpenAI API key | v0.2.2 |
 | SQLite | Single-server persistence | None (pure Go) | v0.3.0 |
-| Redis | Scalable/Distributed | Redis client | v0.4.0 |
-| PostgreSQL | Enterprise/Compliance | PostgreSQL driver | v0.4.0 |
+| Redis | Scalable/Distributed | Build tag: `-tags redis` | v0.5.1 |
+| PostgreSQL | Enterprise/Compliance | Build tag: `-tags postgres` | v0.5.1 |
 
 ## Quick Start
 
@@ -111,6 +111,69 @@ if err != nil {
 // Thread-safe connection pooling
 ```
 
+### Redis Session (Build Tag Required)
+
+Best for distributed systems with high scalability:
+
+```go
+import "github.com/MitulShah1/openai-agents-go/session"
+
+// Build with: go build -tags redis
+sess, err := session.NewRedisStore(
+    &session.RedisConfig{
+        Addr:     "localhost:6379",
+        Password: "", // optional
+        DB:       0,  // default database
+    },
+)
+if err != nil {
+    panic(err)
+}
+
+// Distributed-ready with automatic expiration
+// Horizontal scaling support
+// Optional session TTL configuration
+```
+
+### PostgreSQL Session (Build Tag Required)
+
+Best for enterprise deployments requiring compliance:
+
+```go
+import "github.com/MitulShah1/openai-agents-go/session"
+
+// Build with: go build -tags postgres
+sess, err := session.NewPostgresStore(
+    &session.PostgresConfig{
+        Host:     "localhost",
+        Port:     5432,
+        User:     "postgres",
+        Password: "password",
+        Database: "agents",
+    },
+)
+if err != nil {
+    panic(err)
+}
+
+// ACID compliance for enterprise
+// Advanced querying capabilities
+// Built-in replication support
+```
+
+**Note**: Redis and PostgreSQL backends were merged into the `session` package in v0.5.1. Use build tags to enable optional dependencies:
+
+```bash
+# Build with Redis support
+go build -tags redis ./...
+
+# Build with PostgreSQL support
+go build -tags postgres ./...
+
+# Build with both
+go build -tags "redis postgres" ./...
+```
+
 ## Complete Example
 
 ```go
@@ -200,11 +263,11 @@ User Message → Get History → [History + New Message] → Agent → Append Ne
 |----------|-------------------|
 | Local development | Memory Session |
 | Unit tests | Memory Session |
-| Single-server app | File Session |
-| Multi-server app | Conversations API |
+| Single-server app | File or SQLite Session |
+| Multi-server app | Redis or Conversations API |
 | Cloud deployment | Conversations API |
-| High scalability | Redis (v0.4.0) |
-| Enterprise | PostgreSQL (v0.4.0) |
+| High scalability | Redis (with `-tags redis`) |
+| Enterprise/Compliance | PostgreSQL (with `-tags postgres`) |
 
 ## Best Practices
 
