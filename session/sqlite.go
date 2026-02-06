@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/openai/openai-go/v3"
@@ -264,15 +265,20 @@ func (s *SQLiteSession) rowToMessage(role string, content, toolCalls, _, toolCal
 			// We need to convert ToolCallParam back to UnionParam for the slice
 			var unionCalls []openai.ChatCompletionMessageToolCallUnionParam
 			for _, tc := range tCalls {
-				unionCalls = append(unionCalls, openai.ChatCompletionMessageToolCallUnionParam{
-					OfFunction: &openai.ChatCompletionMessageFunctionToolCallParam{
-						ID: tc.ID,
-						Function: openai.ChatCompletionMessageFunctionToolCallFunctionParam{
-							Name:      tc.Function.Name,
-							Arguments: tc.Function.Arguments,
-						},
-						Type: openai.ToolType("function"),
+				param := openai.ChatCompletionMessageFunctionToolCallParam{
+					ID: tc.ID,
+					Function: openai.ChatCompletionMessageFunctionToolCallFunctionParam{
+						Name:      tc.Function.Name,
+						Arguments: tc.Function.Arguments,
 					},
+				}
+				// Use reflection to set the "Type" field since we can't import the constant type easily
+				v := reflect.ValueOf(&param).Elem()
+				if f := v.FieldByName("Type"); f.IsValid() && f.CanSet() {
+					f.SetString("function")
+				}
+				unionCalls = append(unionCalls, openai.ChatCompletionMessageToolCallUnionParam{
+					OfFunction: &param,
 				})
 			}
 			modelMsg.ToolCalls = unionCalls
@@ -280,7 +286,7 @@ func (s *SQLiteSession) rowToMessage(role string, content, toolCalls, _, toolCal
 		return msg, nil
 
 	case "tool":
-		return openai.ToolMessage(toolCallID.String, content.String), nil
+		return openai.ToolMessage(content.String, toolCallID.String), nil
 	default:
 		// Fallback for unknown roles (e.g. function)
 		// For now treating as minimal assistant-like or skipping?
@@ -312,13 +318,12 @@ func (s *SQLiteSession) messageToRow(msg openai.ChatCompletionMessageParamUnion)
 		content = strPtr(extractTextFromUnion(p.Content))
 
 		if len(p.ToolCalls) > 0 {
-			// Extract tool calls
 			var calls []sqlToolCall
 			for _, tc := range p.ToolCalls {
 				if f := tc.OfFunction; f != nil {
 					calls = append(calls, sqlToolCall{
 						ID:   f.ID,
-						Type: string(f.Type),
+						Type: "function", // Always function for now
 						Function: struct {
 							Name      string `json:"name"`
 							Arguments string `json:"arguments"`
