@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.2] - 2026-02-06
+
+### Fixed
+
+**P0 Bug Fixes**:
+
+1. **Streaming CPU spin loop** (`stream/result.go`): `StreamEvents` iterator had a `default` case in its `select` loop that caused 100% CPU usage when no events were buffered. Removed the busy-wait; the iterator now properly blocks on channel operations.
+
+2. **Session history duplication in streaming runners** (`stream_runner.go`, `stream_with_result.go`): Both streaming paths (`Stream` and `StreamWithResult`) saved the full message history (including already-persisted session prefix) on every run, causing exponential duplication. Ported the `sessionPrefixLen` fix from `runner.go` so only new messages are appended.
+
+3. **Incorrect span lifetimes from `defer` in loops** (`runner.go`, `stream_runner.go`, `stream_with_result.go`): Agent tracing spans were created inside `for` loops with `defer span.End(ctx)`, causing all spans to pile up and only end when the function returned. Spans are now ended explicitly at each loop iteration exit point.
+
+4. **`ContextVariables` data race with parallel tool calls** (`internal/runner/toolhandler.go`): The shared `map[string]any` was passed to concurrent goroutines during parallel tool execution, risking "concurrent map writes" panics. Each goroutine now receives a shallow copy of the map.
+
+5. **`RunConfig.MaxToolConcurrency` silently ignored** (`runner.go`): The runner always passed `0` (unlimited) to the internal tool handler regardless of the user's config. Now correctly passes `config.MaxToolConcurrency` through all execution paths.
+
+6. **Parallel tool calls default wrong in streaming** (`stream_runner.go`, `stream_with_result.go`): When `config.ParallelToolCalls` was nil, streaming runners defaulted to `false` despite `Agent.ParallelToolCalls` defaulting to `true`. Added `resolveParallelToolCalls` helper that correctly falls back to the agent's setting.
+
+7. **Guardrail input extraction serialized Go structs** (`runner.go`): Input guardrails received `fmt.Sprintf("%v", msg)` (a Go struct dump) instead of actual user text. Added `extractUserInput` helper that properly extracts string content from `ChatCompletionMessageParamUnion`.
+
 ## [v0.5.1] - 2026-02-06
 
 ### Removed ⚠️ BREAKING CHANGES
