@@ -91,7 +91,10 @@ func main() {
 	createReportTool := tools.New(
 		"create_report",
 		"Creates a report",
-		map[string]any{"type": "object"},
+		map[string]any{
+			"type":       "object",
+			"properties": map[string]any{},
+		},
 		func(_ map[string]any, _ agents.ContextVariables) (any, error) {
 			return tools.TextContent("Report created."), nil
 		},
