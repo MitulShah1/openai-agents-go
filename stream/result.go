@@ -135,15 +135,6 @@ func (r *Result) StreamEvents(ctx context.Context) iter.Seq2[Event, error] {
 					return
 				}
 
-			default:
-				// Check if complete and no more events
-				r.mu.RLock()
-				complete := r.IsComplete
-				r.mu.RUnlock()
-
-				if complete && len(r.eventChan) == 0 {
-					return
-				}
 			}
 		}
 	}
