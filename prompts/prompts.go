@@ -1,3 +1,6 @@
+// Package prompts provides types and utilities for dynamic prompt configuration.
+// It supports both static prompts and dynamic prompt generation functions,
+// enabling flexible prompt management for AI agents.
 package prompts
 
 // Prompt represents a configuration for OpenAI's Prompts API.
