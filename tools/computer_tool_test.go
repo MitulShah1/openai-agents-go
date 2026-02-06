@@ -3,7 +3,7 @@ package tools_test
 import (
 	"testing"
 
-	"github.com/MitulShah1/openai-agents-go/pkg/computer"
+	"github.com/MitulShah1/openai-agents-go/computer"
 	"github.com/MitulShah1/openai-agents-go/tools"
 )
 

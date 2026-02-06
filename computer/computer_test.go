@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MitulShah1/openai-agents-go/pkg/computer"
+	"github.com/MitulShah1/openai-agents-go/computer"
 )
 
 func TestMockComputer(t *testing.T) {

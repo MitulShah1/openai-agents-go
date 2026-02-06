@@ -25,6 +25,15 @@ type Tool struct {
 	// IsHandoffTool indicates this tool performs an agent handoff.
 	// This field is set automatically by the handoff package.
 	IsHandoffTool bool
+
+	// NeedsApproval indicates whether this tool requires human approval before execution.
+	// When true, the runner will pause execution and wait for explicit approval.
+	NeedsApproval bool
+
+	// ApprovalFunc is an optional callback that determines if approval is needed for a specific call.
+	// If set, this function is called with the tool arguments and call ID.
+	// It should return true if approval is required for this specific invocation.
+	ApprovalFunc func(args map[string]any, callID string, ctx ContextVariables) (bool, error)
 }
 
 // ToParam converts the Tool to an openai.ChatCompletionToolUnionParam.
@@ -64,6 +73,23 @@ func (t Tool) Execute(argsJSON string, ctx ContextVariables) (any, error) {
 	}
 
 	return t.Callback(args, ctx)
+}
+
+// RequiresApproval checks if a tool requires approval for execution.
+// It evaluates both the NeedsApproval flag and the ApprovalFunc if present.
+func (t Tool) RequiresApproval(args map[string]any, callID string, ctx ContextVariables) (bool, error) {
+	// If the tool always needs approval, return true
+	if t.NeedsApproval {
+		return true, nil
+	}
+
+	// If there's a dynamic approval function, call it
+	if t.ApprovalFunc != nil {
+		return t.ApprovalFunc(args, callID, ctx)
+	}
+
+	// No approval required
+	return false, nil
 }
 
 // New creates a Tool from a simpler definition.

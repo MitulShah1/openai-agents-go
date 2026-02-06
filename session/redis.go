@@ -1,4 +1,6 @@
-package redis
+//go:build redis
+
+package session
 
 import (
 	"context"
@@ -8,22 +10,20 @@ import (
 
 	"github.com/openai/openai-go/v3"
 	"github.com/redis/go-redis/v9"
-
-	"github.com/MitulShah1/openai-agents-go/session"
 )
 
-// Store implements session.Session using Redis.
-type Store struct {
+// RedisStore implements Session using Redis.
+type RedisStore struct {
 	client     *redis.Client
 	prefix     string
 	expiration time.Duration
 }
 
-// Ensure Store implements session.Session
-var _ session.Session = (*Store)(nil)
+// Ensure RedisStore implements Session
+var _ Session = (*RedisStore)(nil)
 
-// Options configuration for Redis store
-type Options struct {
+// RedisOptions configuration for Redis store
+type RedisOptions struct {
 	Addr       string
 	Password   string
 	DB         int
@@ -31,8 +31,8 @@ type Options struct {
 	Expiration time.Duration // TTL for sessions, default 24h
 }
 
-// New creates a new Redis session store.
-func New(opts Options) (*Store, error) {
+// NewRedisSession creates a new Redis session store.
+func NewRedisSession(opts RedisOptions) (*RedisStore, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     opts.Addr,
 		Password: opts.Password,
@@ -56,38 +56,38 @@ func New(opts Options) (*Store, error) {
 		expiration = 24 * time.Hour
 	}
 
-	return &Store{
+	return &RedisStore{
 		client:     client,
 		prefix:     prefix,
 		expiration: expiration,
 	}, nil
 }
 
-// NewFromClient creates a new store using an existing redis client.
-func NewFromClient(client *redis.Client, prefix string, expiration time.Duration) *Store {
+// NewRedisSessionFromClient creates a new store using an existing redis client.
+func NewRedisSessionFromClient(client *redis.Client, prefix string, expiration time.Duration) *RedisStore {
 	if prefix == "" {
 		prefix = "agent:session:"
 	}
 	if expiration == 0 {
 		expiration = 24 * time.Hour
 	}
-	return &Store{
+	return &RedisStore{
 		client:     client,
 		prefix:     prefix,
 		expiration: expiration,
 	}
 }
 
-func (s *Store) key(sessionID string) string {
+func (s *RedisStore) key(sessionID string) string {
 	return s.prefix + sessionID
 }
 
 // Get retrieves messages from Redis.
-func (s *Store) Get(ctx context.Context, sessionID string) ([]openai.ChatCompletionMessageParamUnion, error) {
+func (s *RedisStore) Get(ctx context.Context, sessionID string) ([]openai.ChatCompletionMessageParamUnion, error) {
 	key := s.key(sessionID)
 	val, err := s.client.LRange(ctx, key, 0, -1).Result()
 	if err != nil {
-		return nil, &session.StorageError{
+		return nil, &StorageError{
 			SessionID: sessionID,
 			Operation: "get",
 			Err:       err,
@@ -112,7 +112,7 @@ func (s *Store) Get(ctx context.Context, sessionID string) ([]openai.ChatComplet
 }
 
 // Append adds messages to the session history.
-func (s *Store) Append(ctx context.Context, sessionID string, messages []openai.ChatCompletionMessageParamUnion) error {
+func (s *RedisStore) Append(ctx context.Context, sessionID string, messages []openai.ChatCompletionMessageParamUnion) error {
 	if len(messages) == 0 {
 		return nil
 	}
@@ -133,7 +133,7 @@ func (s *Store) Append(ctx context.Context, sessionID string, messages []openai.
 
 	_, err := pipeline.Exec(ctx)
 	if err != nil {
-		return &session.StorageError{
+		return &StorageError{
 			SessionID: sessionID,
 			Operation: "append",
 			Err:       err,
@@ -144,11 +144,11 @@ func (s *Store) Append(ctx context.Context, sessionID string, messages []openai.
 }
 
 // Clear removes all messages from a session
-func (s *Store) Clear(ctx context.Context, sessionID string) error {
+func (s *RedisStore) Clear(ctx context.Context, sessionID string) error {
 	key := s.key(sessionID)
 	err := s.client.Del(ctx, key).Err()
 	if err != nil {
-		return &session.StorageError{
+		return &StorageError{
 			SessionID: sessionID,
 			Operation: "clear",
 			Err:       err,
@@ -158,14 +158,14 @@ func (s *Store) Clear(ctx context.Context, sessionID string) error {
 }
 
 // Delete removes a session completely
-func (s *Store) Delete(ctx context.Context, sessionID string) error {
+func (s *RedisStore) Delete(ctx context.Context, sessionID string) error {
 	return s.Clear(ctx, sessionID)
 }
 
 // Compact implements OpenAIResponsesCompactionAwareSession.
 // It trims the session history to ensure it fits within limits.
 // Currently implements a basic sliding window approach.
-func (s *Store) Compact(ctx context.Context, sessionID string, maxTokens int) error {
+func (s *RedisStore) Compact(ctx context.Context, sessionID string, maxTokens int) error {
 	// 1. Get all messages
 	msgs, err := s.Get(ctx, sessionID)
 	if err != nil {
@@ -176,7 +176,7 @@ func (s *Store) Compact(ctx context.Context, sessionID string, maxTokens int) er
 	}
 
 	// 2. Compact messages using DefaultCompactor (placeholder for now)
-	compactedMsgs := session.DefaultCompactor(msgs, maxTokens)
+	compactedMsgs := DefaultCompactor(msgs, maxTokens)
 
 	// If no change, return
 	if len(compactedMsgs) == len(msgs) {

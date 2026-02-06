@@ -9,7 +9,130 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.1] - 2026-02-06
+
+### Removed ⚠️ BREAKING CHANGES
+
+**Scope Reduction - Removed Non-Agent Features**:
+Following review for Python SDK parity, several packages outside the scope of agent orchestration have been removed:
+
+- **`pkg/embeddings/`**: Embeddings are not part of agent orchestration. Users should use `github.com/openai/openai-go/v3` directly to call the Embeddings API.
+- **`pkg/files/`**: File uploads are OpenAI API features, not agent SDK features. Users should use `github.com/openai/openai-go/v3` directly for file operations.
+- **`pkg/vectorstore/`**: Vector stores are RAG infrastructure, not agent orchestration. Users should use dedicated vector database libraries (pgvector, Redis with RediSearch, Pinecone, Weaviate, etc.).
+- **`tools/rag_tool.go`**: Removed tool helpers that depended on deleted packages.
+- **`tools/file_tool.go`**: Removed tool helpers that depended on deleted packages.
+
+**Migration Guide**:
+```go
+// Before (removed packages)
+import "github.com/MitulShah1/openai-agents-go/pkg/embeddings"
+import "github.com/MitulShah1/openai-agents-go/pkg/files"
+import "github.com/MitulShah1/openai-agents-go/pkg/vectorstore"
+
+// After (use openai-go directly)
+import "github.com/openai/openai-go/v3"
+
+// For embeddings:
+client.Embeddings.New(ctx, openai.EmbeddingNewParams{...})
+
+// For files:
+client.Files.New(ctx, openai.FileNewParams{...})
+
+// For vector stores (RAG):
+// Use dedicated libraries like pgvector, Redis, or cloud vector DBs
+```
+
+**Rationale**: These features are outside the scope of an agents SDK. The official Python SDK (`openai-agents-python`) does not include wrappers for embeddings, files, or vector stores. This SDK now focuses strictly on agent orchestration, matching the Python SDK's scope.
+
+### Changed
+
+**Package Restructuring** ⚠️ BREAKING CHANGES:
+Packages moved from `pkg/*` to top level for better API design:
+
+- `pkg/mcp/` → `mcp/` - Model Context Protocol support
+- `pkg/computer/` → `computer/` - Computer use interface
+- `pkg/diff/` → `diff/` - Diff parsing and application
+
+**Plugin Architecture Simplified**:
+- Merged `plugins/postgres/` and `plugins/redis/` into `session/` package
+- PostgreSQL backend: `session.NewPostgresSession()` (requires build tag: `-tags postgres`)
+- Redis backend: `session.NewRedisSession()` (requires build tag: `-tags redis`)
+- Removed separate go.mod files - all dependencies now in main module
+
+**Migration Guide**:
+```go
+// Package imports (update these)
+import "github.com/MitulShah1/openai-agents-go/pkg/mcp"        // OLD
+import "github.com/MitulShah1/openai-agents-go/mcp"            // NEW
+
+import "github.com/MitulShah1/openai-agents-go/pkg/computer"  // OLD
+import "github.com/MitulShah1/openai-agents-go/computer"      // NEW
+
+import "github.com/MitulShah1/openai-agents-go/pkg/diff"      // OLD
+import "github.com/MitulShah1/openai-agents-go/diff"          // NEW
+
+// Session backends (plugin pattern → build tags)
+import "github.com/MitulShah1/openai-agents-go/plugins/redis"     // OLD
+import "github.com/MitulShah1/openai-agents-go/session"           // NEW
+
+store, err := redis.New(redis.Options{...})                        // OLD
+store, err := session.NewRedisSession(session.RedisOptions{...})   // NEW (requires: go build -tags redis)
+
+import "github.com/MitulShah1/openai-agents-go/plugins/postgres"  // OLD
+import "github.com/MitulShah1/openai-agents-go/session"           // NEW
+
+store, err := postgres.New(connString)                             // OLD  
+store, err := session.NewPostgresSession(connString)               // NEW (requires: go build -tags postgres)
+```
+
+**Rationale**: Following Python SDK's structure where core features are at top level, not under a `pkg/` subdirectory. The plugin architecture was over-engineered for just 2 backends - Python SDK uses optional dependencies/extras, Go equivalent is build tags.
+
 ### Added
+
+**Phase 3 Features - Python SDK Parity (Foundation)**:
+
+1. **Prompts API** - Dynamic prompt configuration (foundation)
+   - `prompts.Prompt` type for OpenAI Prompts API integration
+   - `prompts.DynamicPromptFunc` for runtime prompt generation
+   - Foundation for dynamic agent instruction customization
+
+2. **Tool Approvals** - Human-in-the-loop safety
+   - `Tool.NeedsApproval` field for static approval requirements
+   - `Tool.ApprovalFunc` callback for dynamic approval logic
+   - `tools.ApprovalRequest`, `tools.ApprovalResponse`, `tools.ApprovalHandler` types
+   - `Tool.RequiresApproval()` method for approval checking
+   - Enables building approval workflows for dangerous operations
+
+**Usage Examples**:
+```go
+// Tool Approvals
+import "github.com/MitulShah1/openai-agents-go/tools"
+
+dangerousTool := tools.Tool{
+    Name: "delete_database",
+    NeedsApproval: true,  // Always require approval
+    Callback: func(args map[string]any, ctx tools.ContextVariables) (any, error) {
+        // ... dangerous operation
+    },
+}
+
+conditionalTool := tools.Tool{
+    Name: "execute_command",
+    ApprovalFunc: func(args map[string]any, callID string, ctx tools.ContextVariables) (bool, error) {
+        // Require approval only for sudo commands
+        if cmd, ok := args["command"].(string); ok {
+            return strings.Contains(cmd, "sudo"), nil
+        }
+        return false, nil
+    },
+    Callback: func(args map[string]any, ctx tools.ContextVariables) (any, error) {
+        // ... execute command
+    },
+}
+```
+
+**Note**: These features provide the foundation for Python SDK parity. Full runner integration, model abstraction, and comprehensive examples are planned for v0.6.0.
+
 
 ## [v0.5.0] - 2026-02-05
 
