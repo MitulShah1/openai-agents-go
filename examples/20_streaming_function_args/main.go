@@ -21,6 +21,17 @@ type WeatherArgs struct {
 	Unit     string `json:"unit,omitempty" jsonschema:"enum=celsius,enum=fahrenheit,description=Temperature unit"`
 }
 
+func toInt(v any) int {
+	switch n := v.(type) {
+	case int:
+		return n
+	case float64:
+		return int(n)
+	default:
+		return 0
+	}
+}
+
 func main() {
 	// Create OpenAI client
 	client := openai.NewClient(option.WithAPIKey(os.Getenv("OPENAI_API_KEY")))
@@ -91,7 +102,7 @@ func main() {
 			case "response.function_call_arguments.delta":
 				// Function arguments are streaming in real-time!
 				if data, ok := raw.Data.(map[string]any); ok {
-					outputIndex := int(data["output_index"].(float64))
+					outputIndex := toInt(data["output_index"])
 					delta := data["delta"].(string)
 
 					// Accumulate arguments
@@ -105,7 +116,7 @@ func main() {
 				if data, ok := raw.Data.(map[string]any); ok {
 					if item, ok := data["item"].(map[string]any); ok {
 						if item["type"] == "function_call" {
-							outputIndex := int(data["output_index"].(float64))
+							outputIndex := toInt(data["output_index"])
 							name := item["name"].(string)
 							args := item["arguments"].(string)
 

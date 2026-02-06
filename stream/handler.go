@@ -65,6 +65,13 @@ type functionCallBuilder struct {
 	providerData map[string]any
 }
 
+func (s *streamingState) reasoningOutputOffset() int {
+	if s.reasoningContentIndex != nil {
+		return 1
+	}
+	return 0
+}
+
 func newStreamingState() *streamingState {
 	return &streamingState{
 		functionCalls:         make(map[int]*functionCallBuilder),
@@ -147,7 +154,7 @@ func (h *Handler) processTextContent(content string) []Event {
 		events = append(events, &RawResponseEvent{
 			Type: "response.output_item.added",
 			Data: map[string]any{
-				"output_index": h.state.reasoningContentIndex != nil,
+				"output_index": h.state.reasoningOutputOffset(),
 				"item": map[string]any{
 					"type":    "message",
 					"role":    "assistant",
@@ -163,7 +170,7 @@ func (h *Handler) processTextContent(content string) []Event {
 			Type: "response.content_part.added",
 			Data: map[string]any{
 				"content_index": h.state.textContentIndex.index,
-				"output_index":  h.state.reasoningContentIndex != nil,
+				"output_index":  h.state.reasoningOutputOffset(),
 				"part": map[string]any{
 					"type": "output_text",
 					"text": "",
@@ -178,7 +185,7 @@ func (h *Handler) processTextContent(content string) []Event {
 		Type: "response.output_text.delta",
 		Data: map[string]any{
 			"content_index": h.state.textContentIndex.index,
-			"output_index":  h.state.reasoningContentIndex != nil,
+			"output_index":  h.state.reasoningOutputOffset(),
 			"delta":         content,
 		},
 		SequenceNumber: h.seqNum.Next(),
@@ -213,7 +220,7 @@ func (h *Handler) processRefusal(refusal string) []Event {
 		events = append(events, &RawResponseEvent{
 			Type: "response.output_item.added",
 			Data: map[string]any{
-				"output_index": h.state.reasoningContentIndex != nil,
+				"output_index": h.state.reasoningOutputOffset(),
 				"item": map[string]any{
 					"type":    "message",
 					"role":    "assistant",
@@ -228,7 +235,7 @@ func (h *Handler) processRefusal(refusal string) []Event {
 			Type: "response.content_part.added",
 			Data: map[string]any{
 				"content_index": h.state.refusalContentIndex.index,
-				"output_index":  h.state.reasoningContentIndex != nil,
+				"output_index":  h.state.reasoningOutputOffset(),
 				"part": map[string]any{
 					"type":    "refusal",
 					"refusal": "",
@@ -243,7 +250,7 @@ func (h *Handler) processRefusal(refusal string) []Event {
 		Type: "response.refusal.delta",
 		Data: map[string]any{
 			"content_index": h.state.refusalContentIndex.index,
-			"output_index":  h.state.reasoningContentIndex != nil,
+			"output_index":  h.state.reasoningOutputOffset(),
 			"delta":         refusal,
 		},
 		SequenceNumber: h.seqNum.Next(),
@@ -354,7 +361,7 @@ func (h *Handler) Finalize() []Event {
 			Type: "response.content_part.done",
 			Data: map[string]any{
 				"content_index": h.state.textContentIndex.index,
-				"output_index":  h.state.reasoningContentIndex != nil,
+				"output_index":  h.state.reasoningOutputOffset(),
 				"part": map[string]any{
 					"type": "output_text",
 					"text": h.state.textContentIndex.text,
@@ -370,7 +377,7 @@ func (h *Handler) Finalize() []Event {
 			Type: "response.content_part.done",
 			Data: map[string]any{
 				"content_index": h.state.refusalContentIndex.index,
-				"output_index":  h.state.reasoningContentIndex != nil,
+				"output_index":  h.state.reasoningOutputOffset(),
 				"part": map[string]any{
 					"type":    "refusal",
 					"refusal": h.state.refusalContentIndex.refusal,
@@ -419,7 +426,7 @@ func (h *Handler) Finalize() []Event {
 		events = append(events, &RawResponseEvent{
 			Type: "response.output_item.done",
 			Data: map[string]any{
-				"output_index": h.state.reasoningContentIndex != nil,
+				"output_index": h.state.reasoningOutputOffset(),
 				"item": map[string]any{
 					"type":    "message",
 					"role":    "assistant",

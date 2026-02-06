@@ -163,10 +163,12 @@ func (r *Runner) execute(
 	// Load session history
 	sessionHandler := runner.NewSessionHandler(sess, sessionID)
 	var err error
+	newInputLen := len(messages)
 	messages, err = sessionHandler.LoadHistory(ctx, messages)
 	if err != nil {
 		return nil, err
 	}
+	sessionPrefixLen := len(messages) - newInputLen
 
 	// Execute main agent loop
 	result, err := r.executeAgentLoop(ctx, agent, messages, contextParams, config, executor)
@@ -179,8 +181,8 @@ func (r *Runner) execute(
 		return result, err
 	}
 
-	// Save session history
-	if err := sessionHandler.SaveHistory(ctx, result.Messages); err != nil {
+	// Save only new messages (skip the session prefix that was already persisted)
+	if err := sessionHandler.SaveHistory(ctx, result.Messages[sessionPrefixLen:]); err != nil {
 		return result, err
 	}
 
