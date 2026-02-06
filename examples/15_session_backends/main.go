@@ -99,18 +99,18 @@ func main() {
 
 	// Create session via registry
 	config := map[string]any{
-		"directory": "./file_sessions",
+		"path": "./file_sessions.db",
 	}
-	fileSession, err := session.Create("file", config)
+	fileSession, err := session.Create("sqlite", config)
 	if err != nil {
-		log.Printf("Failed to create file session: %v", err)
+		log.Printf("Failed to create session from registry: %v", err)
 		return
 	}
 
 	registryUserID := "registry_user"
 
 	messages4 := []openai.ChatCompletionMessageParamUnion{
-		openai.UserMessage("This uses the file backend via registry"),
+		openai.UserMessage("This uses the sqlite backend via registry"),
 	}
 	result, err = runner.Run(context.Background(), agent, messages4, agents.WithSession(fileSession, registryUserID))
 	if err != nil {
