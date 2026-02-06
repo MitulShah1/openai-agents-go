@@ -29,7 +29,10 @@ func main() {
 	weatherTool := tools.New(
 		"get_weather",
 		"Get weather",
-		map[string]any{"type": "object"},
+		map[string]any{
+			"type":       "object",
+			"properties": map[string]any{},
+		},
 		func(_ map[string]any, _ agents.ContextVariables) (any, error) {
 			return "Sunny, 25C", nil
 		},
@@ -39,7 +42,10 @@ func main() {
 	recursiveTool := tools.New(
 		"recursive_call",
 		"Calls itself indefinitely",
-		map[string]any{"type": "object"},
+		map[string]any{
+			"type":       "object",
+			"properties": map[string]any{},
+		},
 		func(_ map[string]any, _ agents.ContextVariables) (any, error) {
 			return "calling again...", nil
 		},
