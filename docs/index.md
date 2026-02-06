@@ -89,8 +89,14 @@ go get github.com/MitulShah1/openai-agents-go@latest
 | Database Sessions | ✅ Complete | v0.3.0 |
 | Session Encryption | ✅ Complete | v0.3.0 |
 | Handoff Parity | ✅ Complete | v0.3.5 |
-| Tracing & Observability | 🔮 Planned | v0.4.0 |
-| Streaming | 🔮 Planned | v0.4.0 |
+| Tracing & Observability | ✅ Complete | v0.4.0 |
+| Streaming | ✅ Complete | v0.4.0 |
+| **MCP Support** | ✅ Complete | v0.5.0 |
+| **Computer Use** | ✅ Complete | v0.5.0 |
+| **Diff Tool** | ✅ Complete | v0.5.0 |
+| **Tool Approvals** | ✅ Foundation | v0.5.1 |
+| **Prompts API** | ✅ Foundation | v0.5.1 |
+| Model Abstraction | 🔮 Planned | v0.6.0 |
 
 See the [CHANGELOG](https://github.com/MitulShah1/openai-agents-go/blob/main/CHANGELOG.md) for detailed release notes.
 
@@ -140,9 +146,13 @@ See the [CHANGELOG](https://github.com/MitulShah1/openai-agents-go/blob/main/CHA
 |Tools|✅|✅|✅|
 |Handoffs|✅|✅|✅|
 |Structured Outputs|✅|✅|✅|
-|Streaming|✅|✅|🔮 Planned|
+|Streaming|✅|✅|✅|
 |Guardrails|✅|✅|✅ (9+ guardrails)|
-|Tracing|✅|✅|🔮 Planned|
+|Tracing|✅|✅|✅|
+|MCP Support|✅|✅|✅|
+|Computer Use|✅|✅|✅|
+|Tool Approvals|✅|✅|✅ (Foundation)|
+|Prompts API|✅|❌|✅ (Foundation)|
 |Voice Agents|❌|✅|🔮 Future|
 |**Type Safety**|⚠️ Runtime|⚠️ TypeScript|✅ Compile-time|
 |**Zero Dependencies**|❌|❌|✅ (core only)|
