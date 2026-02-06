@@ -16,7 +16,7 @@ type LineType int
 
 // Line type constants for diff hunks.
 const (
-	Context  LineType = iota
+	Context LineType = iota
 	Addition
 	Deletion
 )

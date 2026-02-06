@@ -36,6 +36,24 @@ Future    │ v1.1.0+ - Advanced Integrations
 
 For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
+#### v0.5.1 - Cleanup & Restructure (2026-02-06) ✅
+- **Package Cleanup**: Removed bloat outside agent SDK scope
+  - Removed `pkg/embeddings/`, `pkg/files/`, `pkg/vectorstore/`
+  - Users should use `openai-go` directly for these features
+- **Package Restructure**: Better API design matching Python SDK
+  - Moved `pkg/mcp/` → `mcp/`, `pkg/computer/` → `computer/`, `pkg/diff/` → `diff/`
+  - Top-level packages for core features
+- **Plugin Simplification**: Build tag approach for optional backends
+  - Merged `plugins/postgres/` and `plugins/redis/` into `session/` package
+  - PostgreSQL backend: `session.NewPostgresSession()` (build tag: `-tags postgres`)
+  - Redis backend: `session.NewRedisSession()` (build tag: `-tags redis`)
+
+#### v0.5.0 - MCP, Computer Use & Extensions (2026-02-05) ✅
+- **MCP Support**: Model Context Protocol integration ✅
+- **Computer Use Interface**: Browser/desktop automation ✅
+- **Diff Application**: Structured code changes ✅
+- **Session Enhancements**: Message compaction, Redis backend ✅
+
 #### v0.4.0 - Tracing, Streaming & Performance (2026-01-23) ✅
 - **Parallel Tools**: Idiomatic goroutine-based parallel execution
 - **Tracing**: OpenTelemetry support for agents, tools, and sessions
@@ -82,49 +100,93 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
-### v0.5.0 - Feature Parity & Extensions 🚀
-**Timeline**: Q1 2026
-**Status**: Planned
+### v0.6.0 - Python SDK Parity 🚀
+**Timeline**: Q1 2026  
+**Status**: In Progress (3/6 features remaining)
 
-#### Goals
-Achieve feature parity with the Python SDK by implementing key missing features:
+#### Completed in v0.5.x ✅
+- ✅ **MCP Support**: Model Context Protocol integration
+- ✅ **Computer Use Interface**: Browser and desktop automation
+- ✅ **Diff Application Logic**: Structured code change application
+- ✅ **Enhanced Session Backends**: Compaction and distributed sessions
+- ✅ **Package Structure**: Cleaned and reorganized for better API
 
-- **MCP Support**: Model Context Protocol integration for external tool/data connections
-  - MCP server integration
-  - Tool approval functions
-  - Hosted MCP tool support
-  
-- **Computer Use Interface**: Browser and desktop automation capabilities
-  - Computer abstraction (sync and async)
-  - Operations: screenshot, click, scroll, type, keypress, drag, move
-  - Support for mac, windows, ubuntu, and browser environments
-  
-- **Diff Application Logic**: Structured code change application
-  - V4A diff parser
-  - Apply patch editor and tool
-  - Support for create and update modes
-  
-- **Enhanced Session Backends**: Advanced conversation management
-  - Message compaction for long conversations
-  - Redis session backend for distributed deployments
-  - OpenAI Responses compaction-aware sessions
+#### Remaining Work 📋
 
-- **Embeddings & Vector Stores**: RAG capabilities via openai-go SDK
-  - Embeddings API integration for semantic search
-  - Vector Stores for managed RAG
-  - File chunking strategies
-  - Semantic search and knowledge retrieval
+**Critical Features** (Python SDK parity gaps):
 
-- **Files API**: File management capabilities
-  - File upload and management
-  - Document processing for agents
-  - File attachments for tools
-  - Content retrieval
-  
-- **Extensions Framework**: Experimental features and utilities
-  - Handoff filters and prompts
-  - Visualization tools
-  - Experimental integrations
+1. **Prompts API** - Dynamic prompt configuration
+   - `prompts.Prompt` type for OpenAI Prompts API
+   - `DynamicPromptFunc` for runtime prompt generation
+   - Integration with `Agent` and `Runner`
+   - Estimated: 3-4 hours
+
+2. **Tool Approvals** - Human-in-the-loop safety
+   - `NeedsApproval` flag on tools
+   - Approval workflow in runner execution
+   - Approval callbacks and interruption handling
+   - Estimated: 4-5 hours
+
+3. **Model Abstraction** - Multi-provider support
+See [CHANGELOG.md](file:///home/mitul/project/openai-agents-go/CHANGELOG.md) for detailed migration guides.
+
+---
+
+## v0.6.0 (Planned - Q1 2026)
+
+**Status**: In Planning  
+**Focus**: Complete Python SDK feature parity with full integration
+
+### Goals
+
+1. **Complete Prompts API Integration**
+   - [ ] Add `Prompt` field to `Agent` struct
+   - [ ] Implement dynamic prompt resolution in runner
+   - [ ] Support OpenAI Prompts API parameters
+   - [ ] Add prompt template examples
+   - [ ] Add comprehensive tests
+
+2. **Complete Tool Approvals Integration**
+   - [ ] Update `Runner` to detect approval requirements
+   - [ ] Implement approval workflow interruption
+   - [ ] Add approval callback to `RunContext`
+   - [ ] Support approval timeout/expiration
+   - [ ] Create approval workflow examples
+   - [ ] Add E2E approval tests
+
+3. **Implement Model Provider Abstraction**
+   - [ ] Create `models.Provider` interface
+   - [ ] Implement `models.OpenAIProvider`
+   - [ ] Implement `models.AnthropicProvider`
+   - [ ] Implement `models.GoogleProvider`
+   - [ ] Add provider configuration utilities
+   - [ ] Update `Agent` to use `Provider` interface
+   - [ ] Create multi-provider examples
+   - [ ] Add provider integration tests
+
+4. **Documentation & Examples**
+   - [ ] Create `examples/XX_prompts_demo/`
+   - [ ] Create `examples/XX_tool_approvals/`
+   - [ ] Create `examples/XX_multi_provider/`
+   - [ ] Update README.md with new features
+   - [ ] Create feature-specific documentation
+   - [ ] Add migration guide for v0.5.0 → v0.6.0
+
+### Success Criteria
+
+- ✅ All foundation APIs (v0.5.1) fully integrated with agent runtime
+- ✅ Support for 3+ LLM providers (OpenAI, Anthropic, Google)
+- ✅ Production-ready approval workflows
+- ✅ Comprehensive examples for all new features
+- ✅ 100% test coverage on new features
+- ✅ Python SDK feature parity achieved
+
+### Timeline
+
+- Week 1-2: Prompts API integration
+- Week 3-4: Tool Approvals integration
+- Week 5-6: Model Provider abstraction
+- Week 7-8: Examples, docs, and testing
 
 ---
 
@@ -236,7 +298,48 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-01-24
-**Current Version**: v0.4.0
-**Next Focus**: v0.5.0 - Feature Parity & Extensions
+**Last Updated**: 2026-02-06
+**Current Version**:## v0.5.1 (2026-02-06) ✅ COMPLETED
+
+**Status**: Released  
+**Focus**: Library cleanup, package restructuring, and Python SDK parity foundations
+
+### Goals Achieved
+
+1. ✅ **Remove Bloat** (~1,800 LOC removed)
+   - Deleted `pkg/embeddings/`, `pkg/files/`, `pkg/vectorstore/` (out of SDK scope)
+   - Simplified plugin architecture (merged into `session/` with build tags)
+   - Removed dependent tools (`rag_tool.go`, `file_tool.go`)
+
+2. ✅ **Package Restructuring** (Better API design)
+   - Moved `pkg/mcp/` → `mcp/` (top level)
+   - Moved `pkg/computer/` → `computer/` (top level)
+   - Moved `pkg/diff/` → `diff/` (top level)
+   - Updated 7 files with new import paths
+
+3. ✅ **Python SDK Parity Foundations**
+   - Created `prompts` package with `Prompt` and `DynamicPromptFunc` types
+   - Implemented Tool Approvals (`NeedsApproval`, `ApprovalFunc`, `RequiresApproval()`)
+   - Added approval types (`ApprovalRequest`, `ApprovalResponse`, `ApprovalHandler`)
+
+### Breaking Changes
+
+**Removed packages** (use alternatives):
+- `pkg/embeddings/` → Use `github.com/openai/openai-go/v3` directly
+- `pkg/files/` → Use `github.com/openai/openai-go/v3` directly
+- `pkg/vectorstore/` → Use dedicated vector DB libraries
+
+**Package moves** (update imports):
+```go
+// Old
+import "github.com/MitulShah1/openai-agents-go/pkg/mcp"
+import "github.com/MitulShah1/openai-agents-go/plugins/redis"
+
+// New
+import "github.com/MitulShah1/openai-agents-go/mcp"
+import "github.com/MitulShah1/openai-agents-go/session"
+store := session.NewRedisStore(...) // Build with: go build -tags redis
+```
+
+### Migration (Prompts API, Tool Approvals, Model Abstraction)
 **SDK Version**: openai-go/v3 v3.16.0

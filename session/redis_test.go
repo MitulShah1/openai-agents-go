@@ -1,4 +1,6 @@
-package redis
+//go:build redis
+
+package session
 
 import (
 	"context"

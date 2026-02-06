@@ -3,7 +3,7 @@ package tools
 import (
 	"fmt"
 
-	"github.com/MitulShah1/openai-agents-go/pkg/diff"
+	"github.com/MitulShah1/openai-agents-go/diff"
 )
 
 // NewApplyPatchTool creates a tool that applies a patch to a file.

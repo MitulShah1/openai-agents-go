@@ -1,4 +1,6 @@
-package postgres
+//go:build postgres
+
+package session
 
 import (
 	"context"
@@ -7,20 +9,18 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/openai/openai-go/v3"
-
-	"github.com/MitulShah1/openai-agents-go/session"
 )
 
-// Store implements session.Session using PostgreSQL.
-type Store struct {
+// PostgresStore implements Session using PostgreSQL.
+type PostgresStore struct {
 	pool *pgxpool.Pool
 }
 
-// Ensure Store implements session.Session
-var _ session.Session = (*Store)(nil)
+// Ensure PostgresStore implements Session
+var _ Session = (*PostgresStore)(nil)
 
-// New creates a new Postgres session store.
-func New(connString string) (*Store, error) {
+// NewPostgresSession creates a new Postgres session store.
+func NewPostgresSession(connString string) (*PostgresStore, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse connection string: %w", err)
@@ -37,7 +37,7 @@ func New(connString string) (*Store, error) {
 		return nil, fmt.Errorf("failed to ping postgres: %w", err)
 	}
 
-	store := &Store{pool: pool}
+	store := &PostgresStore{pool: pool}
 	if err := store.initSchema(context.Background()); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
@@ -46,7 +46,7 @@ func New(connString string) (*Store, error) {
 	return store, nil
 }
 
-func (s *Store) initSchema(ctx context.Context) error {
+func (s *PostgresStore) initSchema(ctx context.Context) error {
 	schema := `
 		CREATE TABLE IF NOT EXISTS agent_sessions (
 			id TEXT PRIMARY KEY,
@@ -76,15 +76,15 @@ func (s *Store) initSchema(ctx context.Context) error {
 }
 
 // Get retrieves messages from Postgres.
-func (s *Store) Get(ctx context.Context, sessionID string) ([]openai.ChatCompletionMessageParamUnion, error) {
+func (s *PostgresStore) Get(ctx context.Context, sessionID string) ([]openai.ChatCompletionMessageParamUnion, error) {
 	// Check existence
 	var exists bool
 	err := s.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM agent_sessions WHERE id = $1)", sessionID).Scan(&exists)
 	if err != nil {
-		return nil, &session.StorageError{SessionID: sessionID, Operation: "check_exists", Err: err}
+		return nil, &StorageError{SessionID: sessionID, Operation: "check_exists", Err: err}
 	}
 	if !exists {
-		return nil, &session.NotFoundError{SessionID: sessionID}
+		return nil, &NotFoundError{SessionID: sessionID}
 	}
 
 	query := `
@@ -95,7 +95,7 @@ func (s *Store) Get(ctx context.Context, sessionID string) ([]openai.ChatComplet
 	`
 	rows, err := s.pool.Query(ctx, query, sessionID)
 	if err != nil {
-		return nil, &session.StorageError{SessionID: sessionID, Operation: "get_messages", Err: err}
+		return nil, &StorageError{SessionID: sessionID, Operation: "get_messages", Err: err}
 	}
 	defer rows.Close()
 
@@ -111,7 +111,7 @@ func (s *Store) Get(ctx context.Context, sessionID string) ([]openai.ChatComplet
 		)
 
 		if err := rows.Scan(&role, &content, &toolCalls, &funcCall, &toolCallID, &name); err != nil {
-			return nil, &session.StorageError{SessionID: sessionID, Operation: "scan_message", Err: err}
+			return nil, &StorageError{SessionID: sessionID, Operation: "scan_message", Err: err}
 		}
 
 		// Reconstruct message
@@ -178,7 +178,7 @@ func (s *Store) Get(ctx context.Context, sessionID string) ([]openai.ChatComplet
 }
 
 // Append adds messages to the session.
-func (s *Store) Append(ctx context.Context, sessionID string, messages []openai.ChatCompletionMessageParamUnion) error {
+func (s *PostgresStore) Append(ctx context.Context, sessionID string, messages []openai.ChatCompletionMessageParamUnion) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -192,7 +192,7 @@ func (s *Store) Append(ctx context.Context, sessionID string, messages []openai.
 		ON CONFLICT(id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
 	`, sessionID)
 	if err != nil {
-		return &session.StorageError{SessionID: sessionID, Operation: "upsert_session", Err: err}
+		return &StorageError{SessionID: sessionID, Operation: "upsert_session", Err: err}
 	}
 
 	// Insert messages
@@ -247,25 +247,25 @@ func (s *Store) Append(ctx context.Context, sessionID string, messages []openai.
 			VALUES ($1, $2, $3, $4, $5, $6)
 		`, sessionID, role, content, toolCallsJSON, toolCallID, nil) // Name ignored for now
 		if err != nil {
-			return &session.StorageError{SessionID: sessionID, Operation: "insert_message", Err: err}
+			return &StorageError{SessionID: sessionID, Operation: "insert_message", Err: err}
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return &session.StorageError{SessionID: sessionID, Operation: "commit", Err: err}
+		return &StorageError{SessionID: sessionID, Operation: "commit", Err: err}
 	}
 
 	return nil
 }
 
 // Clear implementation
-func (s *Store) Clear(ctx context.Context, sessionID string) error {
+func (s *PostgresStore) Clear(ctx context.Context, sessionID string) error {
 	res, err := s.pool.Exec(ctx, "DELETE FROM agent_messages WHERE session_id = $1", sessionID)
 	if err != nil {
-		return &session.StorageError{SessionID: sessionID, Operation: "clear_messages", Err: err}
+		return &StorageError{SessionID: sessionID, Operation: "clear_messages", Err: err}
 	}
 	if res.RowsAffected() == 0 {
-		return &session.NotFoundError{SessionID: sessionID}
+		return &NotFoundError{SessionID: sessionID}
 	}
 	// Touch session
 	_, _ = s.pool.Exec(ctx, "UPDATE agent_sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = $1", sessionID)
@@ -273,13 +273,13 @@ func (s *Store) Clear(ctx context.Context, sessionID string) error {
 }
 
 // Delete implementation
-func (s *Store) Delete(ctx context.Context, sessionID string) error {
+func (s *PostgresStore) Delete(ctx context.Context, sessionID string) error {
 	res, err := s.pool.Exec(ctx, "DELETE FROM agent_sessions WHERE id = $1", sessionID)
 	if err != nil {
-		return &session.StorageError{SessionID: sessionID, Operation: "delete_session", Err: err}
+		return &StorageError{SessionID: sessionID, Operation: "delete_session", Err: err}
 	}
 	if res.RowsAffected() == 0 {
-		return &session.NotFoundError{SessionID: sessionID}
+		return &NotFoundError{SessionID: sessionID}
 	}
 	// Cascade should handle messages
 	return nil
