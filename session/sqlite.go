@@ -271,6 +271,7 @@ func (s *SQLiteSession) rowToMessage(role string, content, toolCalls, _, toolCal
 							Name:      tc.Function.Name,
 							Arguments: tc.Function.Arguments,
 						},
+						Type: openai.ToolType("function"),
 					},
 				})
 			}
