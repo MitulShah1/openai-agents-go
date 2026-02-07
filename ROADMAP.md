@@ -22,9 +22,9 @@ Week 1-2  │ v0.1.0 - Core Foundation ✅
 Week 3-4  │ v0.2.0 - Guardrails & Sessions ✅
 Week 4-5  │ v0.2.3 - Enhanced Guardrails & Error Handling ✅
 Week 6-9  │ v0.3.0 - DB Backends, Tracing & Composition ✅
-Week 10-12│ v0.4.0 - Streaming & Performance ✅
-Week 13-14│ v0.5.0 - Feature Parity & Extensions
-Week 15-16│ v1.0.0 - Stable Release
+Week 13-14│ v0.5.2 - P0 Bug Fixes ✅
+Week 15-16│ v0.6.0 - Python SDK Parity 🚀
+Week 17-18│ v1.0.0 - Stable Release
 Future    │ v1.1.0+ - Advanced Integrations
 ```
 
@@ -35,6 +35,15 @@ Future    │ v1.1.0+ - Advanced Integrations
 ### Completed Releases ✅
 
 For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
+
+#### v0.5.2 - P0 Bug Fixes (2026-02-07) ✅
+- **Streaming CPU Fix**: Removed spin loop in streaming result iterator
+- **History Fix**: Prevented exponential message duplication in sessions
+- **Tracing Fix**: Explicitly ended spans in loops to avoid memory leak
+- **Concurrency Fix**: Resolved map data race in parallel tool calls
+- **Config Fix**: Correctly respect `MaxToolConcurrency` in all paths
+- **Streaming Parity**: Fixed default parallel tool calls in streaming
+- **Guardrail Fix**: Proper text extraction for input guardrails
 
 #### v0.5.1 - Cleanup & Restructure (2026-02-06) ✅
 - **Package Cleanup**: Removed bloat outside agent SDK scope
@@ -298,8 +307,8 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-02-06
-**Current Version**:## v0.5.1 (2026-02-06) ✅ COMPLETED
+**Last Updated**: 2026-02-07
+**Current Version**: ## v0.5.2 (2026-02-07) ✅ COMPLETED
 
 **Status**: Released  
 **Focus**: Library cleanup, package restructuring, and Python SDK parity foundations
