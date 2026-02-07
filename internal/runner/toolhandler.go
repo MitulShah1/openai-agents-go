@@ -72,9 +72,13 @@ func HandleToolCalls(
 					defer func() { <-sem }()
 				}
 
-				// Create a derived context that is NOT cancelled if other tools fail
-				// But we still respect the parent context (timeout/cancellation)
-				res, msg, _ := executeSingleTool(ctx, tc, toolMap, contextParams, isHandoffFunc)
+				// Shallow copy context params to prevent data race
+				localParams := make(map[string]any, len(contextParams))
+				for k, v := range contextParams {
+					localParams[k] = v
+				}
+
+				res, msg, _ := executeSingleTool(ctx, tc, toolMap, localParams, isHandoffFunc)
 
 				// Capture results safely
 				// Since we pre-allocated slices and have unique 'i', no mutex needed for slice access
