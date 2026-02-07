@@ -135,11 +135,13 @@ func (r *Runner) executeStreamWithResult(
 	// Load session history
 	sessionHandler := runner.NewSessionHandler(sess, sessionID)
 	var err error
+	newInputLen := len(messages)
 	messages, err = sessionHandler.LoadHistory(ctx, messages)
 	if err != nil {
 		result.EmitError(err)
 		return
 	}
+	sessionPrefixLen := len(messages) - newInputLen
 
 	// Execute main agent loop with streaming
 	finalResult, err := r.executeAgentLoopWithStreaming(
@@ -162,8 +164,8 @@ func (r *Runner) executeStreamWithResult(
 		return
 	}
 
-	// Save session history
-	if err := sessionHandler.SaveHistory(ctx, finalResult.Messages); err != nil {
+	// Save only new messages (skip the session prefix that was already persisted)
+	if err := sessionHandler.SaveHistory(ctx, finalResult.Messages[sessionPrefixLen:]); err != nil {
 		result.EmitError(err)
 		return
 	}
@@ -221,14 +223,14 @@ func (r *Runner) executeAgentLoopWithStreaming(
 		result.IncrementTurn()
 
 		// Create agent span
+		var agentSpan tracing.Span
 		if !tracing.IsTracingDisabled() {
-			var agentSpan tracing.Span
 			var err error
 			ctx, agentSpan, err = tracing.StartAgentSpan(ctx, currentAgent.Name,
 				tracing.WithModel(currentAgent.Model),
 				tracing.WithInstructions(currentAgent.GetInstructions(ctx)))
-			if err == nil {
-				defer agentSpan.End(ctx)
+			if err != nil {
+				agentSpan = nil
 			}
 		}
 
@@ -238,6 +240,9 @@ func (r *Runner) executeAgentLoopWithStreaming(
 		// Prepare request
 		req, err := r.prepareRequest(ctx, currentAgent, config, tools, history)
 		if err != nil {
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
 			return nil, err
 		}
 
@@ -266,6 +271,9 @@ func (r *Runner) executeAgentLoopWithStreaming(
 		if err := streamObj.Err(); err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
 			return nil, fmt.Errorf("stream failed: %w", err)
 		}
 
@@ -320,6 +328,9 @@ func (r *Runner) executeAgentLoopWithStreaming(
 				},
 				SequenceNumber: 0, // Will be set by handler
 			})
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
 			break
 		}
 
@@ -330,7 +341,8 @@ func (r *Runner) executeAgentLoopWithStreaming(
 			toolMap,
 			contextParams,
 			currentAgent,
-			config.ParallelToolCalls != nil && *config.ParallelToolCalls,
+			resolveParallelToolCalls(currentAgent, config),
+			config.MaxToolConcurrency,
 		)
 
 		step.ToolCalls = recordedToolCalls
@@ -406,6 +418,10 @@ func (r *Runner) executeAgentLoopWithStreaming(
 
 		step.Duration = time.Since(stepStart)
 		steps = append(steps, step)
+
+		if agentSpan != nil {
+			agentSpan.End(ctx)
+		}
 	}
 
 	finalOutput := extractFinalOutput(lastMessage)

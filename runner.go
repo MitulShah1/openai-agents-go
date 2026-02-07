@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/packages/param"
 
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/internal/runner"
@@ -234,14 +235,14 @@ func (r *Runner) executeAgentLoop(
 		turnCount++
 
 		// Create agent span for this iteration (no-op if no current trace)
+		var agentSpan tracing.Span
 		if !tracing.IsTracingDisabled() {
-			var agentSpan tracing.Span
 			var err error
 			ctx, agentSpan, err = tracing.StartAgentSpan(ctx, currentAgent.Name,
 				tracing.WithModel(currentAgent.Model),
 				tracing.WithInstructions(currentAgent.GetInstructions(ctx)))
-			if err == nil {
-				defer agentSpan.End(ctx)
+			if err != nil {
+				agentSpan = nil
 			}
 		}
 
@@ -251,6 +252,9 @@ func (r *Runner) executeAgentLoop(
 		// Prepare and execute request
 		req, err := r.prepareRequest(ctx, currentAgent, config, tools, history)
 		if err != nil {
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
 			return nil, err
 		}
 
@@ -262,6 +266,9 @@ func (r *Runner) executeAgentLoop(
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
 			return nil, fmt.Errorf("LLM call failed: %w", err)
 		}
 
@@ -304,6 +311,9 @@ func (r *Runner) executeAgentLoop(
 			// No tools called, save the final message and exit
 			lastMessage = message
 			steps = append(steps, step)
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
 			break
 		}
 
@@ -314,7 +324,8 @@ func (r *Runner) executeAgentLoop(
 			toolMap,
 			contextParams,
 			currentAgent,
-			config.ParallelToolCalls != nil && *config.ParallelToolCalls,
+			resolveParallelToolCalls(currentAgent, config),
+			config.MaxToolConcurrency,
 		)
 
 		step.ToolCalls = recordedToolCalls
@@ -332,6 +343,9 @@ func (r *Runner) executeAgentLoop(
 		step.Duration = time.Since(stepStart)
 		steps = append(steps, step)
 
+		if agentSpan != nil {
+			agentSpan.End(ctx)
+		}
 	}
 
 	// Extract final output
@@ -456,6 +470,7 @@ func (r *Runner) handleToolCalls(
 	contextParams ContextVariables,
 	currentAgent *Agent,
 	parallel bool,
+	maxConcurrency int,
 ) ([]openai.ChatCompletionMessageParamUnion, []ToolCall, *Agent) {
 	// Use the internal tool handler
 	messages, results, nextAgentAny := runner.HandleToolCalls(
@@ -465,7 +480,7 @@ func (r *Runner) handleToolCalls(
 		contextParams,
 		r.isHandoffFunc,
 		parallel,
-		0, // maxConcurrency (0 = unlimited)
+		maxConcurrency,
 	)
 
 	// Convert results to public ToolCall type
@@ -562,7 +577,7 @@ func (r *Runner) executeInputGuardrails(
 	}
 
 	executor := runner.NewGuardrailExecutor(guardrails, "input")
-	userInput := fmt.Sprintf("%v", messages[len(messages)-1])
+	userInput := extractUserInput(messages[len(messages)-1])
 
 	if err := executor.Execute(ctx, userInput); err != nil {
 		// Convert internal error to public error type
@@ -632,6 +647,15 @@ func (r *Runner) executeOutputGuardrails(
 	return nil
 }
 
+// resolveParallelToolCalls determines the effective parallel tool calls setting.
+// Config overrides agent setting when explicitly set.
+func resolveParallelToolCalls(agent *Agent, config *RunConfig) bool {
+	if config != nil && config.ParallelToolCalls != nil {
+		return *config.ParallelToolCalls
+	}
+	return agent.ParallelToolCalls
+}
+
 // extractGuardrailName extracts the guardrail name from an error message
 func extractGuardrailName(errMsg string) string {
 	// Simple extraction from error message format
@@ -691,4 +715,32 @@ func (r *Runner) RunAsync(
 		ch <- AsyncResult{Result: res, Error: err}
 	}()
 	return ch
+}
+
+func extractUserInput(msg openai.ChatCompletionMessageParamUnion) string {
+	if p := msg.OfUser; p != nil {
+		if s := p.Content.OfString; !param.IsOmitted(s) {
+			return s.Value
+		}
+		var parts []string
+		for _, part := range p.Content.OfArrayOfContentParts {
+			if text := part.OfText; text != nil {
+				parts = append(parts, text.Text)
+			}
+		}
+		if len(parts) > 0 {
+			return strings.Join(parts, " ")
+		}
+	}
+	if p := msg.OfSystem; p != nil {
+		if s := p.Content.OfString; !param.IsOmitted(s) {
+			return s.Value
+		}
+	}
+	if p := msg.OfAssistant; p != nil {
+		if s := p.Content.OfString; !param.IsOmitted(s) {
+			return s.Value
+		}
+	}
+	return fmt.Sprintf("%v", msg)
 }
