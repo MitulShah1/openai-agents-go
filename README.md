@@ -47,6 +47,7 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 - ✅ **Streaming**: Token-by-token and object-based streaming (v0.4.0)
 - ✅ **Tracing & Observability**: OpenTelemetry integration (v0.4.0)
 - ✅ **Advanced DB Backends**: Redis, PostgreSQL (v0.4.0)
+- ✅ **Tool Approvals**: Human-in-the-loop approval workflows with pause/resume (v0.6.0)
 
 ---
 
@@ -272,6 +273,9 @@ cd examples/14_session_backends && go run main.go
 
 # Production chatbot (v0.3.0)
 cd examples/16_production_chatbot && go run main.go
+
+# Tool approvals (human-in-the-loop)
+cd examples/23_tool_approvals && go run main.go
 ```
 
 ---
@@ -324,6 +328,7 @@ make check
 | Streaming | ✅ | ✅ | ✅ (v0.4.0) |
 | Guardrails | ✅ | ✅ | ✅ (v0.2.1) |
 | Tracing | ✅ | ✅ | ✅ (v0.4.0) |
+| Tool Approvals | ✅ | ❌ | ✅ (v0.6.0) |
 | Voice Agents | ❌ | ✅ | 🔮 Future |
 | **Type Safety** | ⚠️ Runtime | ⚠️ TypeScript | ✅ Compile-time |
 | **Zero Dependencies** | ❌ | ❌ | ✅ (core only) |

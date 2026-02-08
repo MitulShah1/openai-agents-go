@@ -111,7 +111,7 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 ### v0.6.0 - Python SDK Parity 🚀
 **Timeline**: Q1 2026  
-**Status**: In Progress (3/6 features remaining)
+**Status**: In Progress (2/6 features remaining)
 
 #### Completed in v0.5.x ✅
 - ✅ **MCP Support**: Model Context Protocol integration
@@ -119,6 +119,14 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 - ✅ **Diff Application Logic**: Structured code change application
 - ✅ **Enhanced Session Backends**: Compaction and distributed sessions
 - ✅ **Package Structure**: Cleaned and reorganized for better API
+
+#### Completed in v0.6.0 (in progress) ✅
+- ✅ **Tool Approvals**: Full human-in-the-loop approval workflow
+  - Runner checks `NeedsApproval`/`ApprovalFunc` before tool execution
+  - Pause/resume via `ToolApprovalRequiredError` + `RunState` + `Runner.Resume()`
+  - Inline approval via `WithApprovalHandler()` run option
+  - Streaming support with `StreamEventApprovalRequired`
+  - Parallel batch safety (no partial execution)
 
 #### Remaining Work 📋
 
@@ -130,13 +138,7 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
    - Integration with `Agent` and `Runner`
    - Estimated: 3-4 hours
 
-2. **Tool Approvals** - Human-in-the-loop safety
-   - `NeedsApproval` flag on tools
-   - Approval workflow in runner execution
-   - Approval callbacks and interruption handling
-   - Estimated: 4-5 hours
-
-3. **Model Abstraction** - Multi-provider support
+2. **Model Abstraction** - Multi-provider support (deferred to v0.7.0)
 See [CHANGELOG.md](file:///home/mitul/project/openai-agents-go/CHANGELOG.md) for detailed migration guides.
 
 ---
@@ -155,13 +157,13 @@ See [CHANGELOG.md](file:///home/mitul/project/openai-agents-go/CHANGELOG.md) for
    - [ ] Add prompt template examples
    - [ ] Add comprehensive tests
 
-2. **Complete Tool Approvals Integration**
-   - [ ] Update `Runner` to detect approval requirements
-   - [ ] Implement approval workflow interruption
-   - [ ] Add approval callback to `RunContext`
-   - [ ] Support approval timeout/expiration
-   - [ ] Create approval workflow examples
-   - [ ] Add E2E approval tests
+2. **Complete Tool Approvals Integration** ✅
+   - [x] Update `Runner` to detect approval requirements
+   - [x] Implement approval workflow interruption (`ToolApprovalRequiredError` + `RunState`)
+   - [x] Add approval callback (`WithApprovalHandler()` run option)
+   - [x] Add `Runner.Resume()` for pause/resume workflow
+   - [x] Create approval workflow examples (`examples/23_tool_approvals/`)
+   - [x] Add comprehensive approval tests (15 test cases)
 
 3. **Implement Model Provider Abstraction**
    - [ ] Create `models.Provider` interface
@@ -175,7 +177,7 @@ See [CHANGELOG.md](file:///home/mitul/project/openai-agents-go/CHANGELOG.md) for
 
 4. **Documentation & Examples**
    - [ ] Create `examples/XX_prompts_demo/`
-   - [ ] Create `examples/XX_tool_approvals/`
+   - [x] Create `examples/23_tool_approvals/`
    - [ ] Create `examples/XX_multi_provider/`
    - [ ] Update README.md with new features
    - [ ] Create feature-specific documentation
@@ -307,7 +309,7 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-02-07
+**Last Updated**: 2026-02-08
 **Current Version**: ## v0.5.2 (2026-02-07) ✅ COMPLETED
 
 **Status**: Released  

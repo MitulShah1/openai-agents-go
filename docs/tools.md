@@ -163,6 +163,89 @@ fmt.Printf("Sequential: %v\n", sequentialDuration)
 - ✅ **Error isolation** - One tool's error doesn't block others in parallel mode
 - ✅ **Semaphore pattern** - `MaxToolConcurrency` prevents resource exhaustion
 
+## Tool Approvals
+
+Tool approvals enable human-in-the-loop safety for dangerous or sensitive operations. When a tool requires approval, the runner pauses execution and lets the caller decide whether to proceed.
+
+### Static Approval
+
+Mark a tool as always requiring approval:
+
+```go
+deleteTool := tools.New("delete_db", "Delete a database", params,
+    func(args map[string]any, ctx tools.ContextVariables) (any, error) {
+        return deleteDatabase(args["name"].(string))
+    },
+)
+deleteTool.NeedsApproval = true
+```
+
+### Dynamic Approval
+
+Use `ApprovalFunc` for conditional approval based on arguments:
+
+```go
+transferTool := tools.New("transfer", "Transfer funds", params,
+    func(args map[string]any, ctx tools.ContextVariables) (any, error) {
+        return transfer(args)
+    },
+)
+transferTool.ApprovalFunc = func(args map[string]any, callID string, ctx tools.ContextVariables) (bool, error) {
+    amount, _ := args["amount"].(float64)
+    return amount > 1000, nil // Only require approval for large transfers
+}
+```
+
+### Inline Approval Handler
+
+For synchronous approval decisions (e.g., CLI prompts), use `WithApprovalHandler`:
+
+```go
+result, err := runner.Run(ctx, agent, messages,
+    agents.WithApprovalHandler(func(req tools.ApprovalRequest) (*tools.ApprovalResponse, error) {
+        fmt.Printf("Tool %s wants to run with args %v. Approve? ", req.ToolName, req.Args)
+        // ... get user input ...
+        return &tools.ApprovalResponse{Approved: true}, nil
+    }),
+)
+```
+
+When the handler approves, execution continues normally. When it rejects, the runner returns a `ToolApprovalRequiredError`.
+
+### Pause/Resume Workflow
+
+When no handler is set and a tool requires approval, `Run()` returns a `ToolApprovalRequiredError` with a `RunState` snapshot. The caller can then approve or reject and resume:
+
+```go
+result, err := runner.Run(ctx, agent, messages)
+
+var approvalErr *agents.ToolApprovalRequiredError
+if errors.As(err, &approvalErr) {
+    // Inspect what needs approval
+    for _, req := range approvalErr.Requests {
+        fmt.Printf("Tool %s (call %s) needs approval\n", req.ToolName, req.CallID)
+    }
+
+    // Make decisions
+    approvals := map[string]*tools.ApprovalResponse{
+        approvalErr.Requests[0].CallID: {Approved: true},
+    }
+
+    // Resume execution
+    result, err = runner.Resume(ctx, approvalErr.State, approvals)
+}
+```
+
+### Streaming
+
+In streaming mode, a `StreamEventApprovalRequired` event is emitted before the stream terminates with `ToolApprovalRequiredError`. This lets stream consumers display approval UI before the error arrives.
+
+### Parallel Tool Calls
+
+If any tool call in a parallel batch requires approval, the **entire batch** is interrupted. No tools are executed partially. This prevents side effects from tools that ran before the interrupted one.
+
+**See the complete example:** [`examples/23_tool_approvals`](https://github.com/MitulShah1/openai-agents-go/blob/main/examples/23_tool_approvals/main.go)
+
 ## Related Topics
 
 - [Agents](agents.md)
