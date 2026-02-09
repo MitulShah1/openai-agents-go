@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.0] - 2026-02-09
+
+### Added
+
+**Tool Approvals - Human-in-the-Loop Safety (Full Runner Integration)**:
+- **Approval checking in runner**: `Runner.Run()`, `Runner.Stream()`, and `Runner.StreamWithResult()` now evaluate `NeedsApproval` and `ApprovalFunc` on every tool call before execution
+- **Pause/resume workflow**: When a tool requires approval and no handler is set, `Run()` returns `ToolApprovalRequiredError` containing a `RunState` snapshot and pending `ApprovalRequest`s
+- **`Runner.Resume()`**: New method to continue execution after approval decisions are made; approved tools execute normally, rejected tools produce rejection messages sent back to the model
+- **`WithApprovalHandler()`**: New run option for synchronous inline approval; the handler is called for each tool needing approval and can approve or reject immediately
+- **`RunState`**: New type capturing agent execution state at point of interruption (agent, messages, turn count, pending tool calls, context variables, config)
+- **`ToolApprovalRequiredError`**: New error type with `Requests []tools.ApprovalRequest` and `State *RunState`
+- **Streaming support**: `Stream()` emits `StreamEventApprovalRequired` event; `StreamWithResult()` emits `ApprovalRequiredEvent`. Both emit the approval event before terminating with `ToolApprovalRequiredError`
+- **`stream.ApprovalRequiredEvent`**: New event type implementing the `stream.Event` interface for `StreamWithResult()` approval notifications
+- **Parallel batch safety**: If any tool call in a parallel batch requires approval, the entire batch is interrupted (no partial execution)
+- **Example**: `examples/23_tool_approvals/` demonstrating pause/resume, dynamic approval, and inline handler patterns
+- **Documentation**: Updated `docs/tools.md` and `docs/streaming.md` with tool approvals sections
+
+### Fixed
+
+- **StreamWithResult missing tool approval checks** (`stream_with_result.go`): `StreamWithResult` did not check `NeedsApproval` or `ApprovalFunc` before executing tool calls, silently bypassing approval requirements. Added `checkToolApprovals` call and `ApprovalRequiredEvent` emission, matching the behavior of `Run()` and `Stream()`.
+
 ## [v0.5.2] - 2026-02-07
 
 ### Fixed
@@ -453,6 +474,7 @@ conditionalTool := tools.Tool{
 
 ## Version Links
 
+- [v0.6.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.6.0)
 - [v0.5.2](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.5.2)
 - [v0.5.1](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.5.1)
 - [v0.5.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.5.0)
@@ -471,7 +493,7 @@ conditionalTool := tools.Tool{
 ## Future Releases
 
 See [ROADMAP.md](./ROADMAP.md) for planned features:
-- v0.4.0: Tracing (OpenTelemetry), Metrics & Streaming support
+- v0.7.0: Model provider abstraction, Prompts API integration
 - v1.0.0: Stable release with API guarantees
 - v1.1.0+: Advanced integrations (Batch API, Realtime API, RAG, MCP)
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/MitulShah1/openai-agents-go/internal/runner"
 	"github.com/MitulShah1/openai-agents-go/session"
+	"github.com/MitulShah1/openai-agents-go/tools"
 	"github.com/MitulShah1/openai-agents-go/tracing"
 )
 
@@ -43,6 +44,7 @@ func (r *Runner) Stream(
 			options.config,
 			options.sess,
 			options.sessionID,
+			options.approvalHandler,
 			ch,
 		)
 		if err != nil {
@@ -64,6 +66,7 @@ func (r *Runner) executeStream(
 	config *RunConfig,
 	sess session.Session,
 	sessionID string,
+	approvalHandler tools.ApprovalHandler,
 	ch chan<- StreamEvent,
 ) (*Result, error) {
 	// Validate input
@@ -122,7 +125,7 @@ func (r *Runner) executeStream(
 	sessionPrefixLen := len(messages) - newInputLen
 
 	// Execute main agent loop with streaming
-	result, err := r.executeAgentLoopStream(ctx, agent, messages, contextParams, config, executor, ch)
+	result, err := r.executeAgentLoopStream(ctx, agent, messages, contextParams, config, executor, approvalHandler, ch)
 	if err != nil {
 		return result, err
 	}
@@ -155,6 +158,7 @@ func (r *Runner) executeAgentLoopStream(
 	contextParams ContextVariables,
 	config *RunConfig,
 	executor *runner.Executor,
+	approvalHandler tools.ApprovalHandler,
 	ch chan<- StreamEvent,
 ) (*Result, error) {
 	currentAgent := agent
@@ -287,6 +291,24 @@ func (r *Runner) executeAgentLoopStream(
 				agentSpan.End(ctx)
 			}
 			break
+		}
+
+		// Check tool approvals before execution
+		approvalErr := r.checkToolApprovals(
+			message.ToolCalls, currentAgent, contextParams, approvalHandler,
+			history, turnCount, config,
+		)
+		if approvalErr != nil {
+			if approvalReqErr, ok := approvalErr.(*ToolApprovalRequiredError); ok {
+				ch <- StreamEvent{
+					Type:             StreamEventApprovalRequired,
+					ApprovalRequests: approvalReqErr.Requests,
+				}
+			}
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, approvalErr
 		}
 
 		// Handle tool calls

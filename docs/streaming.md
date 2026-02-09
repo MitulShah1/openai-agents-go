@@ -92,7 +92,28 @@ for event, err := range result.StreamEvents(ctx) {
 - `HandoffOccurred` - Handoff completed
 - `ReasoningItemCreated` - Reasoning item created
 
-### 3. Agent Updated Events
+### 3. Approval Required Events
+
+`ApprovalRequiredEvent` is emitted when a tool call requires human approval before execution can proceed. The stream will terminate with a `ToolApprovalRequiredError` after this event. Use `Runner.Resume()` to continue.
+
+```go
+for event, err := range result.StreamEvents(ctx) {
+    if err != nil {
+        var approvalErr *agents.ToolApprovalRequiredError
+        if errors.As(err, &approvalErr) {
+            // Collect approval decisions, then resume
+            result, err = runner.Resume(ctx, approvalErr.State, approvals)
+        }
+        return err
+    }
+
+    if approval, ok := event.(*stream.ApprovalRequiredEvent); ok {
+        fmt.Printf("⚠️ Tool approval needed: %v\n", approval.Requests)
+    }
+}
+```
+
+### 4. Agent Updated Events
 
 `AgentUpdatedEvent` provides updates when the current agent changes (e.g., during handoffs).
 
@@ -224,6 +245,7 @@ The Go streaming API is designed for parity with the Python SDK:
 |---------|--------|-----|
 | Raw events | `RawResponsesStreamEvent` | `*stream.RawResponseEvent` |
 | Semantic events | `RunItemStreamEvent` | `*stream.RunItemEvent` |
+| Approval events | — | `*stream.ApprovalRequiredEvent` |
 | Agent updates | `AgentUpdatedStreamEvent` | `*stream.AgentUpdatedEvent` |
 | Iteration | `async for event in result.stream_events()` | `for event, err := range result.StreamEvents(ctx)` |
 | Cancellation | `result.cancel(mode="after_turn")` | `result.Cancel(stream.CancelAfterTurn)` |

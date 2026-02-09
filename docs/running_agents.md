@@ -161,3 +161,38 @@ The runner is designed for safe concurrent execution:
     *   This uses `sync.WaitGroup` to ensure all tools complete.
     *   **Robustness**: If one tool fails, others continue to execute. The runner aggregates all results.
     *   You can disable this by setting `ParallelToolCalls: false` in `RunConfig` or the `Agent` configuration.
+
+## Tool Approvals
+
+The runner supports human-in-the-loop approval for sensitive tool operations. Tools can be marked with `NeedsApproval` or use `ApprovalFunc` for conditional approval.
+
+### Inline Handler
+
+For synchronous approval, provide a handler via `WithApprovalHandler`:
+
+```go
+result, err := runner.Run(ctx, agent, messages,
+    agents.WithApprovalHandler(func(req tools.ApprovalRequest) (*tools.ApprovalResponse, error) {
+        fmt.Printf("Approve %s? ", req.ToolName)
+        return &tools.ApprovalResponse{Approved: true}, nil
+    }),
+)
+```
+
+### Pause/Resume
+
+When no handler is set, `Run()` returns a `ToolApprovalRequiredError`:
+
+```go
+result, err := runner.Run(ctx, agent, messages)
+
+var approvalErr *agents.ToolApprovalRequiredError
+if errors.As(err, &approvalErr) {
+    approvals := map[string]*tools.ApprovalResponse{
+        approvalErr.Requests[0].CallID: {Approved: true},
+    }
+    result, err = runner.Resume(ctx, approvalErr.State, approvals)
+}
+```
+
+See [Tools - Tool Approvals](tools.md#tool-approvals) for complete documentation.

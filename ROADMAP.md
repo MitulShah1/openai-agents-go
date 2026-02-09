@@ -23,8 +23,9 @@ Week 3-4  │ v0.2.0 - Guardrails & Sessions ✅
 Week 4-5  │ v0.2.3 - Enhanced Guardrails & Error Handling ✅
 Week 6-9  │ v0.3.0 - DB Backends, Tracing & Composition ✅
 Week 13-14│ v0.5.2 - P0 Bug Fixes ✅
-Week 15-16│ v0.6.0 - Python SDK Parity 🚀
-Week 17-18│ v1.0.0 - Stable Release
+Week 15-16│ v0.6.0 - Tool Approvals (Runner Integration) ✅
+Week 17-18│ v0.7.0 - Model Abstraction & Prompts API 🚀
+Week 19-20│ v1.0.0 - Stable Release
 Future    │ v1.1.0+ - Advanced Integrations
 ```
 
@@ -35,6 +36,14 @@ Future    │ v1.1.0+ - Advanced Integrations
 ### Completed Releases ✅
 
 For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
+
+#### v0.6.0 - Tool Approvals Runner Integration (2026-02-09) ✅
+- **Tool Approvals**: Full human-in-the-loop approval workflow integrated into all runner paths
+  - `Run()`, `Stream()`, and `StreamWithResult()` check approvals before tool execution
+  - Pause/resume via `ToolApprovalRequiredError` + `RunState` + `Runner.Resume()`
+  - Inline approval via `WithApprovalHandler()` run option
+  - Streaming support with `StreamEventApprovalRequired` and `ApprovalRequiredEvent`
+  - Parallel batch safety (no partial execution)
 
 #### v0.5.2 - P0 Bug Fixes (2026-02-07) ✅
 - **Streaming CPU Fix**: Removed spin loop in streaming result iterator
@@ -109,44 +118,11 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
-### v0.6.0 - Python SDK Parity 🚀
+### v0.7.0 - Model Abstraction & Prompts API 🚀
 **Timeline**: Q1 2026  
-**Status**: In Progress (3/6 features remaining)
+**Status**: Planned
 
-#### Completed in v0.5.x ✅
-- ✅ **MCP Support**: Model Context Protocol integration
-- ✅ **Computer Use Interface**: Browser and desktop automation
-- ✅ **Diff Application Logic**: Structured code change application
-- ✅ **Enhanced Session Backends**: Compaction and distributed sessions
-- ✅ **Package Structure**: Cleaned and reorganized for better API
-
-#### Remaining Work 📋
-
-**Critical Features** (Python SDK parity gaps):
-
-1. **Prompts API** - Dynamic prompt configuration
-   - `prompts.Prompt` type for OpenAI Prompts API
-   - `DynamicPromptFunc` for runtime prompt generation
-   - Integration with `Agent` and `Runner`
-   - Estimated: 3-4 hours
-
-2. **Tool Approvals** - Human-in-the-loop safety
-   - `NeedsApproval` flag on tools
-   - Approval workflow in runner execution
-   - Approval callbacks and interruption handling
-   - Estimated: 4-5 hours
-
-3. **Model Abstraction** - Multi-provider support
-See [CHANGELOG.md](file:///home/mitul/project/openai-agents-go/CHANGELOG.md) for detailed migration guides.
-
----
-
-## v0.6.0 (Planned - Q1 2026)
-
-**Status**: In Planning  
-**Focus**: Complete Python SDK feature parity with full integration
-
-### Goals
+#### Goals
 
 1. **Complete Prompts API Integration**
    - [ ] Add `Prompt` field to `Agent` struct
@@ -155,15 +131,7 @@ See [CHANGELOG.md](file:///home/mitul/project/openai-agents-go/CHANGELOG.md) for
    - [ ] Add prompt template examples
    - [ ] Add comprehensive tests
 
-2. **Complete Tool Approvals Integration**
-   - [ ] Update `Runner` to detect approval requirements
-   - [ ] Implement approval workflow interruption
-   - [ ] Add approval callback to `RunContext`
-   - [ ] Support approval timeout/expiration
-   - [ ] Create approval workflow examples
-   - [ ] Add E2E approval tests
-
-3. **Implement Model Provider Abstraction**
+2. **Model Provider Abstraction**
    - [ ] Create `models.Provider` interface
    - [ ] Implement `models.OpenAIProvider`
    - [ ] Implement `models.AnthropicProvider`
@@ -173,29 +141,19 @@ See [CHANGELOG.md](file:///home/mitul/project/openai-agents-go/CHANGELOG.md) for
    - [ ] Create multi-provider examples
    - [ ] Add provider integration tests
 
-4. **Documentation & Examples**
+3. **Documentation & Examples**
    - [ ] Create `examples/XX_prompts_demo/`
-   - [ ] Create `examples/XX_tool_approvals/`
    - [ ] Create `examples/XX_multi_provider/`
    - [ ] Update README.md with new features
-   - [ ] Create feature-specific documentation
-   - [ ] Add migration guide for v0.5.0 → v0.6.0
+   - [ ] Add migration guide for v0.6.0 → v0.7.0
 
-### Success Criteria
+#### Success Criteria
 
-- ✅ All foundation APIs (v0.5.1) fully integrated with agent runtime
-- ✅ Support for 3+ LLM providers (OpenAI, Anthropic, Google)
-- ✅ Production-ready approval workflows
-- ✅ Comprehensive examples for all new features
-- ✅ 100% test coverage on new features
-- ✅ Python SDK feature parity achieved
-
-### Timeline
-
-- Week 1-2: Prompts API integration
-- Week 3-4: Tool Approvals integration
-- Week 5-6: Model Provider abstraction
-- Week 7-8: Examples, docs, and testing
+- All foundation APIs fully integrated with agent runtime
+- Support for 3+ LLM providers (OpenAI, Anthropic, Google)
+- Comprehensive examples for all new features
+- 100% test coverage on new features
+- Python SDK feature parity achieved
 
 ---
 
@@ -307,48 +265,5 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-02-07
-**Current Version**: ## v0.5.2 (2026-02-07) ✅ COMPLETED
-
-**Status**: Released  
-**Focus**: Library cleanup, package restructuring, and Python SDK parity foundations
-
-### Goals Achieved
-
-1. ✅ **Remove Bloat** (~1,800 LOC removed)
-   - Deleted `pkg/embeddings/`, `pkg/files/`, `pkg/vectorstore/` (out of SDK scope)
-   - Simplified plugin architecture (merged into `session/` with build tags)
-   - Removed dependent tools (`rag_tool.go`, `file_tool.go`)
-
-2. ✅ **Package Restructuring** (Better API design)
-   - Moved `pkg/mcp/` → `mcp/` (top level)
-   - Moved `pkg/computer/` → `computer/` (top level)
-   - Moved `pkg/diff/` → `diff/` (top level)
-   - Updated 7 files with new import paths
-
-3. ✅ **Python SDK Parity Foundations**
-   - Created `prompts` package with `Prompt` and `DynamicPromptFunc` types
-   - Implemented Tool Approvals (`NeedsApproval`, `ApprovalFunc`, `RequiresApproval()`)
-   - Added approval types (`ApprovalRequest`, `ApprovalResponse`, `ApprovalHandler`)
-
-### Breaking Changes
-
-**Removed packages** (use alternatives):
-- `pkg/embeddings/` → Use `github.com/openai/openai-go/v3` directly
-- `pkg/files/` → Use `github.com/openai/openai-go/v3` directly
-- `pkg/vectorstore/` → Use dedicated vector DB libraries
-
-**Package moves** (update imports):
-```go
-// Old
-import "github.com/MitulShah1/openai-agents-go/pkg/mcp"
-import "github.com/MitulShah1/openai-agents-go/plugins/redis"
-
-// New
-import "github.com/MitulShah1/openai-agents-go/mcp"
-import "github.com/MitulShah1/openai-agents-go/session"
-store := session.NewRedisStore(...) // Build with: go build -tags redis
-```
-
-### Migration (Prompts API, Tool Approvals, Model Abstraction)
-**SDK Version**: openai-go/v3 v3.16.0
+**Last Updated**: 2026-02-09  
+**Current Version**: v0.6.0

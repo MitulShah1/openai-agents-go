@@ -1,5 +1,7 @@
 package agents
 
+import "github.com/MitulShah1/openai-agents-go/tools"
+
 // StreamEventType represents the type of event in a stream
 type StreamEventType string
 
@@ -15,6 +17,12 @@ const (
 
 	// StreamEventResult represents the final result event
 	StreamEventResult StreamEventType = "result"
+
+	// StreamEventApprovalRequired represents a tool approval request event.
+	// When this event is emitted, the stream will terminate with a
+	// ToolApprovalRequiredError. The caller should use Runner.Resume
+	// to continue execution after making approval decisions.
+	StreamEventApprovalRequired StreamEventType = "approval_required"
 )
 
 // StreamEvent represents a single event in the agent execution stream
@@ -25,10 +33,10 @@ type StreamEvent struct {
 	Content string
 
 	// ToolCall contains tool call information (delta or complete)
-	// For now, we might just emit the full tool call when ready, or deltas.
-	// Let's start with simplifying: for now, streaming usually means text content.
-	// Tool execution steps might be better as status updates.
 	ToolCall *ToolCall
+
+	// ApprovalRequests contains pending approval requests (only for StreamEventApprovalRequired)
+	ApprovalRequests []tools.ApprovalRequest
 
 	// Result contains the final execution result (only for StreamEventResult)
 	Result *Result

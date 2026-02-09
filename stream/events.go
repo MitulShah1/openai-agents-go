@@ -80,6 +80,22 @@ const (
 	MCPListTools RunItemEventName = "mcp_list_tools"
 )
 
+// ApprovalRequiredEvent notifies that one or more tool calls require approval
+// before execution can continue. The caller should use Runner.Resume to continue
+// execution after making approval decisions.
+type ApprovalRequiredEvent struct {
+	// Requests contains the pending approval requests (type is any to avoid import cycle)
+	Requests any
+
+	// SequenceNumber is used for ordering events
+	SequenceNumber int
+}
+
+// EventType implements the Event interface
+func (e *ApprovalRequiredEvent) EventType() string {
+	return "approval_required_event"
+}
+
 // AgentUpdatedEvent notifies that there is a new agent running.
 // This typically occurs during handoffs.
 type AgentUpdatedEvent struct {

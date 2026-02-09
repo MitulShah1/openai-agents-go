@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -103,6 +104,7 @@ func (r *Runner) Run(
 		options.config,
 		options.sess,
 		options.sessionID,
+		options.approvalHandler,
 	)
 }
 
@@ -115,6 +117,7 @@ func (r *Runner) execute(
 	config *RunConfig,
 	sess session.Session,
 	sessionID string,
+	approvalHandler tools.ApprovalHandler,
 ) (*Result, error) {
 	// Validate input
 	if len(messages) == 0 {
@@ -172,7 +175,7 @@ func (r *Runner) execute(
 	sessionPrefixLen := len(messages) - newInputLen
 
 	// Execute main agent loop
-	result, err := r.executeAgentLoop(ctx, agent, messages, contextParams, config, executor)
+	result, err := r.executeAgentLoop(ctx, agent, messages, contextParams, config, executor, approvalHandler)
 	if err != nil {
 		return result, err
 	}
@@ -205,6 +208,7 @@ func (r *Runner) executeAgentLoop(
 	contextParams ContextVariables,
 	config *RunConfig,
 	executor *runner.Executor,
+	approvalHandler tools.ApprovalHandler,
 ) (*Result, error) {
 	currentAgent := agent
 	history := make([]openai.ChatCompletionMessageParamUnion, len(messages))
@@ -308,13 +312,24 @@ func (r *Runner) executeAgentLoop(
 
 		// Check for tool calls
 		if len(message.ToolCalls) == 0 {
-			// No tools called, save the final message and exit
 			lastMessage = message
 			steps = append(steps, step)
 			if agentSpan != nil {
 				agentSpan.End(ctx)
 			}
 			break
+		}
+
+		// Check tool approvals before execution
+		approvalErr := r.checkToolApprovals(
+			message.ToolCalls, currentAgent, contextParams, approvalHandler,
+			history, turnCount, config,
+		)
+		if approvalErr != nil {
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, approvalErr
 		}
 
 		// Handle tool calls
@@ -349,6 +364,363 @@ func (r *Runner) executeAgentLoop(
 	}
 
 	// Extract final output
+	finalOutput := extractFinalOutput(lastMessage)
+
+	return &Result{
+		Messages:    history,
+		Agent:       currentAgent,
+		Usage:       usage,
+		Steps:       steps,
+		FinalOutput: finalOutput,
+	}, nil
+}
+
+// checkToolApprovals evaluates whether any tool calls require approval.
+// If an ApprovalHandler is provided, it is called synchronously for each tool
+// needing approval. If no handler is provided, a ToolApprovalRequiredError is
+// returned with a RunState snapshot for pause/resume.
+func (r *Runner) checkToolApprovals(
+	toolCalls []openai.ChatCompletionMessageToolCallUnion,
+	agent *Agent,
+	contextParams ContextVariables,
+	approvalHandler tools.ApprovalHandler,
+	history []openai.ChatCompletionMessageParamUnion,
+	turnCount int,
+	config *RunConfig,
+) error {
+	// Build a map of tool name -> Tool for approval checking
+	toolIndex := make(map[string]*tools.Tool, len(agent.Tools))
+	for i := range agent.Tools {
+		toolIndex[agent.Tools[i].Name] = &agent.Tools[i]
+	}
+
+	var pendingRequests []tools.ApprovalRequest
+	for _, tc := range toolCalls {
+		t, ok := toolIndex[tc.Function.Name]
+		if !ok {
+			continue
+		}
+
+		args := parseToolArgs(tc.Function.Arguments)
+		needs, err := t.RequiresApproval(args, tc.ID, contextParams)
+		if err != nil {
+			return fmt.Errorf("approval check failed for tool %s: %w", tc.Function.Name, err)
+		}
+		if !needs {
+			continue
+		}
+
+		req := tools.ApprovalRequest{
+			ToolName: tc.Function.Name,
+			CallID:   tc.ID,
+			Args:     args,
+			Context:  contextParams,
+		}
+
+		if approvalHandler != nil {
+			resp, err := approvalHandler(req)
+			if err != nil {
+				return fmt.Errorf("approval handler error for tool %s: %w", tc.Function.Name, err)
+			}
+			if !resp.Approved {
+				return &ToolApprovalRequiredError{
+					Requests: []tools.ApprovalRequest{req},
+					State: &RunState{
+						Agent:            agent,
+						Messages:         history,
+						TurnCount:        turnCount,
+						PendingToolCalls: toolCalls,
+						ContextVariables: contextParams,
+						Config:           config,
+					},
+				}
+			}
+			continue
+		}
+
+		pendingRequests = append(pendingRequests, req)
+	}
+
+	if len(pendingRequests) > 0 {
+		return &ToolApprovalRequiredError{
+			Requests: pendingRequests,
+			State: &RunState{
+				Agent:            agent,
+				Messages:         history,
+				TurnCount:        turnCount,
+				PendingToolCalls: toolCalls,
+				ContextVariables: contextParams,
+				Config:           config,
+			},
+		}
+	}
+
+	return nil
+}
+
+// parseToolArgs parses JSON arguments into a map, returning an empty map on failure.
+func parseToolArgs(argsJSON string) map[string]any {
+	if argsJSON == "" {
+		return map[string]any{}
+	}
+	var args map[string]any
+	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
+		return map[string]any{}
+	}
+	return args
+}
+
+// Resume continues execution after tool approval decisions have been made.
+//
+// This method is used in conjunction with ToolApprovalRequiredError to implement
+// human-in-the-loop approval workflows. When Run returns a ToolApprovalRequiredError,
+// the caller makes approval decisions and passes them to Resume along with the
+// captured RunState.
+//
+// Approved tools are executed normally. Rejected tools produce a rejection message
+// that is sent back to the model so it can respond appropriately.
+//
+// Example:
+//
+//	result, err := runner.Run(ctx, agent, messages)
+//	var approvalErr *agents.ToolApprovalRequiredError
+//	if errors.As(err, &approvalErr) {
+//	    approvals := map[string]*tools.ApprovalResponse{
+//	        "call_123": {Approved: true},
+//	        "call_456": {Approved: false, Reason: "not allowed"},
+//	    }
+//	    result, err = runner.Resume(ctx, approvalErr.State, approvals)
+//	}
+func (r *Runner) Resume(
+	ctx context.Context,
+	state *RunState,
+	approvals map[string]*tools.ApprovalResponse,
+	opts ...RunOption,
+) (*Result, error) {
+	if state == nil {
+		return nil, fmt.Errorf("resume: state is nil")
+	}
+
+	// Apply options
+	options := &runOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	config := state.Config
+	if options.config != nil {
+		config = config.Merge(options.config)
+	}
+	if config == nil {
+		config = DefaultRunConfig()
+	}
+
+	contextParams := state.ContextVariables
+	if options.contextParams != nil {
+		contextParams = options.contextParams
+	}
+
+	approvalHandler := options.approvalHandler
+
+	// Rebuild tool map
+	_, toolMap := r.prepareTools(state.Agent)
+
+	// Process pending tool calls based on approval decisions
+	var toolMessages []openai.ChatCompletionMessageParamUnion
+	for _, tc := range state.PendingToolCalls {
+		callID := tc.ID
+		if len(callID) > runner.MaxToolCallIDLength {
+			callID = callID[:runner.MaxToolCallIDLength]
+		}
+
+		resp, hasDecision := approvals[tc.ID]
+		if !hasDecision || !resp.Approved {
+			reason := "tool call rejected"
+			if hasDecision && resp.Reason != "" {
+				reason = resp.Reason
+			}
+			toolMessages = append(toolMessages, openai.ToolMessage(reason, callID))
+			continue
+		}
+
+		// Execute approved tool
+		executor, found := toolMap[tc.Function.Name]
+		if !found {
+			toolMessages = append(toolMessages, openai.ToolMessage(
+				fmt.Sprintf("Error: Tool %s not found", tc.Function.Name), callID,
+			))
+			continue
+		}
+		result, err := executor.Execute(tc.Function.Arguments, contextParams)
+		if err != nil {
+			toolMessages = append(toolMessages, openai.ToolMessage(
+				fmt.Sprintf("Error executing tool %s: %s", tc.Function.Name, err.Error()), callID,
+			))
+			continue
+		}
+
+		// Check for handoff
+		if extractedAgent, ok := IsHandoff(result); ok {
+			state.Agent = extractedAgent
+			result = fmt.Sprintf("Transferred to %s", extractedAgent.Name)
+		}
+
+		toolMessages = append(toolMessages, openai.ToolMessage(fmt.Sprintf("%v", result), callID))
+	}
+
+	// Append tool messages to history and continue agent loop
+	history := make([]openai.ChatCompletionMessageParamUnion, len(state.Messages))
+	copy(history, state.Messages)
+	history = append(history, toolMessages...)
+
+	executor := runner.NewExecutor(config.MaxTurns, config.Timeout)
+	var cancel context.CancelFunc
+	ctx, cancel = executor.ApplyTimeout(ctx)
+	defer cancel()
+
+	// Continue the agent loop from the saved turn count
+	result, err := r.executeAgentLoopResume(
+		ctx, state.Agent, history, contextParams, config,
+		executor, state.TurnCount, approvalHandler,
+	)
+	if err != nil {
+		return result, err
+	}
+
+	// Run output guardrails
+	if err := r.executeOutputGuardrails(ctx, state.Agent, result.FinalOutput); err != nil {
+		return result, err
+	}
+
+	// Save session if provided
+	if options.sess != nil {
+		sessionHandler := runner.NewSessionHandler(options.sess, options.sessionID)
+		if err := sessionHandler.SaveHistory(ctx, result.Messages); err != nil {
+			return result, err
+		}
+	}
+
+	return result, nil
+}
+
+// executeAgentLoopResume continues the agent loop from a saved state.
+func (r *Runner) executeAgentLoopResume(
+	ctx context.Context,
+	agent *Agent,
+	messages []openai.ChatCompletionMessageParamUnion,
+	contextParams ContextVariables,
+	config *RunConfig,
+	executor *runner.Executor,
+	startTurnCount int,
+	approvalHandler tools.ApprovalHandler,
+) (*Result, error) {
+	currentAgent := agent
+	history := make([]openai.ChatCompletionMessageParamUnion, len(messages))
+	copy(history, messages)
+
+	var usage Usage
+	var steps []Step
+	var lastMessage openai.ChatCompletionMessage
+	turnCount := startTurnCount
+
+	for {
+		shouldContinue, err := executor.ShouldContinueExecution(ctx, turnCount)
+		if err != nil {
+			if errors.Is(err, runner.ErrMaxTurnsExceeded) {
+				return nil, ErrMaxTurnsExceeded
+			}
+			if errors.Is(err, runner.ErrTimeout) {
+				return nil, ErrTimeout
+			}
+			return nil, err
+		}
+		if !shouldContinue {
+			break
+		}
+
+		stepStart := time.Now()
+		turnCount++
+
+		agentTools, toolMap := r.prepareTools(currentAgent)
+
+		req, err := r.prepareRequest(ctx, currentAgent, config, agentTools, history)
+		if err != nil {
+			return nil, err
+		}
+
+		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
+
+		completion, err := r.Client.Chat.Completions.New(ctxGen, req)
+		if err != nil {
+			genSpan.RecordError(err)
+			genSpan.End(ctxGen)
+			return nil, fmt.Errorf("LLM call failed: %w", err)
+		}
+
+		genSpan.SetAttributes(map[string]any{
+			"request":  req,
+			"response": completion,
+			"usage": &schema.Usage{
+				PromptTokens:     int(completion.Usage.PromptTokens),
+				CompletionTokens: int(completion.Usage.CompletionTokens),
+				TotalTokens:      int(completion.Usage.TotalTokens),
+			},
+		})
+		genSpan.End(ctxGen)
+
+		if completion.Usage.PromptTokens > 0 {
+			usage.Add(Usage{
+				PromptTokens:     int(completion.Usage.PromptTokens),
+				CompletionTokens: int(completion.Usage.CompletionTokens),
+				TotalTokens:      int(completion.Usage.TotalTokens),
+			})
+		}
+
+		message := completion.Choices[0].Message
+		runner.TruncateToolCallIDs(&message)
+		history = append(history, message.ToParam())
+
+		step := Step{
+			AgentName:  currentAgent.Name,
+			StepNumber: turnCount,
+			Duration:   time.Since(stepStart),
+		}
+
+		if len(message.ToolCalls) == 0 {
+			lastMessage = message
+			steps = append(steps, step)
+			break
+		}
+
+		approvalErr := r.checkToolApprovals(
+			message.ToolCalls, currentAgent, contextParams, approvalHandler,
+			history, turnCount, config,
+		)
+		if approvalErr != nil {
+			return nil, approvalErr
+		}
+
+		toolMessages, recordedToolCalls, nextAgent := r.handleToolCalls(
+			ctx,
+			message.ToolCalls,
+			toolMap,
+			contextParams,
+			currentAgent,
+			resolveParallelToolCalls(currentAgent, config),
+			config.MaxToolConcurrency,
+		)
+
+		step.ToolCalls = recordedToolCalls
+		history = append(history, toolMessages...)
+
+		if nextAgent != nil {
+			currentAgent = nextAgent
+		}
+
+		step.Duration = time.Since(stepStart)
+		steps = append(steps, step)
+	}
+
 	finalOutput := extractFinalOutput(lastMessage)
 
 	return &Result{

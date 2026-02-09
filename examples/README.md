@@ -260,6 +260,24 @@ go run main.go
 
 ---
 
+### 23_tool_approvals - Tool Approvals
+Human-in-the-loop approval workflows for dangerous tool operations.
+
+```bash
+cd examples/23_tool_approvals
+go run main.go
+```
+
+**Demonstrates:**
+- Static approval (`NeedsApproval = true`)
+- Dynamic approval (`ApprovalFunc` with conditional logic)
+- Inline `ApprovalHandler` for synchronous approval decisions
+- Pause/resume workflow with `ToolApprovalRequiredError` and `Runner.Resume()`
+- `StreamEventApprovalRequired` for streaming approval
+- Parallel batch safety (no partial execution)
+
+---
+
 ## Quick Start
 
 Run all examples:
