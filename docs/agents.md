@@ -105,6 +105,19 @@ agent.OnAfterRun = func(ctx context.Context, agent *agents.Agent, result *agents
 }
 ```
 
+## Tool Approvals
+
+Tools can require human approval before execution. Set `NeedsApproval` for static approval or `ApprovalFunc` for conditional logic.
+
+```go
+dangerousTool := tools.New("delete_db", "Delete database", params, callback)
+dangerousTool.NeedsApproval = true
+
+agent.Tools = []tools.Tool{dangerousTool}
+```
+
+When the runner encounters a tool requiring approval, it either calls the configured `ApprovalHandler` or returns a `ToolApprovalRequiredError` for pause/resume workflows. See [Tools - Tool Approvals](tools.md#tool-approvals) for details.
+
 ## Guardrails
 
 Agents can be configured with input guardrails (to validate user messages) and output guardrails (to validate model responses) for safety and compliance.
