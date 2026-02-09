@@ -9,16 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+**StreamWithResult missing tool approval checks** (`stream_with_result.go`):
+- `StreamWithResult` did not check `NeedsApproval` or `ApprovalFunc` before executing tool calls, silently bypassing approval requirements. Added `checkToolApprovals` call and `ApprovalRequiredEvent` emission, matching the behavior of `Run()` and `Stream()`.
+
 ### Added
 
 **Tool Approvals - Human-in-the-Loop Safety (Runner Integration)**:
-- **Approval checking in runner**: `Runner.Run()` and `Runner.Stream()` now evaluate `NeedsApproval` and `ApprovalFunc` on every tool call before execution
+- **Approval checking in runner**: `Runner.Run()`, `Runner.Stream()`, and `Runner.StreamWithResult()` now evaluate `NeedsApproval` and `ApprovalFunc` on every tool call before execution
 - **Pause/resume workflow**: When a tool requires approval and no handler is set, `Run()` returns `ToolApprovalRequiredError` containing a `RunState` snapshot and pending `ApprovalRequest`s
 - **`Runner.Resume()`**: New method to continue execution after approval decisions are made; approved tools execute normally, rejected tools produce rejection messages sent back to the model
 - **`WithApprovalHandler()`**: New run option for synchronous inline approval; the handler is called for each tool needing approval and can approve or reject immediately
 - **`RunState`**: New type capturing agent execution state at point of interruption (agent, messages, turn count, pending tool calls, context variables, config)
 - **`ToolApprovalRequiredError`**: New error type with `Requests []tools.ApprovalRequest` and `State *RunState`
-- **Streaming support**: New `StreamEventApprovalRequired` event type with `ApprovalRequests` field on `StreamEvent`; stream emits approval event before terminating with `ToolApprovalRequiredError`
+- **Streaming support**: `Stream()` emits `StreamEventApprovalRequired` event; `StreamWithResult()` emits `ApprovalRequiredEvent`. Both emit the approval event before terminating with `ToolApprovalRequiredError`
 - **Parallel batch safety**: If any tool call in a parallel batch requires approval, the entire batch is interrupted (no partial execution)
 - **Example**: `examples/23_tool_approvals/` demonstrating pause/resume, dynamic approval, and inline handler patterns
 - **Documentation**: Updated `docs/tools.md` with tool approvals section

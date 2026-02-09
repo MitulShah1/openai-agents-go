@@ -238,7 +238,12 @@ if errors.As(err, &approvalErr) {
 
 ### Streaming
 
-In streaming mode, a `StreamEventApprovalRequired` event is emitted before the stream terminates with `ToolApprovalRequiredError`. This lets stream consumers display approval UI before the error arrives.
+Both streaming APIs support tool approvals:
+
+- **`Stream()`** emits a `StreamEventApprovalRequired` event on the channel before terminating with `ToolApprovalRequiredError`.
+- **`StreamWithResult()`** emits an `*stream.ApprovalRequiredEvent` through the event iterator before terminating with `ToolApprovalRequiredError`.
+
+This lets stream consumers display approval UI before the error arrives. Use `Runner.Resume()` to continue execution after collecting approval decisions.
 
 ### Parallel Tool Calls
 
