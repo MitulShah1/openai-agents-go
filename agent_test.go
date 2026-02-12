@@ -2,7 +2,13 @@ package agents
 
 import (
 	"context"
+	"fmt"
 	"testing"
+
+	"github.com/openai/openai-go/v3"
+
+	"github.com/MitulShah1/openai-agents-go/models"
+	"github.com/MitulShah1/openai-agents-go/prompts"
 )
 
 func TestNewAgent(t *testing.T) {
@@ -113,5 +119,152 @@ func TestLifecycleHooks(t *testing.T) {
 
 	if !afterCalled {
 		t.Error("OnAfterRun was not called")
+	}
+}
+
+func TestGetPrompt_Nil(t *testing.T) {
+	agent := NewAgent("test")
+	// agent.Prompt is nil by default
+
+	result, err := agent.GetPrompt(nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Error("expected nil prompt when not set")
+	}
+}
+
+func TestGetPrompt_StaticPrompt(t *testing.T) {
+	agent := NewAgent("test")
+	agent.Prompt = &prompts.Prompt{
+		ID:      "prompt_helpful",
+		Version: "v2",
+		Variables: map[string]any{
+			"tone": "friendly",
+		},
+	}
+
+	result, err := agent.GetPrompt(nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected non-nil prompt")
+	}
+	if result.ID != "prompt_helpful" {
+		t.Errorf("expected ID prompt_helpful, got %s", result.ID)
+	}
+	if result.Version != "v2" {
+		t.Errorf("expected Version v2, got %s", result.Version)
+	}
+	if result.Variables["tone"] != "friendly" {
+		t.Errorf("expected tone=friendly, got %v", result.Variables["tone"])
+	}
+}
+
+func TestGetPrompt_DynamicPrompt(t *testing.T) {
+	agent := NewAgent("PremiumBot")
+	agent.Model = "gpt-4o"
+	agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
+		return &prompts.Prompt{
+			ID: "prompt_" + data.Agent.Name,
+			Variables: map[string]any{
+				"model": data.Agent.Model,
+			},
+		}, nil
+	})
+
+	result, err := agent.GetPrompt(nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.ID != "prompt_PremiumBot" {
+		t.Errorf("expected prompt_PremiumBot, got %s", result.ID)
+	}
+	if result.Variables["model"] != "gpt-4o" {
+		t.Errorf("expected model=gpt-4o, got %v", result.Variables["model"])
+	}
+}
+
+func TestGetPrompt_DynamicWithContextVars(t *testing.T) {
+	agent := NewAgent("test")
+	agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
+		tier, _ := data.ContextVariables["tier"].(string)
+		if tier == "premium" {
+			return &prompts.Prompt{ID: "prompt_premium"}, nil
+		}
+		return &prompts.Prompt{ID: "prompt_free"}, nil
+	})
+
+	// Premium
+	result, err := agent.GetPrompt(map[string]any{"tier": "premium"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.ID != "prompt_premium" {
+		t.Errorf("expected prompt_premium, got %s", result.ID)
+	}
+
+	// Free
+	result, err = agent.GetPrompt(map[string]any{"tier": "free"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.ID != "prompt_free" {
+		t.Errorf("expected prompt_free, got %s", result.ID)
+	}
+}
+
+func TestGetPrompt_DynamicError(t *testing.T) {
+	agent := NewAgent("test")
+	agent.Prompt = prompts.DynamicPromptFunc(func(_ prompts.DynamicPromptData) (*prompts.Prompt, error) {
+		return nil, fmt.Errorf("prompt service down")
+	})
+
+	_, err := agent.GetPrompt(nil)
+	if err == nil {
+		t.Fatal("expected error from failing dynamic prompt")
+	}
+}
+
+func TestGetPrompt_InvalidType(t *testing.T) {
+	agent := NewAgent("test")
+	agent.Prompt = "not a prompt" // wrong type
+
+	_, err := agent.GetPrompt(nil)
+	if err == nil {
+		t.Fatal("expected error for unsupported Prompt type")
+	}
+}
+
+func TestGetPrompt_IntegrationWithRunner(t *testing.T) {
+	// Verify prompt is resolved in runner context by testing
+	// that GetPrompt works with the same mock setup as runner tests
+	mockResp := &models.ModelResponse{
+		Completion: &openai.ChatCompletion{
+			Choices: []openai.ChatCompletionChoice{
+				{Message: openai.ChatCompletionMessage{Role: "assistant", Content: "prompted!"}},
+			},
+		},
+		Usage: models.ModelUsage{TotalTokens: 5},
+	}
+
+	mock := &testModel{name: "test", response: mockResp}
+	r := NewRunnerWithProvider(&testProvider{model: mock})
+
+	agent := NewAgent("test")
+	agent.Prompt = &prompts.Prompt{ID: "prompt_test", Version: "v1"}
+
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	result, err := r.Run(context.Background(), agent, messages)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.FinalOutput != "prompted!" {
+		t.Errorf("expected 'prompted!', got %q", result.FinalOutput)
 	}
 }

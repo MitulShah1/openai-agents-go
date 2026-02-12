@@ -14,6 +14,7 @@ import (
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/internal/runner"
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/models"
 	"github.com/MitulShah1/openai-agents-go/session"
 	"github.com/MitulShah1/openai-agents-go/tools"
 	"github.com/MitulShah1/openai-agents-go/tracing"
@@ -24,8 +25,13 @@ import (
 // It handles the orchestration of OpenAI API calls, tool execution,
 // session management, and guardrail validation.
 type Runner struct {
-	// Client is the OpenAI API client used to make completion requests
+	// Client is the OpenAI API client used to make completion requests.
+	// Deprecated: Use ModelProvider instead. Kept for backward compatibility.
 	Client *openai.Client
+
+	// ModelProvider is the default model provider for all agents.
+	// When an agent does not have its own ModelProvider, this is used.
+	ModelProvider models.ModelProvider
 }
 
 // NewRunner creates a new Runner with the given OpenAI client.
@@ -36,8 +42,42 @@ type Runner struct {
 //	runner := agents.NewRunner(client)
 func NewRunner(client *openai.Client) *Runner {
 	return &Runner{
-		Client: client,
+		Client:        client,
+		ModelProvider: models.NewOpenAIProvider(client),
 	}
+}
+
+// NewRunnerWithProvider creates a new Runner with the given model provider.
+// This is the preferred constructor for using custom model providers.
+//
+// Example:
+//
+//	provider := models.NewOpenAIProvider(&client)
+//	runner := agents.NewRunnerWithProvider(provider)
+func NewRunnerWithProvider(provider models.ModelProvider) *Runner {
+	return &Runner{
+		ModelProvider: provider,
+	}
+}
+
+// resolveModel returns the Model to use for the given agent.
+// Resolution order:
+//  1. Agent.ModelProvider (if set)
+//  2. Runner.ModelProvider (if set)
+//  3. Fallback: wrap Runner.Client in OpenAIProvider (backward compatibility)
+func (r *Runner) resolveModel(agent *Agent) (models.Model, error) {
+	provider := agent.ModelProvider
+	if provider == nil {
+		provider = r.ModelProvider
+	}
+	if provider == nil {
+		if r.Client != nil {
+			provider = models.NewOpenAIProvider(r.Client)
+		} else {
+			return nil, fmt.Errorf("no model provider configured: set Runner.ModelProvider or Agent.ModelProvider")
+		}
+	}
+	return provider.GetModel(agent.Model)
 }
 
 // Run executes the agent loop with functional options.
@@ -262,11 +302,20 @@ func (r *Runner) executeAgentLoop(
 			return nil, err
 		}
 
+		// Resolve the model for this agent
+		model, err := r.resolveModel(currentAgent)
+		if err != nil {
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, fmt.Errorf("failed to resolve model: %w", err)
+		}
+
 		// Start generation span
 		// Note: Sensitive data redaction is handled automatically by the exporter based on trace config
 		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
 
-		completion, err := r.Client.Chat.Completions.New(ctxGen, req)
+		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{})
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)
@@ -276,23 +325,25 @@ func (r *Runner) executeAgentLoop(
 			return nil, fmt.Errorf("LLM call failed: %w", err)
 		}
 
+		completion := resp.Completion
+
 		genSpan.SetAttributes(map[string]any{
 			"request":  req,
 			"response": completion,
 			"usage": &schema.Usage{
-				PromptTokens:     int(completion.Usage.PromptTokens),
-				CompletionTokens: int(completion.Usage.CompletionTokens),
-				TotalTokens:      int(completion.Usage.TotalTokens),
+				PromptTokens:     resp.Usage.PromptTokens,
+				CompletionTokens: resp.Usage.CompletionTokens,
+				TotalTokens:      resp.Usage.TotalTokens,
 			},
 		})
 		genSpan.End(ctxGen)
 
 		// Track usage
-		if completion.Usage.PromptTokens > 0 {
+		if resp.Usage.PromptTokens > 0 {
 			usage.Add(Usage{
-				PromptTokens:     int(completion.Usage.PromptTokens),
-				CompletionTokens: int(completion.Usage.CompletionTokens),
-				TotalTokens:      int(completion.Usage.TotalTokens),
+				PromptTokens:     resp.Usage.PromptTokens,
+				CompletionTokens: resp.Usage.CompletionTokens,
+				TotalTokens:      resp.Usage.TotalTokens,
 			})
 		}
 
@@ -648,31 +699,38 @@ func (r *Runner) executeAgentLoopResume(
 			return nil, err
 		}
 
+		model, err := r.resolveModel(currentAgent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve model: %w", err)
+		}
+
 		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
 
-		completion, err := r.Client.Chat.Completions.New(ctxGen, req)
+		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{})
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)
 			return nil, fmt.Errorf("LLM call failed: %w", err)
 		}
 
+		completion := resp.Completion
+
 		genSpan.SetAttributes(map[string]any{
 			"request":  req,
 			"response": completion,
 			"usage": &schema.Usage{
-				PromptTokens:     int(completion.Usage.PromptTokens),
-				CompletionTokens: int(completion.Usage.CompletionTokens),
-				TotalTokens:      int(completion.Usage.TotalTokens),
+				PromptTokens:     resp.Usage.PromptTokens,
+				CompletionTokens: resp.Usage.CompletionTokens,
+				TotalTokens:      resp.Usage.TotalTokens,
 			},
 		})
 		genSpan.End(ctxGen)
 
-		if completion.Usage.PromptTokens > 0 {
+		if resp.Usage.PromptTokens > 0 {
 			usage.Add(Usage{
-				PromptTokens:     int(completion.Usage.PromptTokens),
-				CompletionTokens: int(completion.Usage.CompletionTokens),
-				TotalTokens:      int(completion.Usage.TotalTokens),
+				PromptTokens:     resp.Usage.PromptTokens,
+				CompletionTokens: resp.Usage.CompletionTokens,
+				TotalTokens:      resp.Usage.TotalTokens,
 			})
 		}
 

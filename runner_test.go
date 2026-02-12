@@ -3,10 +3,14 @@ package agents
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/packages/ssestream"
+
+	"github.com/MitulShah1/openai-agents-go/models"
 )
 
 func TestNewRunner(t *testing.T) {
@@ -280,5 +284,240 @@ func TestRunAsync_CapturesResult(t *testing.T) {
 
 	if res.Result != nil {
 		t.Error("expected nil Result on error")
+	}
+}
+
+// --- Phase 3: Model Provider Integration Tests ---
+
+// testModel implements models.Model for testing without real API calls.
+type testModel struct {
+	name      string
+	response  *models.ModelResponse
+	err       error
+	callCount int
+}
+
+func (m *testModel) GetResponse(_ context.Context, _ openai.ChatCompletionNewParams, _ models.ModelSettings) (*models.ModelResponse, error) {
+	m.callCount++
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.response, nil
+}
+
+func (m *testModel) StreamResponse(_ context.Context, _ openai.ChatCompletionNewParams, _ models.ModelSettings) (*ssestream.Stream[openai.ChatCompletionChunk], error) {
+	return nil, fmt.Errorf("streaming not implemented in test model")
+}
+
+func (m *testModel) ModelName() string { return m.name }
+
+// testProvider implements models.ModelProvider for testing.
+type testProvider struct {
+	model models.Model
+	err   error
+}
+
+func (p *testProvider) GetModel(_ string) (models.Model, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+	return p.model, nil
+}
+
+func TestNewRunnerWithProvider(t *testing.T) {
+	provider := &testProvider{model: &testModel{name: "test-model"}}
+	r := NewRunnerWithProvider(provider)
+
+	if r == nil {
+		t.Fatal("expected non-nil runner")
+	}
+	if r.ModelProvider == nil {
+		t.Error("expected ModelProvider to be set")
+	}
+	if r.Client != nil {
+		t.Error("expected Client to be nil for provider-based runner")
+	}
+}
+
+func TestNewRunner_SetsModelProvider(t *testing.T) {
+	client := &openai.Client{}
+	r := NewRunner(client)
+
+	if r.ModelProvider == nil {
+		t.Error("NewRunner should auto-set ModelProvider")
+	}
+	if r.Client != client {
+		t.Error("NewRunner should preserve Client for backward compatibility")
+	}
+}
+
+func TestResolveModel_AgentProviderTakesPrecedence(t *testing.T) {
+	agentModel := &testModel{name: "agent-model"}
+	runnerModel := &testModel{name: "runner-model"}
+
+	r := NewRunnerWithProvider(&testProvider{model: runnerModel})
+
+	agent := NewAgent("test")
+	agent.ModelProvider = &testProvider{model: agentModel}
+
+	model, err := r.resolveModel(agent)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if model.ModelName() != "agent-model" {
+		t.Errorf("expected agent-model, got %s", model.ModelName())
+	}
+}
+
+func TestResolveModel_FallsBackToRunnerProvider(t *testing.T) {
+	runnerModel := &testModel{name: "runner-model"}
+	r := NewRunnerWithProvider(&testProvider{model: runnerModel})
+
+	agent := NewAgent("test")
+	// agent.ModelProvider is nil
+
+	model, err := r.resolveModel(agent)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if model.ModelName() != "runner-model" {
+		t.Errorf("expected runner-model, got %s", model.ModelName())
+	}
+}
+
+func TestResolveModel_FallsBackToClient(t *testing.T) {
+	client := &openai.Client{}
+	r := &Runner{Client: client} // No ModelProvider set
+
+	agent := NewAgent("test")
+	agent.Model = "gpt-4o"
+
+	model, err := r.resolveModel(agent)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if model.ModelName() != "gpt-4o" {
+		t.Errorf("expected gpt-4o, got %s", model.ModelName())
+	}
+}
+
+func TestResolveModel_ErrorWhenNoProviderOrClient(t *testing.T) {
+	r := &Runner{} // Neither ModelProvider nor Client
+
+	agent := NewAgent("test")
+
+	_, err := r.resolveModel(agent)
+	if err == nil {
+		t.Fatal("expected error when no provider or client is set")
+	}
+}
+
+func TestRunWithCustomProvider(t *testing.T) {
+	// Create a mock model that returns a simple completion
+	mockResp := &models.ModelResponse{
+		Completion: &openai.ChatCompletion{
+			Choices: []openai.ChatCompletionChoice{
+				{
+					Message: openai.ChatCompletionMessage{
+						Role:    "assistant",
+						Content: "Hello from custom provider!",
+					},
+				},
+			},
+		},
+		Usage: models.ModelUsage{
+			PromptTokens:     10,
+			CompletionTokens: 5,
+			TotalTokens:      15,
+		},
+	}
+
+	mock := &testModel{name: "custom-model", response: mockResp}
+	provider := &testProvider{model: mock}
+	r := NewRunnerWithProvider(provider)
+
+	agent := NewAgent("test")
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	result, err := r.Run(context.Background(), agent, messages)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.FinalOutput != "Hello from custom provider!" {
+		t.Errorf("expected 'Hello from custom provider!', got %q", result.FinalOutput)
+	}
+	if mock.callCount != 1 {
+		t.Errorf("expected model to be called once, got %d", mock.callCount)
+	}
+	if result.Usage.TotalTokens != 15 {
+		t.Errorf("expected TotalTokens 15, got %d", result.Usage.TotalTokens)
+	}
+}
+
+func TestRunWithAgentLevelProvider(t *testing.T) {
+	// Runner has one provider, agent has a different one
+	runnerResp := &models.ModelResponse{
+		Completion: &openai.ChatCompletion{
+			Choices: []openai.ChatCompletionChoice{
+				{Message: openai.ChatCompletionMessage{Role: "assistant", Content: "from runner"}},
+			},
+		},
+		Usage: models.ModelUsage{},
+	}
+	agentResp := &models.ModelResponse{
+		Completion: &openai.ChatCompletion{
+			Choices: []openai.ChatCompletionChoice{
+				{Message: openai.ChatCompletionMessage{Role: "assistant", Content: "from agent provider"}},
+			},
+		},
+		Usage: models.ModelUsage{},
+	}
+
+	runnerMock := &testModel{name: "runner-model", response: runnerResp}
+	agentMock := &testModel{name: "agent-model", response: agentResp}
+
+	r := NewRunnerWithProvider(&testProvider{model: runnerMock})
+
+	agent := NewAgent("test")
+	agent.ModelProvider = &testProvider{model: agentMock}
+
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	result, err := r.Run(context.Background(), agent, messages)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.FinalOutput != "from agent provider" {
+		t.Errorf("expected 'from agent provider', got %q", result.FinalOutput)
+	}
+	if agentMock.callCount != 1 {
+		t.Errorf("expected agent model to be called, got %d calls", agentMock.callCount)
+	}
+	if runnerMock.callCount != 0 {
+		t.Errorf("expected runner model NOT to be called, got %d calls", runnerMock.callCount)
+	}
+}
+
+func TestRunWithProviderError(t *testing.T) {
+	provider := &testProvider{err: fmt.Errorf("provider unavailable")}
+	r := NewRunnerWithProvider(provider)
+
+	agent := NewAgent("test")
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	_, err := r.Run(context.Background(), agent, messages)
+	if err == nil {
+		t.Fatal("expected error from failing provider")
+	}
+	if !errors.Is(err, nil) && err.Error() == "" {
+		t.Error("error should contain provider error info")
 	}
 }

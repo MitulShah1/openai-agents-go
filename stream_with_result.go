@@ -9,6 +9,7 @@ import (
 	"github.com/openai/openai-go/v3"
 
 	"github.com/MitulShah1/openai-agents-go/internal/runner"
+	"github.com/MitulShah1/openai-agents-go/models"
 	"github.com/MitulShah1/openai-agents-go/session"
 	"github.com/MitulShah1/openai-agents-go/stream"
 	"github.com/MitulShah1/openai-agents-go/tools"
@@ -251,6 +252,15 @@ func (r *Runner) executeAgentLoopWithStreaming(
 			return nil, err
 		}
 
+		// Resolve the model for this agent
+		model, err := r.resolveModel(currentAgent)
+		if err != nil {
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, fmt.Errorf("failed to resolve model: %w", err)
+		}
+
 		// Start generation span
 		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
 
@@ -258,7 +268,15 @@ func (r *Runner) executeAgentLoopWithStreaming(
 		streamHandler := stream.NewHandler()
 
 		// Enable streaming
-		streamObj := r.Client.Chat.Completions.NewStreaming(ctxGen, req)
+		streamObj, err := model.StreamResponse(ctxGen, req, models.ModelSettings{})
+		if err != nil {
+			genSpan.RecordError(err)
+			genSpan.End(ctxGen)
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, fmt.Errorf("stream creation failed: %w", err)
+		}
 
 		// Process stream chunks
 		for streamObj.Next() {

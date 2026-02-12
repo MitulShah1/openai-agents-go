@@ -3,11 +3,14 @@ package agents
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/openai/openai-go/v3"
 
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/models"
+	"github.com/MitulShah1/openai-agents-go/prompts"
 	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
@@ -30,9 +33,29 @@ type Agent struct {
 	// Model is the OpenAI model to use (default: "gpt-4o").
 	Model string
 
+	// ModelProvider is an optional model provider for this agent.
+	// If set, it overrides the runner's default provider.
+	// If nil, the runner's provider is used.
+	ModelProvider models.ModelProvider
+
 	// Instructions can be a string or a function that returns a string.
 	// Function signature: func(context.Context) string or func() string.
 	Instructions any
+
+	// Prompt is an optional OpenAI Prompts API configuration.
+	// When set, it is passed to the model alongside the agent's instructions.
+	// Accepts *prompts.Prompt for static prompts or prompts.DynamicPromptFunc
+	// for runtime-resolved prompts. Only usable with OpenAI models using
+	// the Responses API.
+	//
+	// Example (static):
+	//   agent.Prompt = &prompts.Prompt{ID: "prompt_helpful", Version: "v2"}
+	//
+	// Example (dynamic):
+	//   agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
+	//       return &prompts.Prompt{ID: "prompt_" + data.Agent.Name}, nil
+	//   })
+	Prompt any
 
 	// Tools is a list of tools available to the agent.
 	Tools []tools.Tool
@@ -89,6 +112,31 @@ func (a *Agent) GetInstructions(ctx context.Context) string {
 		return v(ctx)
 	default:
 		return DefaultInstructions
+	}
+}
+
+// GetPrompt resolves the agent's prompt configuration.
+// It handles both static *prompts.Prompt and dynamic prompts.DynamicPromptFunc.
+// Returns nil if no prompt is configured.
+func (a *Agent) GetPrompt(contextVars map[string]any) (*prompts.Prompt, error) {
+	if a.Prompt == nil {
+		return nil, nil
+	}
+
+	switch v := a.Prompt.(type) {
+	case *prompts.Prompt:
+		return v, nil
+	case prompts.DynamicPromptFunc:
+		data := prompts.DynamicPromptData{
+			Agent: prompts.AgentInfo{
+				Name:  a.Name,
+				Model: a.Model,
+			},
+			ContextVariables: contextVars,
+		}
+		return v(data)
+	default:
+		return nil, fmt.Errorf("agent %s: unsupported Prompt type %T; use *prompts.Prompt or prompts.DynamicPromptFunc", a.Name, v)
 	}
 }
 
