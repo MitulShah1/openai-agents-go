@@ -3,6 +3,9 @@ package agents
 import (
 	"context"
 	"testing"
+
+	"github.com/MitulShah1/openai-agents-go/guardrail"
+	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 func TestNewAgent(t *testing.T) {
@@ -113,5 +116,60 @@ func TestLifecycleHooks(t *testing.T) {
 
 	if !afterCalled {
 		t.Error("OnAfterRun was not called")
+	}
+}
+
+func TestGetInstructions_WithSkills(t *testing.T) {
+	ctx := context.Background()
+	agent := NewAgent("SkillAgent")
+	agent.Instructions = "Base instructions"
+	agent.AddSkills(
+		Skill{Instructions: "Skill one instructions"},
+		Skill{Instructions: "Skill two instructions"},
+	)
+
+	got := agent.GetInstructions(ctx)
+	want := "Base instructions\n\nSkill one instructions\n\nSkill two instructions"
+	if got != want {
+		t.Fatalf("expected %q, got %q", want, got)
+	}
+}
+
+func TestAddSkill_AppendsToolsAndGuardrails(t *testing.T) {
+	agent := NewAgent("SkillAgent")
+
+	tool := tools.New(
+		"mock_tool",
+		"mock",
+		map[string]any{"type": "object"},
+		func(_ map[string]any, _ tools.ContextVariables) (any, error) { return "ok", nil },
+	)
+	inGR := guardrail.NewGuardrail("in", func(_ context.Context, _ string) (*guardrail.Result, error) {
+		return &guardrail.Result{Passed: true}, nil
+	})
+	outGR := guardrail.NewGuardrail("out", func(_ context.Context, _ string) (*guardrail.Result, error) {
+		return &guardrail.Result{Passed: true}, nil
+	})
+
+	agent.AddSkill(Skill{
+		Name:             "support",
+		Description:      "Support workflow",
+		Instructions:     "Use support rubric",
+		Tools:            []tools.Tool{tool},
+		InputGuardrails:  []*guardrail.Guardrail{inGR},
+		OutputGuardrails: []*guardrail.Guardrail{outGR},
+	})
+
+	if len(agent.Skills) != 1 {
+		t.Fatalf("expected 1 skill, got %d", len(agent.Skills))
+	}
+	if len(agent.Tools) != 1 {
+		t.Fatalf("expected 1 tool, got %d", len(agent.Tools))
+	}
+	if len(agent.InputGuardrails) != 1 {
+		t.Fatalf("expected 1 input guardrail, got %d", len(agent.InputGuardrails))
+	}
+	if len(agent.OutputGuardrails) != 1 {
+		t.Fatalf("expected 1 output guardrail, got %d", len(agent.OutputGuardrails))
 	}
 }

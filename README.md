@@ -17,11 +17,12 @@ A lightweight, powerful Go framework for building multi-agent workflows with Ope
 
 1. **Agents**: LLMs configured with instructions, tools, and behavior settings
 2. **Tools**: Functions that agents can call to perform actions
-3. **Handoffs**: Transfer control between specialized agents dynamically
-4. **Structured Outputs**: Schema-validated JSON responses for reliable parsing
-5. **Guardrails**: Input/output validation for safety and compliance
-6. **Sessions**: Persistent conversation history and memory management
-7. **Run Configuration**: Control execution flow with max turns, timeouts, and more
+3. **Runtime Skills**: Reusable capability bundles (instructions + tools + guardrails) on agents
+4. **Handoffs**: Transfer control between specialized agents dynamically
+5. **Structured Outputs**: Schema-validated JSON responses for reliable parsing
+6. **Guardrails**: Input/output validation for safety and compliance
+7. **Sessions**: Persistent conversation history and memory management
+8. **Run Configuration**: Control execution flow with max turns, timeouts, and more
 
 Explore the [`examples/`](./examples) directory to see the SDK in action.
 
@@ -31,6 +32,7 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 
 - ✅ **Multi-Agent Workflows**: Compose and orchestrate multiple agents
 - ✅ **Tool Integration**: Seamlessly call Go functions from agent responses
+- ✅ **Runtime Agent Skills**: Reusable capability composition via `Skill` + `AddSkill`
 - ✅ **Handoffs**: Dynamic agent-to-agent transfers during execution
 - ✅ **Structured Outputs**: Schema-validated JSON responses with fluent API
 - ✅ **Guardrails**: Input/output validation with PII detection, URL filtering, custom regex, and OpenAI Moderation API
@@ -48,6 +50,21 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 - ✅ **Tracing & Observability**: OpenTelemetry integration (v0.4.0)
 - ✅ **Advanced DB Backends**: Redis, PostgreSQL (v0.4.0)
 - ✅ **Tool Approvals**: Human-in-the-loop approval workflows with pause/resume (v0.6.0)
+
+---
+
+
+## Project Agent Skills
+
+This repo includes project-local skills in `.agents/skills`.
+These are for **developer workflow guidance** when using Codex in this repository.
+
+See [.agents/skills/README.md](.agents/skills/README.md) for available project skills.
+
+## Runtime Agent Skills (SDK API)
+
+The Go SDK also provides a runtime `Skill` type you can attach to an `Agent` with `AddSkill`/`AddSkills`.
+These runtime skills compose instructions, tools, and guardrails directly into agent behavior.
 
 ---
 
