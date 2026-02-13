@@ -76,6 +76,7 @@ go get github.com/MitulShah1/openai-agents-go@latest
 |---------|--------|---------|
 | Multi-Agent Workflows | ✅ Complete | v0.1.0 |
 | Tool Integration | ✅ Complete | v0.1.0 |
+| **Runtime Agent Skills** | ✅ Complete | v0.6.1 |
 | Handoffs | ✅ Complete | v0.1.0 |
 | Structured Outputs | ✅ Complete | v0.1.0 |
 | Lifecycle Hooks | ✅ Complete | v0.1.0 |
