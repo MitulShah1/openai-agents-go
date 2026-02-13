@@ -24,6 +24,7 @@ agent.Instructions = "You are a helpful AI assistant."
 | `Model` | `string` | Optional | The OpenAI model to use. Defaults to `gpt-4o`. |
 | `Instructions` | `string` \| `func` | Required | The system prompt or instructions for the agent. |
 | `Tools` | `[]tools.Tool` | Optional | A list of tools the agent can use. |
+| `Skills` | `[]agents.Skill` | Optional | Runtime capability bundles that append instructions, tools, and guardrails. |
 | `ResponseFormat`| `*jsonschema.ResponseFormat` | Optional | Schema for [Structured Outputs](structured_outputs.md). |
 | `Temperature` | `*float64` | Optional | Sampling temperature (0.0 - 2.0). |
 | `MaxTokens` | `*int` | Optional | Max tokens for generated response. |
@@ -65,6 +66,34 @@ agent.Tools = []tools.Tool{
 ```
 
 When an agent decides to call a tool, the `Runner` executes the corresponding Go function and feeds the result back to the agent. See [Tools](tools.md) for more comprehensive documentation.
+
+
+## Runtime Skills
+
+Use runtime skills to compose reusable capabilities onto an agent.
+
+A runtime skill can contribute:
+- Additional instructions
+- Tools
+- Input guardrails
+- Output guardrails
+
+```go
+supportSkill := agents.Skill{
+    Name:         "customer_support",
+    Description:  "Handle support triage and escalation",
+    Instructions: "Ask clarifying questions first, then classify urgency.",
+    Tools:        []tools.Tool{lookupTicketTool, escalateTool},
+}
+
+agent := agents.NewAgent("Support Assistant")
+agent.Instructions = "You are a customer support assistant."
+agent.AddSkill(supportSkill)
+```
+
+`Agent.GetInstructions` appends runtime skill instructions after the agent's base instructions.
+
+> Note: This runtime `agents.Skill` API is separate from project-local Codex skill files stored in `.agents/skills`.
 
 ## Handoffs
 

@@ -37,6 +37,9 @@ type Agent struct {
 	// Tools is a list of tools available to the agent.
 	Tools []tools.Tool
 
+	// Skills is a list of runtime capability bundles applied to the agent.
+	Skills []Skill
+
 	// ParallelToolCalls determines if tools can be called in parallel.
 	// Can be overridden by RunConfig.
 	ParallelToolCalls bool
@@ -82,13 +85,13 @@ func NewAgent(name string) *Agent {
 func (a *Agent) GetInstructions(ctx context.Context) string {
 	switch v := a.Instructions.(type) {
 	case string:
-		return v
+		return a.instructionsWithSkills(v)
 	case func() string:
-		return v()
+		return a.instructionsWithSkills(v())
 	case func(context.Context) string:
-		return v(ctx)
+		return a.instructionsWithSkills(v(ctx))
 	default:
-		return DefaultInstructions
+		return a.instructionsWithSkills(DefaultInstructions)
 	}
 }
 
