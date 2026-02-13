@@ -6,7 +6,10 @@
 // their own providers for Anthropic, Google, or any other LLM service.
 package models
 
-import "github.com/MitulShah1/openai-agents-go/jsonschema"
+import (
+	"github.com/MitulShah1/openai-agents-go/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/prompts"
+)
 
 // ModelSettings holds configuration for a model request.
 // These settings are resolved from agent-level and run-level configuration,
@@ -41,6 +44,13 @@ type ModelSettings struct {
 	// ResponseFormat defines the structure of the response (for structured outputs).
 	// If nil, responses will be unstructured text.
 	ResponseFormat *jsonschema.ResponseFormat
+
+	// Prompt is an optional OpenAI Prompts API configuration.
+	// When set, it is forwarded to the model alongside system instructions.
+	// For Chat Completions API this is stored but not sent (not supported).
+	// For Responses API or custom providers, it can be used to configure
+	// the prompt externally.
+	Prompt *prompts.Prompt
 }
 
 // Resolve merges two ModelSettings, with the override taking precedence
@@ -72,6 +82,9 @@ func (s ModelSettings) Resolve(override ModelSettings) ModelSettings {
 	}
 	if override.ResponseFormat != nil {
 		result.ResponseFormat = override.ResponseFormat
+	}
+	if override.Prompt != nil {
+		result.Prompt = override.Prompt
 	}
 
 	return result

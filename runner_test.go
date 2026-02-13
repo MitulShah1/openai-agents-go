@@ -291,21 +291,24 @@ func TestRunAsync_CapturesResult(t *testing.T) {
 
 // testModel implements models.Model for testing without real API calls.
 type testModel struct {
-	name      string
-	response  *models.ModelResponse
-	err       error
-	callCount int
+	name         string
+	response     *models.ModelResponse
+	err          error
+	callCount    int
+	lastSettings models.ModelSettings // captures the last ModelSettings received
 }
 
-func (m *testModel) GetResponse(_ context.Context, _ openai.ChatCompletionNewParams, _ models.ModelSettings) (*models.ModelResponse, error) {
+func (m *testModel) GetResponse(_ context.Context, _ openai.ChatCompletionNewParams, settings models.ModelSettings) (*models.ModelResponse, error) {
 	m.callCount++
+	m.lastSettings = settings
 	if m.err != nil {
 		return nil, m.err
 	}
 	return m.response, nil
 }
 
-func (m *testModel) StreamResponse(_ context.Context, _ openai.ChatCompletionNewParams, _ models.ModelSettings) (*ssestream.Stream[openai.ChatCompletionChunk], error) {
+func (m *testModel) StreamResponse(_ context.Context, _ openai.ChatCompletionNewParams, settings models.ModelSettings) (*ssestream.Stream[openai.ChatCompletionChunk], error) {
+	m.lastSettings = settings
 	return nil, fmt.Errorf("streaming not implemented in test model")
 }
 

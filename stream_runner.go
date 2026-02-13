@@ -223,11 +223,20 @@ func (r *Runner) executeAgentLoopStream(
 			return nil, fmt.Errorf("failed to resolve model: %w", err)
 		}
 
+		// Resolve prompt if configured
+		resolvedPrompt, err := currentAgent.GetPrompt(contextParams)
+		if err != nil {
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, fmt.Errorf("prompt resolution failed: %w", err)
+		}
+
 		// Start generation span (redaction handled automatically)
 		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
 
 		// Enable streaming
-		stream, err := model.StreamResponse(ctxGen, req, models.ModelSettings{})
+		stream, err := model.StreamResponse(ctxGen, req, models.ModelSettings{Prompt: resolvedPrompt})
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)

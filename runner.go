@@ -311,11 +311,20 @@ func (r *Runner) executeAgentLoop(
 			return nil, fmt.Errorf("failed to resolve model: %w", err)
 		}
 
+		// Resolve prompt if configured
+		resolvedPrompt, err := currentAgent.GetPrompt(contextParams)
+		if err != nil {
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, fmt.Errorf("prompt resolution failed: %w", err)
+		}
+
 		// Start generation span
 		// Note: Sensitive data redaction is handled automatically by the exporter based on trace config
 		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
 
-		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{})
+		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{Prompt: resolvedPrompt})
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)
@@ -704,9 +713,15 @@ func (r *Runner) executeAgentLoopResume(
 			return nil, fmt.Errorf("failed to resolve model: %w", err)
 		}
 
+		// Resolve prompt if configured
+		resolvedPrompt, err := currentAgent.GetPrompt(contextParams)
+		if err != nil {
+			return nil, fmt.Errorf("prompt resolution failed: %w", err)
+		}
+
 		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
 
-		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{})
+		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{Prompt: resolvedPrompt})
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)

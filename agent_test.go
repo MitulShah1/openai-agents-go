@@ -238,9 +238,8 @@ func TestGetPrompt_InvalidType(t *testing.T) {
 	}
 }
 
-func TestGetPrompt_IntegrationWithRunner(t *testing.T) {
-	// Verify prompt is resolved in runner context by testing
-	// that GetPrompt works with the same mock setup as runner tests
+func TestGetPrompt_IntegrationWithRunner_Static(t *testing.T) {
+	// Verify the runner resolves the prompt and passes it to the model
 	mockResp := &models.ModelResponse{
 		Completion: &openai.ChatCompletion{
 			Choices: []openai.ChatCompletionChoice{
@@ -266,5 +265,121 @@ func TestGetPrompt_IntegrationWithRunner(t *testing.T) {
 	}
 	if result.FinalOutput != "prompted!" {
 		t.Errorf("expected 'prompted!', got %q", result.FinalOutput)
+	}
+
+	// Verify the prompt was actually passed to the model via ModelSettings
+	if mock.lastSettings.Prompt == nil {
+		t.Fatal("expected prompt to be passed to model, got nil")
+	}
+	if mock.lastSettings.Prompt.ID != "prompt_test" {
+		t.Errorf("expected prompt ID 'prompt_test', got %q", mock.lastSettings.Prompt.ID)
+	}
+	if mock.lastSettings.Prompt.Version != "v1" {
+		t.Errorf("expected prompt Version 'v1', got %q", mock.lastSettings.Prompt.Version)
+	}
+}
+
+func TestGetPrompt_IntegrationWithRunner_Dynamic(t *testing.T) {
+	// Verify dynamic prompts receive context variables from the runner
+	mockResp := &models.ModelResponse{
+		Completion: &openai.ChatCompletion{
+			Choices: []openai.ChatCompletionChoice{
+				{Message: openai.ChatCompletionMessage{Role: "assistant", Content: "ok"}},
+			},
+		},
+		Usage: models.ModelUsage{},
+	}
+
+	mock := &testModel{name: "test", response: mockResp}
+	r := NewRunnerWithProvider(&testProvider{model: mock})
+
+	agent := NewAgent("test")
+	agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
+		tier, _ := data.ContextVariables["tier"].(string)
+		return &prompts.Prompt{ID: "prompt_" + tier}, nil
+	})
+
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	_, err := r.Run(context.Background(), agent, messages,
+		WithContextVariables(ContextVariables{"tier": "premium"}),
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the dynamic prompt resolved with context variables
+	if mock.lastSettings.Prompt == nil {
+		t.Fatal("expected prompt to be passed to model, got nil")
+	}
+	if mock.lastSettings.Prompt.ID != "prompt_premium" {
+		t.Errorf("expected prompt ID 'prompt_premium', got %q", mock.lastSettings.Prompt.ID)
+	}
+}
+
+func TestGetPrompt_IntegrationWithRunner_NoPrompt(t *testing.T) {
+	// Verify no prompt is passed when agent has no prompt configured
+	mockResp := &models.ModelResponse{
+		Completion: &openai.ChatCompletion{
+			Choices: []openai.ChatCompletionChoice{
+				{Message: openai.ChatCompletionMessage{Role: "assistant", Content: "ok"}},
+			},
+		},
+		Usage: models.ModelUsage{},
+	}
+
+	mock := &testModel{name: "test", response: mockResp}
+	r := NewRunnerWithProvider(&testProvider{model: mock})
+
+	agent := NewAgent("test")
+	// agent.Prompt is nil
+
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	_, err := r.Run(context.Background(), agent, messages)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if mock.lastSettings.Prompt != nil {
+		t.Errorf("expected nil prompt when not configured, got %+v", mock.lastSettings.Prompt)
+	}
+}
+
+func TestGetPrompt_StreamingPromptErrorPropagates(t *testing.T) {
+	// Verify that if GetPrompt fails, the streaming runner propagates the error
+	mock := &testModel{name: "test"}
+	r := NewRunnerWithProvider(&testProvider{model: mock})
+
+	agent := NewAgent("test")
+	agent.Prompt = prompts.DynamicPromptFunc(func(_ prompts.DynamicPromptData) (*prompts.Prompt, error) {
+		return nil, fmt.Errorf("prompt service unavailable")
+	})
+
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	// Test Stream() path
+	ch, err := r.Stream(context.Background(), agent, messages)
+	if err != nil {
+		t.Fatalf("Stream() should not return error immediately: %v", err)
+	}
+
+	// Drain channel and look for the error event
+	var gotPromptError bool
+	for event := range ch {
+		if event.Type == StreamEventError && event.Error != nil {
+			if contains := fmt.Sprintf("%v", event.Error); len(contains) > 0 {
+				gotPromptError = true
+			}
+		}
+	}
+	if !gotPromptError {
+		t.Error("expected prompt resolution error to propagate through Stream()")
 	}
 }

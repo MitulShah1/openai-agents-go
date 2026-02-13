@@ -85,9 +85,13 @@ func applySettings(params *openai.ChatCompletionNewParams, settings ModelSetting
 	if settings.PresencePenalty != nil {
 		params.PresencePenalty = openai.Float(*settings.PresencePenalty)
 	}
-	if len(settings.Stop) > 0 {
+	if len(settings.Stop) == 1 {
 		params.Stop = openai.ChatCompletionNewParamsStopUnion{
 			OfString: openai.String(settings.Stop[0]),
+		}
+	} else if len(settings.Stop) > 1 {
+		params.Stop = openai.ChatCompletionNewParamsStopUnion{
+			OfStringArray: settings.Stop,
 		}
 	}
 }

@@ -261,6 +261,15 @@ func (r *Runner) executeAgentLoopWithStreaming(
 			return nil, fmt.Errorf("failed to resolve model: %w", err)
 		}
 
+		// Resolve prompt if configured
+		resolvedPrompt, err := currentAgent.GetPrompt(contextParams)
+		if err != nil {
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, fmt.Errorf("prompt resolution failed: %w", err)
+		}
+
 		// Start generation span
 		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
 
@@ -268,7 +277,7 @@ func (r *Runner) executeAgentLoopWithStreaming(
 		streamHandler := stream.NewHandler()
 
 		// Enable streaming
-		streamObj, err := model.StreamResponse(ctxGen, req, models.ModelSettings{})
+		streamObj, err := model.StreamResponse(ctxGen, req, models.ModelSettings{Prompt: resolvedPrompt})
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)

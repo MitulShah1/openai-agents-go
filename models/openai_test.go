@@ -56,14 +56,37 @@ func TestApplySettings_Penalties(t *testing.T) {
 	}
 }
 
-func TestApplySettings_Stop(t *testing.T) {
+func TestApplySettings_StopSingle(t *testing.T) {
 	params := openai.ChatCompletionNewParams{}
 	settings := ModelSettings{Stop: []string{"END"}}
 
 	applySettings(&params, settings)
 
 	if params.Stop.OfString.Value != "END" {
-		t.Errorf("expected Stop END, got %v", params.Stop)
+		t.Errorf("expected Stop OfString END, got %v", params.Stop.OfString.Value)
+	}
+	if params.Stop.OfStringArray != nil {
+		t.Errorf("expected OfStringArray to be nil for single stop, got %v", params.Stop.OfStringArray)
+	}
+}
+
+func TestApplySettings_StopMultiple(t *testing.T) {
+	params := openai.ChatCompletionNewParams{}
+	settings := ModelSettings{Stop: []string{"END", "STOP", "DONE"}}
+
+	applySettings(&params, settings)
+
+	if params.Stop.OfStringArray == nil {
+		t.Fatal("expected OfStringArray to be set for multiple stop sequences")
+	}
+	if len(params.Stop.OfStringArray) != 3 {
+		t.Fatalf("expected 3 stop sequences, got %d", len(params.Stop.OfStringArray))
+	}
+	expected := []string{"END", "STOP", "DONE"}
+	for i, v := range params.Stop.OfStringArray {
+		if v != expected[i] {
+			t.Errorf("stop[%d]: expected %q, got %q", i, expected[i], v)
+		}
 	}
 }
 

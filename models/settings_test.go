@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/prompts"
 )
 
 func ptrFloat64(v float64) *float64 { return &v }
@@ -112,4 +113,48 @@ func TestModelSettings_Resolve_AllFields(t *testing.T) {
 	if result.ResponseFormat == nil || result.ResponseFormat.Type != "json_schema" {
 		t.Errorf("expected ResponseFormat json_schema, got %v", result.ResponseFormat)
 	}
+}
+
+func TestModelSettings_Resolve_Prompt(t *testing.T) {
+	promptA := &prompts.Prompt{ID: "prompt_a", Version: "v1"}
+	promptB := &prompts.Prompt{ID: "prompt_b", Version: "v2"}
+
+	t.Run("base has Prompt, override nil preserves base", func(t *testing.T) {
+		base := ModelSettings{Prompt: promptA}
+		override := ModelSettings{}
+		result := base.Resolve(override)
+
+		if result.Prompt == nil {
+			t.Fatal("expected Prompt to be preserved from base, got nil")
+		}
+		if result.Prompt.ID != "prompt_a" || result.Prompt.Version != "v1" {
+			t.Errorf("expected base Prompt (prompt_a v1), got %v", result.Prompt)
+		}
+	})
+
+	t.Run("base nil Prompt, override has Prompt uses override", func(t *testing.T) {
+		base := ModelSettings{}
+		override := ModelSettings{Prompt: promptB}
+		result := base.Resolve(override)
+
+		if result.Prompt == nil {
+			t.Fatal("expected Prompt from override, got nil")
+		}
+		if result.Prompt.ID != "prompt_b" || result.Prompt.Version != "v2" {
+			t.Errorf("expected override Prompt (prompt_b v2), got %v", result.Prompt)
+		}
+	})
+
+	t.Run("both have Prompt, override wins", func(t *testing.T) {
+		base := ModelSettings{Prompt: promptA}
+		override := ModelSettings{Prompt: promptB}
+		result := base.Resolve(override)
+
+		if result.Prompt == nil {
+			t.Fatal("expected Prompt from override, got nil")
+		}
+		if result.Prompt.ID != "prompt_b" || result.Prompt.Version != "v2" {
+			t.Errorf("expected override Prompt (prompt_b v2), got %v", result.Prompt)
+		}
+	})
 }
