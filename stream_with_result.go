@@ -188,6 +188,8 @@ func (r *Runner) executeStreamWithResult(
 }
 
 // executeAgentLoopWithStreaming runs the main agent loop with full streaming support
+//
+//nolint:gocyclo
 func (r *Runner) executeAgentLoopWithStreaming(
 	ctx context.Context,
 	result *stream.Result,

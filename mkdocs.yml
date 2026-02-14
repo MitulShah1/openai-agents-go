@@ -71,6 +71,8 @@ nav:
   - Examples: examples.md
   - Documentation:
       - Agents: agents.md
+      - Models: models.md
+      - Prompts: prompts.md
       - Running Agents: running_agents.md
       - Tracing: tracing.md
       - Tools: tools.md

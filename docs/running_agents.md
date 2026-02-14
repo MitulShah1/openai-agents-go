@@ -17,6 +17,28 @@ client := openai.NewClient(option.WithAPIKey("your-api-key"))
 runner := agents.NewRunner(&client)
 ```
 
+### Custom Model Providers
+
+For explicit control over model providers, use `NewRunnerWithProvider`:
+
+```go
+import (
+    agents "github.com/MitulShah1/openai-agents-go"
+    "github.com/MitulShah1/openai-agents-go/models"
+)
+
+// Create an explicit OpenAI provider
+provider := models.NewOpenAIProvider(&client)
+runner := agents.NewRunnerWithProvider(provider)
+```
+
+This is useful when you want to:
+- Use multiple LLM providers in one application
+- Implement custom providers for Anthropic, Google, or other backends
+- Control model resolution behavior
+
+See [Models](models.md) for details on the provider abstraction.
+
 ## Basic Execution
 
 To run an agent, call the `Run` method with a context, the agent, and the initial messages.

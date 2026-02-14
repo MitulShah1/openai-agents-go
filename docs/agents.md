@@ -22,7 +22,9 @@ agent.Instructions = "You are a helpful AI assistant."
 |-------|------|----------|-------------|
 | `Name` | `string` | Required | The name of the agent. Used for logging and tool identification. |
 | `Model` | `string` | Optional | The OpenAI model to use. Defaults to `gpt-4o`. |
+| `ModelProvider` | `models.ModelProvider` | Optional | Custom model provider for this agent. Overrides runner's default. See [Models](models.md). |
 | `Instructions` | `string` \| `func` | Required | The system prompt or instructions for the agent. |
+| `Prompt` | `*prompts.Prompt` \| `DynamicPromptFunc` | Optional | OpenAI Prompts API configuration. See [Prompts](prompts.md). |
 | `Tools` | `[]tools.Tool` | Optional | A list of tools the agent can use. |
 | `Skills` | `[]agents.Skill` | Optional | Runtime capability bundles that append instructions, tools, and guardrails. |
 | `ResponseFormat`| `*jsonschema.ResponseFormat` | Optional | Schema for [Structured Outputs](structured_outputs.md). |

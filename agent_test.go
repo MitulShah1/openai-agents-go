@@ -167,7 +167,7 @@ func TestGetPrompt_StaticPrompt(t *testing.T) {
 
 func TestGetPrompt_DynamicPrompt(t *testing.T) {
 	agent := NewAgent("PremiumBot")
-	agent.Model = "gpt-4o"
+	agent.Model = openai.ChatModelGPT4o
 	agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
 		return &prompts.Prompt{
 			ID: "prompt_" + data.Agent.Name,
@@ -184,8 +184,8 @@ func TestGetPrompt_DynamicPrompt(t *testing.T) {
 	if result.ID != "prompt_PremiumBot" {
 		t.Errorf("expected prompt_PremiumBot, got %s", result.ID)
 	}
-	if result.Variables["model"] != "gpt-4o" {
-		t.Errorf("expected model=gpt-4o, got %v", result.Variables["model"])
+	if result.Variables["model"] != openai.ChatModelGPT4o {
+		t.Errorf("expected model=%s, got %v", openai.ChatModelGPT4o, result.Variables["model"])
 	}
 }
 

@@ -152,6 +152,8 @@ func (r *Runner) executeStream(
 }
 
 // executeAgentLoopStream runs the main agent execution loop with streaming
+//
+//nolint:gocyclo
 func (r *Runner) executeAgentLoopStream(
 	ctx context.Context,
 	agent *Agent,

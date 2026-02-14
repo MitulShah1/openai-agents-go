@@ -95,9 +95,9 @@ go get github.com/MitulShah1/openai-agents-go@latest
 | **MCP Support** | ✅ Complete | v0.5.0 |
 | **Computer Use** | ✅ Complete | v0.5.0 |
 | **Diff Tool** | ✅ Complete | v0.5.0 |
-| **Tool Approvals** | ✅ Foundation | v0.5.1 |
-| **Prompts API** | ✅ Foundation | v0.5.1 |
-| Model Abstraction | 🔮 Planned | v0.6.0 |
+| **Tool Approvals** | ✅ Complete | v0.6.0 |
+| **Prompts API** | ✅ Complete | v0.7.0 |
+| **Model Abstraction** | ✅ Complete | v0.7.0 |
 
 See the [CHANGELOG](https://github.com/MitulShah1/openai-agents-go/blob/main/CHANGELOG.md) for detailed release notes.
 
@@ -152,8 +152,9 @@ See the [CHANGELOG](https://github.com/MitulShah1/openai-agents-go/blob/main/CHA
 |Tracing|✅|✅|✅|
 |MCP Support|✅|✅|✅|
 |Computer Use|✅|✅|✅|
-|Tool Approvals|✅|✅|✅ (Foundation)|
-|Prompts API|✅|❌|✅ (Foundation)|
+|Tool Approvals|✅|✅|✅|
+|Prompts API|✅|❌|✅|
+|Model Abstraction|❌|❌|✅|
 |Voice Agents|❌|✅|🔮 Future|
 |**Type Safety**|⚠️ Runtime|⚠️ TypeScript|✅ Compile-time|
 |**Zero Dependencies**|❌|❌|✅ (core only)|

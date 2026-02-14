@@ -24,8 +24,8 @@ Week 4-5  │ v0.2.3 - Enhanced Guardrails & Error Handling ✅
 Week 6-9  │ v0.3.0 - DB Backends, Tracing & Composition ✅
 Week 13-14│ v0.5.2 - P0 Bug Fixes ✅
 Week 15-16│ v0.6.0 - Tool Approvals (Runner Integration) ✅
-Week 17-18│ v0.7.0 - Model Abstraction & Prompts API 🚀
-Week 19-20│ v1.0.0 - Stable Release
+Week 17-18│ v0.7.0 - Model Abstraction & Prompts API ✅
+Week 19-20│ v1.0.0 - Stable Release 🚀
 Future    │ v1.1.0+ - Advanced Integrations
 ```
 
@@ -118,42 +118,19 @@ For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
-### v0.7.0 - Model Abstraction & Prompts API 🚀
-**Timeline**: Q1 2026  
-**Status**: Planned
-
-#### Goals
-
-1. **Complete Prompts API Integration**
-   - [ ] Add `Prompt` field to `Agent` struct
-   - [ ] Implement dynamic prompt resolution in runner
-   - [ ] Support OpenAI Prompts API parameters
-   - [ ] Add prompt template examples
-   - [ ] Add comprehensive tests
-
-2. **Model Provider Abstraction**
-   - [ ] Create `models.Provider` interface
-   - [ ] Implement `models.OpenAIProvider`
-   - [ ] Implement `models.AnthropicProvider`
-   - [ ] Implement `models.GoogleProvider`
-   - [ ] Add provider configuration utilities
-   - [ ] Update `Agent` to use `Provider` interface
-   - [ ] Create multi-provider examples
-   - [ ] Add provider integration tests
-
-3. **Documentation & Examples**
-   - [ ] Create `examples/XX_prompts_demo/`
-   - [ ] Create `examples/XX_multi_provider/`
-   - [ ] Update README.md with new features
-   - [ ] Add migration guide for v0.6.0 → v0.7.0
-
-#### Success Criteria
-
-- All foundation APIs fully integrated with agent runtime
-- Support for 3+ LLM providers (OpenAI, Anthropic, Google)
-- Comprehensive examples for all new features
-- 100% test coverage on new features
-- Python SDK feature parity achieved
+#### v0.7.0 - Model Abstraction & Prompts API (2026-02-14) ✅
+- **Model Provider Abstraction**: Pluggable LLM backends via `models.Model` and `models.ModelProvider` interfaces
+  - `OpenAIProvider` built-in implementation
+  - `MultiProvider` for prefix-based routing to multiple providers
+  - `ModelSettings` with `Resolve()` merge logic
+  - 3-tier resolution: Agent.ModelProvider → Runner.ModelProvider → Runner.Client
+  - `NewRunnerWithProvider()` constructor for explicit control
+- **Prompts API**: Dynamic prompt configuration via `Agent.Prompt` field
+  - `prompts.Prompt` for static prompts
+  - `prompts.DynamicPromptFunc` for runtime-resolved prompts
+  - Runner integration in all execution paths
+- **Examples**: `24_prompts_demo/`, `25_multi_provider/`
+- **Documentation**: `docs/models.md`, `docs/prompts.md`
 
 ---
 
@@ -265,5 +242,5 @@ We welcome contributions! Please:
 
 ---
 
-**Last Updated**: 2026-02-09  
-**Current Version**: v0.6.0
+**Last Updated**: 2026-02-14  
+**Current Version**: v0.7.0

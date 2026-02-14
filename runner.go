@@ -26,6 +26,7 @@ import (
 // session management, and guardrail validation.
 type Runner struct {
 	// Client is the OpenAI API client used to make completion requests.
+	//
 	// Deprecated: Use ModelProvider instead. Kept for backward compatibility.
 	Client *openai.Client
 

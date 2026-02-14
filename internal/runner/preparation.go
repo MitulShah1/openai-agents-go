@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MitulShah1/openai-agents-go/jsonschema"
 	"github.com/openai/openai-go/v3"
+
+	"github.com/MitulShah1/openai-agents-go/jsonschema"
 )
 
 // RequestConfig holds configuration for preparing requests

@@ -9,6 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.7.0] - 2026-02-14
+
+### Added
+
+**Model Provider Abstraction**:
+- **`models.Model` interface**: Core abstraction for LLM backends with `GetResponse()` and `StreamResponse()` methods
+- **`models.ModelProvider` interface**: Factory for creating Model instances by name
+- **`models.OpenAIProvider`**: Built-in provider wrapping OpenAI's Chat Completions API
+- **`models.OpenAIChatCompletionsModel`**: Model implementation for OpenAI
+- **`models.MultiProvider`**: Prefix-based routing to multiple providers (e.g., `anthropic/claude-3-sonnet` → Anthropic)
+- **`models.ModelSettings`**: Unified settings struct with `Resolve()` merge logic
+- **`models.ModelResponse`**: Normalized response wrapper with usage tracking
+- **`NewRunnerWithProvider(provider)`**: New constructor for explicit provider control
+- **`Agent.ModelProvider`**: Per-agent provider override for multi-provider workflows
+- **3-tier resolution**: Agent.ModelProvider → Runner.ModelProvider → Runner.Client (fallback)
+- **Backward compatible**: `NewRunner(client)` still works, auto-wraps in `OpenAIProvider`
+
+**Prompts API Integration**:
+- **`Agent.Prompt` field**: Configure OpenAI Prompts API for centrally managed prompts
+- **`prompts.Prompt` struct**: Static prompt configuration with ID, version, and variables
+- **`prompts.DynamicPromptFunc`**: Runtime prompt resolution based on context variables
+- **`prompts.DynamicPromptData`**: Context passed to dynamic prompt functions (agent info, context vars)
+- **`Agent.GetPrompt(contextVars)`**: Resolves static or dynamic prompts
+- **Runner integration**: All 4 execution paths (`Run`, `RunAsync`, `Stream`, `StreamWithResult`) pass resolved prompts to models
+
+**Examples**:
+- **`examples/24_prompts_demo/`**: Static, dynamic, and variable-based prompt usage
+- **`examples/25_multi_provider/`**: MultiProvider routing and agent-level overrides
+
+**Documentation**:
+- **`docs/models.md`**: New concept guide for Model Provider abstraction
+- **`docs/prompts.md`**: New concept guide for Prompts API
+- Updated `docs/agents.md` with ModelProvider and Prompt attributes
+- Updated `docs/running_agents.md` with NewRunnerWithProvider section
+
+### Changed
+
+- **Runner refactored**: Uses `model.GetResponse()` and `model.StreamResponse()` instead of direct client calls
+- **`resolveModel()` internal method**: Implements 3-tier provider resolution
+
+### Notes
+
+- Custom provider implementations must convert responses to `*openai.ChatCompletion` format
+- `ModelSettings.Prompt` carries resolved prompt from runner to model implementations
+- StreamResponse returns `*ssestream.Stream[openai.ChatCompletionChunk]` for streaming compatibility
+
 ## [v0.6.0] - 2026-02-09
 
 ### Added
@@ -474,6 +520,7 @@ conditionalTool := tools.Tool{
 
 ## Version Links
 
+- [v0.7.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.7.0)
 - [v0.6.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.6.0)
 - [v0.5.2](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.5.2)
 - [v0.5.1](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.5.1)
@@ -493,7 +540,6 @@ conditionalTool := tools.Tool{
 ## Future Releases
 
 See [ROADMAP.md](./ROADMAP.md) for planned features:
-- v0.7.0: Model provider abstraction, Prompts API integration
 - v1.0.0: Stable release with API guarantees
-- v1.1.0+: Advanced integrations (Batch API, Realtime API, RAG, MCP)
+- v1.1.0+: Advanced integrations (Batch API, Realtime API, Voice Agents)
 
