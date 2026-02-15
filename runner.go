@@ -251,199 +251,16 @@ func (r *Runner) executeAgentLoop(
 	executor *runner.Executor,
 	approvalHandler tools.ApprovalHandler,
 ) (*Result, error) {
-	currentAgent := agent
-	history := make([]openai.ChatCompletionMessageParamUnion, len(messages))
-	copy(history, messages)
-
-	var usage Usage
-	var steps []Step
-	var lastMessage openai.ChatCompletionMessage
-	turnCount := 0
-
-	for {
-		// Check if execution should continue
-		shouldContinue, err := executor.ShouldContinueExecution(ctx, turnCount)
-		if err != nil {
-			if errors.Is(err, runner.ErrMaxTurnsExceeded) {
-				return nil, ErrMaxTurnsExceeded
-			}
-			if errors.Is(err, runner.ErrTimeout) {
-				return nil, ErrTimeout
-			}
-			return nil, err
-		}
-		if !shouldContinue {
-			break
-		}
-
-		stepStart := time.Now()
-		turnCount++
-
-		// Create agent span for this iteration (no-op if no current trace)
-		var agentSpan tracing.Span
-		if !tracing.IsTracingDisabled() {
-			var err error
-			ctx, agentSpan, err = tracing.StartAgentSpan(ctx, currentAgent.Name,
-				tracing.WithModel(currentAgent.Model),
-				tracing.WithInstructions(currentAgent.GetInstructions(ctx)))
-			if err != nil {
-				agentSpan = nil
-			}
-		}
-
-		// Prepare tools
-		tools, toolMap := r.prepareTools(currentAgent)
-
-		// Prepare and execute request
-		req, err := r.prepareRequest(ctx, currentAgent, config, tools, history)
-		if err != nil {
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, err
-		}
-
-		// Resolve the model for this agent
-		model, err := r.resolveModel(currentAgent)
-		if err != nil {
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, fmt.Errorf("failed to resolve model: %w", err)
-		}
-
-		// Resolve prompt if configured
-		resolvedPrompt, err := currentAgent.GetPrompt(contextParams)
-		if err != nil {
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, fmt.Errorf("prompt resolution failed: %w", err)
-		}
-
-		// Start generation span
-		// Note: Sensitive data redaction is handled automatically by the exporter based on trace config
-		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
-
-		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{Prompt: resolvedPrompt})
-		if err != nil {
-			genSpan.RecordError(err)
-			genSpan.End(ctxGen)
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, fmt.Errorf("LLM call failed: %w", err)
-		}
-
-		// Validate response
-		if resp.Completion == nil || len(resp.Completion.Choices) == 0 {
-			genSpan.RecordError(ErrEmptyModelResponse)
-			genSpan.End(ctxGen)
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, ErrEmptyModelResponse
-		}
-
-		completion := resp.Completion
-
-		genSpan.SetAttributes(map[string]any{
-			"request":  req,
-			"response": completion,
-			"usage": &schema.Usage{
-				PromptTokens:     resp.Usage.PromptTokens,
-				CompletionTokens: resp.Usage.CompletionTokens,
-				TotalTokens:      resp.Usage.TotalTokens,
-			},
-		})
-		genSpan.End(ctxGen)
-
-		// Track usage
-		if resp.Usage.PromptTokens > 0 || resp.Usage.CompletionTokens > 0 || resp.Usage.TotalTokens > 0 {
-			usage.Add(Usage{
-				PromptTokens:     resp.Usage.PromptTokens,
-				CompletionTokens: resp.Usage.CompletionTokens,
-				TotalTokens:      resp.Usage.TotalTokens,
-			})
-		}
-
-		message := completion.Choices[0].Message
-
-		// Truncate tool call IDs
-		runner.TruncateToolCallIDs(&message)
-
-		history = append(history, message.ToParam())
-
-		// Record step
-		step := Step{
-			AgentName:  currentAgent.Name,
-			StepNumber: turnCount,
-			Duration:   time.Since(stepStart),
-		}
-
-		// Check for tool calls
-		if len(message.ToolCalls) == 0 {
-			lastMessage = message
-			steps = append(steps, step)
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			break
-		}
-
-		// Check tool approvals before execution
-		approvalErr := r.checkToolApprovals(
-			message.ToolCalls, currentAgent, contextParams, approvalHandler,
-			history, turnCount, config,
-		)
-		if approvalErr != nil {
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, approvalErr
-		}
-
-		// Handle tool calls
-		toolMessages, recordedToolCalls, nextAgent := r.handleToolCalls(
-			ctx,
-			message.ToolCalls,
-			toolMap,
-			contextParams,
-			currentAgent,
-			resolveParallelToolCalls(currentAgent, config),
-			config.MaxToolConcurrency,
-		)
-
-		step.ToolCalls = recordedToolCalls
-		history = append(history, toolMessages...)
-
-		if nextAgent != nil {
-			// Record handoff span (Python parity).
-			if tracing.FromContext(ctx) != nil && nextAgent.Name != "" {
-				ctx2, hs, _ := tracing.StartHandoffSpan(ctx, currentAgent.Name, nextAgent.Name, "")
-				hs.End(ctx2)
-			}
-			currentAgent = nextAgent
-		}
-
-		step.Duration = time.Since(stepStart)
-		steps = append(steps, step)
-
-		if agentSpan != nil {
-			agentSpan.End(ctx)
-		}
-	}
-
-	// Extract final output
-	finalOutput := extractFinalOutput(lastMessage)
-
-	return &Result{
-		Messages:    history,
-		Agent:       currentAgent,
-		Usage:       usage,
-		Steps:       steps,
-		FinalOutput: finalOutput,
-	}, nil
+	return r.executeAgentLoopResume(
+		ctx,
+		agent,
+		messages,
+		contextParams,
+		config,
+		executor,
+		0,
+		approvalHandler,
+	)
 }
 
 // checkToolApprovals evaluates whether any tool calls require approval.
@@ -740,7 +557,7 @@ func (r *Runner) executeAgentLoopResume(
 		}
 
 		// Validate response
-		if resp.Completion == nil || len(resp.Completion.Choices) == 0 {
+		if resp == nil || resp.Completion == nil || len(resp.Completion.Choices) == 0 {
 			genSpan.RecordError(ErrEmptyModelResponse)
 			genSpan.End(ctxGen)
 			return nil, ErrEmptyModelResponse

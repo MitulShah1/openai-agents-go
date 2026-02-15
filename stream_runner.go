@@ -247,6 +247,14 @@ func (r *Runner) executeAgentLoopStream(
 			}
 			return nil, fmt.Errorf("stream creation failed: %w", err)
 		}
+		if stream == nil {
+			genSpan.RecordError(ErrEmptyModelResponse)
+			genSpan.End(ctxGen)
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, ErrEmptyModelResponse
+		}
 
 		var accumulatedContent strings.Builder
 		var toolCalls []openai.ChatCompletionChunkChoiceDeltaToolCall

@@ -5,8 +5,6 @@ import (
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/packages/ssestream"
-
-	"github.com/MitulShah1/openai-agents-go/tools"
 )
 
 // Model is the core interface for interacting with any LLM.
@@ -54,23 +52,4 @@ type Model interface {
 
 	// ModelName returns the identifier of the model (e.g., "gpt-4o").
 	ModelName() string
-}
-
-// ModelRequest contains all parameters needed to make a model call.
-// This is used internally by the runner to pass context to the model.
-type ModelRequest struct {
-	// SystemInstructions is the system prompt for the model.
-	SystemInstructions string
-
-	// Messages is the conversation history.
-	Messages []openai.ChatCompletionMessageParamUnion
-
-	// Tools is the list of tools available for the model to call.
-	Tools []tools.Tool
-
-	// Settings contains model configuration (temperature, max tokens, etc.).
-	Settings ModelSettings
-
-	// ModelName is the name/ID of the model to use.
-	ModelName string
 }

@@ -22,6 +22,15 @@ import (
 	"github.com/MitulShah1/openai-agents-go/models"
 )
 
+const placeholderAPIKey = "sk-placeholder"
+
+func getAPIKey() string {
+	if key := os.Getenv("OPENAI_API_KEY"); key != "" {
+		return key
+	}
+	return placeholderAPIKey
+}
+
 func main() {
 	fmt.Println("=== Model Provider Abstraction Demo ===")
 	fmt.Println()
@@ -39,11 +48,7 @@ func main() {
 func demoDefaultProvider() {
 	fmt.Println("--- 1. Default Provider (Backward Compatible) ---")
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		apiKey = "sk-placeholder"
-	}
-	client := openai.NewClient(option.WithAPIKey(apiKey))
+	client := openai.NewClient(option.WithAPIKey(getAPIKey()))
 	runner := agents.NewRunner(&client)
 
 	fmt.Printf("Runner created with client: ModelProvider is %T\n", runner.ModelProvider)
@@ -54,11 +59,7 @@ func demoDefaultProvider() {
 func demoExplicitProvider() {
 	fmt.Println("--- 2. Explicit Provider ---")
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		apiKey = "sk-placeholder"
-	}
-	client := openai.NewClient(option.WithAPIKey(apiKey))
+	client := openai.NewClient(option.WithAPIKey(getAPIKey()))
 
 	provider := models.NewOpenAIProvider(&client)
 	runner := agents.NewRunnerWithProvider(provider)
@@ -77,11 +78,7 @@ func demoExplicitProvider() {
 func demoPerAgentProvider() {
 	fmt.Println("--- 3. Per-Agent Providers ---")
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		apiKey = "sk-placeholder"
-	}
-	client := openai.NewClient(option.WithAPIKey(apiKey))
+	client := openai.NewClient(option.WithAPIKey(getAPIKey()))
 
 	runner := agents.NewRunner(&client)
 
@@ -105,11 +102,7 @@ func demoPerAgentProvider() {
 func demoMultiProvider() {
 	fmt.Println("--- 4. MultiProvider (Prefix Routing) ---")
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		apiKey = "sk-placeholder"
-	}
-	client := openai.NewClient(option.WithAPIKey(apiKey))
+	client := openai.NewClient(option.WithAPIKey(getAPIKey()))
 
 	openaiProvider := models.NewOpenAIProvider(&client)
 

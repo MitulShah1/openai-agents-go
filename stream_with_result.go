@@ -288,6 +288,14 @@ func (r *Runner) executeAgentLoopWithStreaming(
 			}
 			return nil, fmt.Errorf("stream creation failed: %w", err)
 		}
+		if streamObj == nil {
+			genSpan.RecordError(ErrEmptyModelResponse)
+			genSpan.End(ctxGen)
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, ErrEmptyModelResponse
+		}
 
 		// Process stream chunks
 		for streamObj.Next() {
