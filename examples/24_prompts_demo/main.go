@@ -1,21 +1,24 @@
-// Package main demonstrates the Prompts API for agent configuration.
+// Package main demonstrates the Prompts API for dynamic prompt configuration.
+//
+// The Prompts API lets agents use centrally managed prompts from OpenAI's
+// Prompts API, enabling prompt versioning, A/B testing, and runtime
+// customization without code changes.
 //
 // This example shows three patterns:
-//  1. Static prompt - Fixed prompt configuration
-//  2. Dynamic prompt - Runtime-resolved prompt based on context
-//  3. No prompt - Traditional instructions-only approach
-//
-// The Prompts API allows agents to use centrally managed prompt configurations
-// from OpenAI's Prompts API, enabling prompt versioning, A/B testing, and
-// runtime customization without code changes.
-//
-// Note: This example demonstrates the API surface. In production, prompts
-// would be fetched from OpenAI's Prompts API endpoint.
+//  1. Static prompts — a fixed Prompt with ID, version, and variables
+//  2. Dynamic prompts — runtime prompt selection based on context
+//  3. Prompt variables — template variable substitution
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
 
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
+
+	agents "github.com/MitulShah1/openai-agents-go"
 	"github.com/MitulShah1/openai-agents-go/prompts"
 )
 
@@ -30,134 +33,129 @@ func main() {
 	demoPromptVariables()
 }
 
-// demoStaticPrompt shows how to configure an agent with a fixed prompt.
+// demoStaticPrompt shows how to configure a fixed prompt on an agent.
 func demoStaticPrompt() {
 	fmt.Println("--- 1. Static Prompt ---")
 
-	// A static prompt has a fixed ID and optional version
-	prompt := &prompts.Prompt{
+	agent := agents.NewAgent("Assistant")
+	agent.Instructions = "You are a helpful assistant."
+
+	// Set a static prompt — the ID references a prompt in OpenAI's Prompts API
+	agent.Prompt = &prompts.Prompt{
 		ID:      "prompt_helpful_assistant",
 		Version: "v2",
 	}
 
-	fmt.Printf("  Prompt ID: %s\n", prompt.ID)
-	fmt.Printf("  Version: %s\n", prompt.Version)
+	// Resolve the prompt (normally done by the runner automatically)
+	resolved, err := agent.GetPrompt(nil)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Resolved prompt: ID=%s, Version=%s\n", resolved.ID, resolved.Version)
+	fmt.Println("The runner passes this prompt to the model via ModelSettings.")
 	fmt.Println()
-	fmt.Println("  Usage:")
-	fmt.Println("    agent := agents.NewAgent(\"Assistant\")")
-	fmt.Println("    agent.Prompt = &prompts.Prompt{")
-	fmt.Println("        ID:      \"prompt_helpful_assistant\",")
-	fmt.Println("        Version: \"v2\",")
-	fmt.Println("    }")
+
+	// To actually run with an API key:
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey != "" {
+		client := openai.NewClient(option.WithAPIKey(apiKey))
+		runner := agents.NewRunner(&client)
+
+		messages := []openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage("Hello! What can you help me with?"),
+		}
+
+		result, err := runner.Run(context.Background(), agent, messages)
+		if err != nil {
+			fmt.Printf("Run error (expected if prompt ID doesn't exist): %v\n", err)
+			return
+		}
+		fmt.Printf("Response: %s\n", result.FinalOutput)
+	} else {
+		fmt.Println("(Set OPENAI_API_KEY to run with a real API)")
+	}
 }
 
-// demoDynamicPrompt shows how to select prompts based on runtime context.
+// demoDynamicPrompt shows runtime prompt selection based on context.
 func demoDynamicPrompt() {
 	fmt.Println("--- 2. Dynamic Prompt ---")
 
-	// A dynamic prompt function receives context and returns the appropriate prompt
-	dynamicPrompt := prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
-		// Select prompt based on user tier from context variables
+	agent := agents.NewAgent("Support")
+	agent.Instructions = "You are a customer support agent."
+
+	// Use a dynamic prompt that selects based on context variables
+	agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
 		tier, _ := data.ContextVariables["tier"].(string)
 
 		switch tier {
 		case "premium":
 			return &prompts.Prompt{
-				ID:      "prompt_premium_assistant",
+				ID:      "prompt_premium_support",
 				Version: "v3",
 			}, nil
 		case "enterprise":
 			return &prompts.Prompt{
-				ID:      "prompt_enterprise_assistant",
+				ID:      "prompt_enterprise_support",
 				Version: "v1",
 			}, nil
 		default:
 			return &prompts.Prompt{
-				ID: "prompt_free_assistant",
+				ID: "prompt_free_support",
 			}, nil
 		}
 	})
 
-	// Test with different context variables
-	testCases := []map[string]any{
-		{"tier": "free"},
-		{"tier": "premium"},
-		{"tier": "enterprise"},
-	}
-
-	for _, ctxVars := range testCases {
-		data := prompts.DynamicPromptData{
-			Agent:            prompts.AgentInfo{Name: "Assistant", Model: "gpt-4o"},
-			ContextVariables: ctxVars,
+	// Simulate different user tiers
+	for _, tier := range []string{"free", "premium", "enterprise"} {
+		vars := map[string]any{"tier": tier}
+		resolved, err := agent.GetPrompt(vars)
+		if err != nil {
+			fmt.Printf("  %s tier: Error: %v\n", tier, err)
+			continue
 		}
-
-		prompt, _ := dynamicPrompt(data)
-		fmt.Printf("  tier=%q → prompt=%s (version=%s)\n",
-			ctxVars["tier"], prompt.ID, prompt.Version)
+		fmt.Printf("  %s tier → prompt ID=%s", tier, resolved.ID)
+		if resolved.Version != "" {
+			fmt.Printf(", version=%s", resolved.Version)
+		}
+		fmt.Println()
 	}
 
 	fmt.Println()
-	fmt.Println("  Usage:")
-	fmt.Println("    agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {")
-	fmt.Println("        if data.ContextVariables[\"tier\"] == \"premium\" {")
-	fmt.Println("            return &prompts.Prompt{ID: \"prompt_premium\"}, nil")
-	fmt.Println("        }")
-	fmt.Println("        return &prompts.Prompt{ID: \"prompt_default\"}, nil")
-	fmt.Println("    })")
+	fmt.Println("With the runner, pass context variables via WithContextVariables:")
+	fmt.Println(`  runner.Run(ctx, agent, messages, agents.WithContextVariables(agents.ContextVariables{"tier": "premium"}))`)
 }
 
-// demoPromptVariables shows how to pass template variables to prompts.
+// demoPromptVariables shows how to use template variables in prompts.
 func demoPromptVariables() {
-	fmt.Println("--- 3. Prompt Variables ---")
+	fmt.Println("--- 3. Prompt with Variables ---")
 
-	// Variables are substituted in the prompt template at runtime
-	prompt := &prompts.Prompt{
+	agent := agents.NewAgent("Personalized")
+	agent.Instructions = "You are a personalized assistant."
+
+	// Static prompt with template variables
+	agent.Prompt = &prompts.Prompt{
 		ID:      "prompt_personalized",
 		Version: "v1",
 		Variables: map[string]any{
-			"user_name":  "Alice",
-			"language":   "Spanish",
-			"tone":       "friendly",
-			"max_length": 100,
+			"user_name": "Alice",
+			"language":  "English",
+			"tone":      "friendly",
 		},
 	}
 
-	fmt.Printf("  Prompt ID: %s\n", prompt.ID)
-	fmt.Println("  Variables:")
-	for k, v := range prompt.Variables {
-		fmt.Printf("    %s: %v\n", k, v)
+	resolved, err := agent.GetPrompt(nil)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
 	}
 
-	fmt.Println()
-	fmt.Println("  Usage:")
-	fmt.Println("    agent.Prompt = &prompts.Prompt{")
-	fmt.Println("        ID: \"prompt_personalized\",")
-	fmt.Println("        Variables: map[string]any{")
-	fmt.Println("            \"user_name\": userName,")
-	fmt.Println("            \"language\":  preferredLang,")
-	fmt.Println("        },")
-	fmt.Println("    }")
-
-	// Dynamic prompts can also include variables
-	fmt.Println()
-	fmt.Println("  Dynamic prompts with variables:")
-
-	dynamicWithVars := prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
-		userName, _ := data.ContextVariables["user_name"].(string)
-		return &prompts.Prompt{
-			ID: "prompt_greeting",
-			Variables: map[string]any{
-				"name":  userName,
-				"agent": data.Agent.Name,
-			},
-		}, nil
-	})
-
-	data := prompts.DynamicPromptData{
-		Agent:            prompts.AgentInfo{Name: "Greeter", Model: "gpt-4o"},
-		ContextVariables: map[string]any{"user_name": "Bob"},
+	fmt.Printf("Prompt ID: %s (version: %s)\n", resolved.ID, resolved.Version)
+	fmt.Println("Variables:")
+	for k, v := range resolved.Variables {
+		fmt.Printf("  %s = %v\n", k, v)
 	}
-
-	resolved, _ := dynamicWithVars(data)
-	fmt.Printf("    Resolved: ID=%s, Variables=%v\n", resolved.ID, resolved.Variables)
+	fmt.Println()
+	fmt.Println("These variables are substituted in the prompt template by the API.")
 }

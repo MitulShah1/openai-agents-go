@@ -524,3 +524,45 @@ func TestRunWithProviderError(t *testing.T) {
 		t.Error("error should contain provider error info")
 	}
 }
+
+func TestRunEmptyModelResponse_NilCompletion(t *testing.T) {
+	mock := &testModel{
+		name:     "empty-model",
+		response: &models.ModelResponse{Completion: nil},
+	}
+	provider := &testProvider{model: mock}
+	r := NewRunnerWithProvider(provider)
+
+	agent := NewAgent("test")
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	_, err := r.Run(context.Background(), agent, messages)
+	if !errors.Is(err, ErrEmptyModelResponse) {
+		t.Errorf("expected ErrEmptyModelResponse, got %v", err)
+	}
+}
+
+func TestRunEmptyModelResponse_EmptyChoices(t *testing.T) {
+	mock := &testModel{
+		name: "empty-model",
+		response: &models.ModelResponse{
+			Completion: &openai.ChatCompletion{
+				Choices: []openai.ChatCompletionChoice{},
+			},
+		},
+	}
+	provider := &testProvider{model: mock}
+	r := NewRunnerWithProvider(provider)
+
+	agent := NewAgent("test")
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Hello"),
+	}
+
+	_, err := r.Run(context.Background(), agent, messages)
+	if !errors.Is(err, ErrEmptyModelResponse) {
+		t.Errorf("expected ErrEmptyModelResponse, got %v", err)
+	}
+}

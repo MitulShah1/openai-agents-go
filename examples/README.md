@@ -278,6 +278,37 @@ go run main.go
 
 ---
 
+### 24_prompts_demo - Prompts API
+Using static and dynamic prompts for externally managed prompt configurations.
+
+```bash
+cd examples/24_prompts_demo
+go run main.go
+```
+
+**Demonstrates:**
+- Static prompts with ID, version, and variables
+- Dynamic prompt selection based on context variables
+- Prompt template variable substitution
+
+---
+
+### 25_multi_provider - Model Providers
+Using multiple model providers in a single application.
+
+```bash
+cd examples/25_multi_provider
+go run main.go
+```
+
+**Demonstrates:**
+- Default provider (backward compatible `NewRunner`)
+- Explicit provider with `NewRunnerWithProvider`
+- Per-agent provider overrides
+- `MultiProvider` prefix-based routing
+
+---
+
 ## Quick Start
 
 Run all examples:

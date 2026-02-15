@@ -112,3 +112,24 @@ func TestNewOpenAIChatCompletionsModel(t *testing.T) {
 		t.Errorf("expected gpt-4o-mini, got %s", model.ModelName())
 	}
 }
+
+func TestApplySettings_ModelNameOverride(t *testing.T) {
+	params := openai.ChatCompletionNewParams{
+		Model: openai.ChatModel("openai/gpt-4o"),
+	}
+	settings := ModelSettings{}
+	applySettings(&params, settings)
+
+	// applySettings should NOT change the model
+	if params.Model != openai.ChatModel("openai/gpt-4o") {
+		t.Errorf("applySettings should not change model, got %v", params.Model)
+	}
+}
+
+func TestOpenAIChatCompletionsModel_ModelName(t *testing.T) {
+	client := openai.NewClient()
+	model := NewOpenAIChatCompletionsModel(&client, "gpt-4o")
+	if model.ModelName() != "gpt-4o" {
+		t.Errorf("expected gpt-4o, got %s", model.ModelName())
+	}
+}

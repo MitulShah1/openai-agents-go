@@ -118,3 +118,36 @@ func TestOpenAIProvider_Client(t *testing.T) {
 		t.Error("Client() should return the underlying client")
 	}
 }
+
+func TestNewMultiProvider_NilDefaultProvider(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for nil defaultProvider")
+		}
+	}()
+	NewMultiProvider(nil)
+}
+
+func TestWithProviderPrefix_NilProvider(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for nil provider")
+		}
+	}()
+	WithProviderPrefix("test", nil)
+}
+
+func TestMultiProvider_PrefixStrippedModelName(t *testing.T) {
+	defaultProvider := NewOpenAIProvider(&openai.Client{})
+	mp := NewMultiProvider(defaultProvider,
+		WithProviderPrefix("openai", defaultProvider),
+	)
+
+	model, err := mp.GetModel("openai/gpt-4o-mini")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if model.ModelName() != "gpt-4o-mini" {
+		t.Errorf("expected stripped model name 'gpt-4o-mini', got %q", model.ModelName())
+	}
+}

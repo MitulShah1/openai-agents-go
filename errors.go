@@ -15,6 +15,9 @@ var (
 
 	// ErrNoMessages is returned when Run is called with empty messages
 	ErrNoMessages = errors.New("no messages provided")
+
+	// ErrEmptyModelResponse is returned when a model provider returns a response with no choices
+	ErrEmptyModelResponse = errors.New("model returned empty response with no choices")
 )
 
 // ToolExecutionError wraps errors from tool execution

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.7.0] - 2026-02-14
+## [v0.7.0] - 2026-02-15
 
 ### Added
 
@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Agent.ModelProvider`**: Per-agent provider override for multi-provider workflows
 - **3-tier resolution**: Agent.ModelProvider → Runner.ModelProvider → Runner.Client (fallback)
 - **Backward compatible**: `NewRunner(client)` still works, auto-wraps in `OpenAIProvider`
+- **`ErrEmptyModelResponse`**: Sentinel error for model responses with nil completion or empty choices
 
 **Prompts API Integration**:
 - **`Agent.Prompt` field**: Configure OpenAI Prompts API for centrally managed prompts
@@ -43,6 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`docs/prompts.md`**: New concept guide for Prompts API
 - Updated `docs/agents.md` with ModelProvider and Prompt attributes
 - Updated `docs/running_agents.md` with NewRunnerWithProvider section
+
+### Fixed
+
+- **Prefixed model names sent to OpenAI API**: `MultiProvider` stripped prefixes (e.g., `openai/gpt-4o` → `gpt-4o`) but the runner still sent the original prefixed name in API requests; `OpenAIChatCompletionsModel` now overrides `params.Model` with its own `modelName`
+- **Nil completion panics**: Runner dereferenced `resp.Completion` and `completion.Choices[0]` without validation; custom providers returning nil/empty responses now get `ErrEmptyModelResponse` instead of a panic
+- **Usage under-reporting for custom providers**: Usage accumulation was gated on `PromptTokens > 0`, dropping all usage when a provider returned only `CompletionTokens` or `TotalTokens`; now tracks usage when any token field is non-zero
+- **Nil provider panics in MultiProvider**: `NewMultiProvider` and `WithProviderPrefix` accepted nil providers, causing delayed nil-dereference panics at runtime; now panic immediately at construction with a clear message
 
 ### Changed
 

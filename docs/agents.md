@@ -31,6 +31,8 @@ agent.Instructions = "You are a helpful AI assistant."
 | `Temperature` | `*float64` | Optional | Sampling temperature (0.0 - 2.0). |
 | `MaxTokens` | `*int` | Optional | Max tokens for generated response. |
 | `ParallelToolCalls` | `bool` | Optional | Whether to allow parallel tool execution (default: `true`). |
+| `ModelProvider` | `models.ModelProvider` | Optional | Per-agent model provider. Overrides runner's default. See [Models](models.md). |
+| `Prompt` | `*prompts.Prompt` \| `DynamicPromptFunc` | Optional | Prompts API configuration. See [Prompts](prompts.md). |
 
 ## Instructions
 
@@ -96,6 +98,40 @@ agent.AddSkill(supportSkill)
 `Agent.GetInstructions` appends runtime skill instructions after the agent's base instructions.
 
 > Note: This runtime `agents.Skill` API is separate from project-local Codex skill files stored in `.agents/skills`.
+
+## Model Provider
+
+By default, agents use the runner's model provider. Set `ModelProvider` on an agent for per-agent provider overrides:
+
+```go
+import "github.com/MitulShah1/openai-agents-go/models"
+
+agent := agents.NewAgent("Premium")
+agent.ModelProvider = models.NewOpenAIProvider(&premiumClient)
+```
+
+See [Models](models.md) for provider patterns and custom implementations.
+
+## Prompts
+
+Agents can use OpenAI's Prompts API for externally managed prompt configurations:
+
+```go
+import "github.com/MitulShah1/openai-agents-go/prompts"
+
+// Static prompt
+agent.Prompt = &prompts.Prompt{
+    ID:      "prompt_helpful",
+    Version: "v2",
+}
+
+// Dynamic prompt
+agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
+    return &prompts.Prompt{ID: "prompt_" + data.Agent.Name}, nil
+})
+```
+
+See [Prompts](prompts.md) for full documentation.
 
 ## Handoffs
 

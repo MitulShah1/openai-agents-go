@@ -34,6 +34,9 @@ func (m *OpenAIChatCompletionsModel) GetResponse(
 	params openai.ChatCompletionNewParams,
 	settings ModelSettings,
 ) (*ModelResponse, error) {
+	// Override model name to strip any provider prefix (e.g., "openai/gpt-4o" → "gpt-4o")
+	params.Model = openai.ChatModel(m.modelName)
+
 	// Apply model settings to the request
 	applySettings(&params, settings)
 
@@ -59,6 +62,9 @@ func (m *OpenAIChatCompletionsModel) StreamResponse(
 	params openai.ChatCompletionNewParams,
 	settings ModelSettings,
 ) (*ssestream.Stream[openai.ChatCompletionChunk], error) {
+	// Override model name to strip any provider prefix (e.g., "openai/gpt-4o" → "gpt-4o")
+	params.Model = openai.ChatModel(m.modelName)
+
 	// Apply model settings to the request
 	applySettings(&params, settings)
 

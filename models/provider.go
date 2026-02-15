@@ -41,15 +41,22 @@ type MultiProvider struct {
 type MultiProviderOption func(*MultiProvider)
 
 // WithProviderPrefix registers a provider for a given prefix.
+// Panics if provider is nil.
 func WithProviderPrefix(prefix string, provider ModelProvider) MultiProviderOption {
+	if provider == nil {
+		panic("models: WithProviderPrefix called with nil provider")
+	}
 	return func(mp *MultiProvider) {
 		mp.providers[prefix] = provider
 	}
 }
 
 // NewMultiProvider creates a MultiProvider with a default provider and optional
-// prefix-based routing.
+// prefix-based routing. Panics if defaultProvider is nil.
 func NewMultiProvider(defaultProvider ModelProvider, opts ...MultiProviderOption) *MultiProvider {
+	if defaultProvider == nil {
+		panic("models: NewMultiProvider called with nil defaultProvider")
+	}
 	mp := &MultiProvider{
 		defaultProvider: defaultProvider,
 		providers:       make(map[string]ModelProvider),

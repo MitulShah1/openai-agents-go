@@ -1,89 +1,105 @@
 # Prompts
 
-The `prompts` package allows you to manage and resolve agent instructions dynamically. It supports both static string prompts and dynamic functions that can adapt based on context.
+The Prompts API allows agents to use centrally managed prompt configurations from OpenAI's Prompts API, enabling prompt versioning, A/B testing, and runtime customization without code changes.
 
 ## Overview
 
-The `Prompt` struct is the central container for prompt logic. It can hold either a static string or a dynamic function.
+The `prompts` package provides:
+
+- **`Prompt`** — A static prompt configuration with ID, version, and variables
+- **`DynamicPromptFunc`** — A function that generates prompts at runtime based on context
+
+## Static Prompts
+
+Set a fixed prompt on an agent using a `*prompts.Prompt`:
 
 ```go
-type Prompt struct {
-    Static  string
-    Dynamic DynamicPromptFunc
+import "github.com/MitulShah1/openai-agents-go/prompts"
+
+agent := agents.NewAgent("Assistant")
+agent.Prompt = &prompts.Prompt{
+    ID:      "prompt_helpful_assistant",
+    Version: "v2",
+    Variables: map[string]any{
+        "tone": "friendly",
+    },
 }
 ```
 
-### Static Prompts
+The prompt ID references a prompt in OpenAI's Prompts API. The version is optional (defaults to latest). Variables are substituted into the prompt template.
 
-A static prompt is a fixed string. This is the simplest form of instruction.
+## Dynamic Prompts
 
-```go
-// Implicitly created when setting agent.Instructions = "..."
-p := prompts.NewStaticPrompt("You are a helpful assistant.")
-```
-
-### Dynamic Prompts
-
-Dynamic prompts allow you to generate instructions at runtime based on context variables.
+Use `DynamicPromptFunc` for runtime prompt selection:
 
 ```go
-func dynamicInstructions(ctx context.Context, data prompts.DynamicPromptData) (string, error) {
-    user := data.ContextVars["user_name"]
-    return fmt.Sprintf("Hello %s, how can I help you?", user), nil
-}
-
-p := prompts.NewDynamicPrompt(dynamicInstructions)
-```
-
-## Integration with Agents
-
-The `Agent` struct now has a `Prompt` field.
-
-```go
-agent := agents.NewAgent("Greeter")
-
-// Option 1: Set Instructions (Helper for Static Prompt)
-agent.Instructions = "Hello there!" 
-
-// Option 2: Set Prompt directly
-agent.Prompt = prompts.NewDynamicPrompt(myFunc)
-```
-
-When the agent runs, the `Runner` calls `agent.GetPrompt(ctx, contextVars)` to resolve the final instruction string before sending it to the model.
-
-## Context Variables
-
-`ContextVars` is a map passed to the dynamic prompt function. You can inject these variables when running the agent.
-
-```go
-vars := map[string]any{
-    "user_name": "Alice",
-    "role":      "admin",
-}
-
-runner.Run(ctx, agent, agents.RunnerOptions{
-    ContextVars: vars,
+agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
+    tier, _ := data.ContextVariables["tier"].(string)
+    if tier == "premium" {
+        return &prompts.Prompt{ID: "prompt_premium", Version: "v3"}, nil
+    }
+    return &prompts.Prompt{ID: "prompt_free"}, nil
 })
 ```
 
-Inside your dynamic prompt function, you access these via `data.ContextVars`.
+The `DynamicPromptData` struct provides:
 
-## Advanced Usage
+| Field | Type | Description |
+|-------|------|-------------|
+| `Agent` | `AgentInfo` | Snapshot of the current agent (Name, Model) |
+| `ContextVariables` | `map[string]any` | Context variables passed to the current run |
 
-### Accessing Agent Info
+## How Prompts Flow
 
-The `DynamicPromptData` struct also contains information about the agent itself.
+When the runner executes an agent with a prompt configured:
 
-```go
-type DynamicPromptData struct {
-    ContextVars map[string]any
-    Agent       AgentInfo
-}
+1. The runner calls `agent.GetPrompt(contextVars)` to resolve the prompt
+2. The resolved `*prompts.Prompt` is placed in `ModelSettings.Prompt`
+3. The model implementation receives the prompt via `ModelSettings`
+4. For OpenAI models, the prompt is forwarded to the API
 
-type AgentInfo struct {
-    Name  string
-    Model string
-}
+```
+Agent.Prompt → GetPrompt(contextVars) → ModelSettings.Prompt → Model.GetResponse()
 ```
 
-This ensures your prompt logic can stay decoupled from the specific agent instance while still knowing who it is "speaking" as.
+## Using with Context Variables
+
+Pass context variables through `WithContextVariables` — they are available to dynamic prompts:
+
+```go
+result, err := runner.Run(ctx, agent, messages,
+    agents.WithContextVariables(agents.ContextVariables{
+        "tier":      "premium",
+        "user_name": "Alice",
+    }),
+)
+```
+
+## Error Handling
+
+If a dynamic prompt function returns an error, the runner aborts the run:
+
+```go
+agent.Prompt = prompts.DynamicPromptFunc(func(data prompts.DynamicPromptData) (*prompts.Prompt, error) {
+    if data.ContextVariables["tier"] == nil {
+        return nil, fmt.Errorf("tier is required for prompt resolution")
+    }
+    return &prompts.Prompt{ID: "prompt_default"}, nil
+})
+```
+
+Setting an unsupported type on `agent.Prompt` (anything other than `*prompts.Prompt` or `DynamicPromptFunc`) also returns an error.
+
+## Prompts vs Instructions
+
+Prompts and instructions serve different purposes:
+
+| Aspect | Instructions | Prompts |
+|--------|-------------|---------|
+| **Location** | In code | Managed externally via Prompts API |
+| **Updates** | Requires code change | Update without redeployment |
+| **Versioning** | Via git | Built-in version management |
+| **Variables** | Not supported | Template variable substitution |
+| **Use case** | Core agent behavior | A/B testing, personalization |
+
+Both can be used together — the agent's instructions provide the base system prompt, while the prompt adds API-managed configuration on top.

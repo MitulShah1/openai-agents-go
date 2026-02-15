@@ -335,6 +335,16 @@ func (r *Runner) executeAgentLoop(
 			return nil, fmt.Errorf("LLM call failed: %w", err)
 		}
 
+		// Validate response
+		if resp.Completion == nil || len(resp.Completion.Choices) == 0 {
+			genSpan.RecordError(ErrEmptyModelResponse)
+			genSpan.End(ctxGen)
+			if agentSpan != nil {
+				agentSpan.End(ctx)
+			}
+			return nil, ErrEmptyModelResponse
+		}
+
 		completion := resp.Completion
 
 		genSpan.SetAttributes(map[string]any{
@@ -349,7 +359,7 @@ func (r *Runner) executeAgentLoop(
 		genSpan.End(ctxGen)
 
 		// Track usage
-		if resp.Usage.PromptTokens > 0 {
+		if resp.Usage.PromptTokens > 0 || resp.Usage.CompletionTokens > 0 || resp.Usage.TotalTokens > 0 {
 			usage.Add(Usage{
 				PromptTokens:     resp.Usage.PromptTokens,
 				CompletionTokens: resp.Usage.CompletionTokens,
@@ -729,6 +739,13 @@ func (r *Runner) executeAgentLoopResume(
 			return nil, fmt.Errorf("LLM call failed: %w", err)
 		}
 
+		// Validate response
+		if resp.Completion == nil || len(resp.Completion.Choices) == 0 {
+			genSpan.RecordError(ErrEmptyModelResponse)
+			genSpan.End(ctxGen)
+			return nil, ErrEmptyModelResponse
+		}
+
 		completion := resp.Completion
 
 		genSpan.SetAttributes(map[string]any{
@@ -742,7 +759,7 @@ func (r *Runner) executeAgentLoopResume(
 		})
 		genSpan.End(ctxGen)
 
-		if resp.Usage.PromptTokens > 0 {
+		if resp.Usage.PromptTokens > 0 || resp.Usage.CompletionTokens > 0 || resp.Usage.TotalTokens > 0 {
 			usage.Add(Usage{
 				PromptTokens:     resp.Usage.PromptTokens,
 				CompletionTokens: resp.Usage.CompletionTokens,
