@@ -50,6 +50,8 @@ Explore the [`examples/`](./examples) directory to see the SDK in action.
 - ✅ **Tracing & Observability**: OpenTelemetry integration (v0.4.0)
 - ✅ **Advanced DB Backends**: Redis, PostgreSQL (v0.4.0)
 - ✅ **Tool Approvals**: Human-in-the-loop approval workflows with pause/resume (v0.6.0)
+- ✅ **Model Abstraction**: Pluggable LLM providers with `models.Model` interface (v0.7.0)
+- ✅ **Prompts API**: Static and dynamic prompt management via OpenAI Prompts API (v0.7.0)
 
 ---
 
