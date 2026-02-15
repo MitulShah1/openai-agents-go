@@ -14,6 +14,7 @@ import (
 	"github.com/MitulShah1/openai-agents-go/guardrail"
 	"github.com/MitulShah1/openai-agents-go/internal/runner"
 	"github.com/MitulShah1/openai-agents-go/jsonschema"
+	"github.com/MitulShah1/openai-agents-go/models"
 	"github.com/MitulShah1/openai-agents-go/session"
 	"github.com/MitulShah1/openai-agents-go/tools"
 	"github.com/MitulShah1/openai-agents-go/tracing"
@@ -24,8 +25,14 @@ import (
 // It handles the orchestration of OpenAI API calls, tool execution,
 // session management, and guardrail validation.
 type Runner struct {
-	// Client is the OpenAI API client used to make completion requests
+	// Client is the OpenAI API client used to make completion requests.
+	//
+	// Deprecated: Use ModelProvider instead. Kept for backward compatibility.
 	Client *openai.Client
+
+	// ModelProvider is the default model provider for all agents.
+	// When an agent does not have its own ModelProvider, this is used.
+	ModelProvider models.ModelProvider
 }
 
 // NewRunner creates a new Runner with the given OpenAI client.
@@ -36,8 +43,42 @@ type Runner struct {
 //	runner := agents.NewRunner(client)
 func NewRunner(client *openai.Client) *Runner {
 	return &Runner{
-		Client: client,
+		Client:        client,
+		ModelProvider: models.NewOpenAIProvider(client),
 	}
+}
+
+// NewRunnerWithProvider creates a new Runner with the given model provider.
+// This is the preferred constructor for using custom model providers.
+//
+// Example:
+//
+//	provider := models.NewOpenAIProvider(&client)
+//	runner := agents.NewRunnerWithProvider(provider)
+func NewRunnerWithProvider(provider models.ModelProvider) *Runner {
+	return &Runner{
+		ModelProvider: provider,
+	}
+}
+
+// resolveModel returns the Model to use for the given agent.
+// Resolution order:
+//  1. Agent.ModelProvider (if set)
+//  2. Runner.ModelProvider (if set)
+//  3. Fallback: wrap Runner.Client in OpenAIProvider (backward compatibility)
+func (r *Runner) resolveModel(agent *Agent) (models.Model, error) {
+	provider := agent.ModelProvider
+	if provider == nil {
+		provider = r.ModelProvider
+	}
+	if provider == nil {
+		if r.Client != nil {
+			provider = models.NewOpenAIProvider(r.Client)
+		} else {
+			return nil, fmt.Errorf("no model provider configured: set Runner.ModelProvider or Agent.ModelProvider")
+		}
+	}
+	return provider.GetModel(agent.Model)
 }
 
 // Run executes the agent loop with functional options.
@@ -210,169 +251,16 @@ func (r *Runner) executeAgentLoop(
 	executor *runner.Executor,
 	approvalHandler tools.ApprovalHandler,
 ) (*Result, error) {
-	currentAgent := agent
-	history := make([]openai.ChatCompletionMessageParamUnion, len(messages))
-	copy(history, messages)
-
-	var usage Usage
-	var steps []Step
-	var lastMessage openai.ChatCompletionMessage
-	turnCount := 0
-
-	for {
-		// Check if execution should continue
-		shouldContinue, err := executor.ShouldContinueExecution(ctx, turnCount)
-		if err != nil {
-			if errors.Is(err, runner.ErrMaxTurnsExceeded) {
-				return nil, ErrMaxTurnsExceeded
-			}
-			if errors.Is(err, runner.ErrTimeout) {
-				return nil, ErrTimeout
-			}
-			return nil, err
-		}
-		if !shouldContinue {
-			break
-		}
-
-		stepStart := time.Now()
-		turnCount++
-
-		// Create agent span for this iteration (no-op if no current trace)
-		var agentSpan tracing.Span
-		if !tracing.IsTracingDisabled() {
-			var err error
-			ctx, agentSpan, err = tracing.StartAgentSpan(ctx, currentAgent.Name,
-				tracing.WithModel(currentAgent.Model),
-				tracing.WithInstructions(currentAgent.GetInstructions(ctx)))
-			if err != nil {
-				agentSpan = nil
-			}
-		}
-
-		// Prepare tools
-		tools, toolMap := r.prepareTools(currentAgent)
-
-		// Prepare and execute request
-		req, err := r.prepareRequest(ctx, currentAgent, config, tools, history)
-		if err != nil {
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, err
-		}
-
-		// Start generation span
-		// Note: Sensitive data redaction is handled automatically by the exporter based on trace config
-		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
-
-		completion, err := r.Client.Chat.Completions.New(ctxGen, req)
-		if err != nil {
-			genSpan.RecordError(err)
-			genSpan.End(ctxGen)
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, fmt.Errorf("LLM call failed: %w", err)
-		}
-
-		genSpan.SetAttributes(map[string]any{
-			"request":  req,
-			"response": completion,
-			"usage": &schema.Usage{
-				PromptTokens:     int(completion.Usage.PromptTokens),
-				CompletionTokens: int(completion.Usage.CompletionTokens),
-				TotalTokens:      int(completion.Usage.TotalTokens),
-			},
-		})
-		genSpan.End(ctxGen)
-
-		// Track usage
-		if completion.Usage.PromptTokens > 0 {
-			usage.Add(Usage{
-				PromptTokens:     int(completion.Usage.PromptTokens),
-				CompletionTokens: int(completion.Usage.CompletionTokens),
-				TotalTokens:      int(completion.Usage.TotalTokens),
-			})
-		}
-
-		message := completion.Choices[0].Message
-
-		// Truncate tool call IDs
-		runner.TruncateToolCallIDs(&message)
-
-		history = append(history, message.ToParam())
-
-		// Record step
-		step := Step{
-			AgentName:  currentAgent.Name,
-			StepNumber: turnCount,
-			Duration:   time.Since(stepStart),
-		}
-
-		// Check for tool calls
-		if len(message.ToolCalls) == 0 {
-			lastMessage = message
-			steps = append(steps, step)
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			break
-		}
-
-		// Check tool approvals before execution
-		approvalErr := r.checkToolApprovals(
-			message.ToolCalls, currentAgent, contextParams, approvalHandler,
-			history, turnCount, config,
-		)
-		if approvalErr != nil {
-			if agentSpan != nil {
-				agentSpan.End(ctx)
-			}
-			return nil, approvalErr
-		}
-
-		// Handle tool calls
-		toolMessages, recordedToolCalls, nextAgent := r.handleToolCalls(
-			ctx,
-			message.ToolCalls,
-			toolMap,
-			contextParams,
-			currentAgent,
-			resolveParallelToolCalls(currentAgent, config),
-			config.MaxToolConcurrency,
-		)
-
-		step.ToolCalls = recordedToolCalls
-		history = append(history, toolMessages...)
-
-		if nextAgent != nil {
-			// Record handoff span (Python parity).
-			if tracing.FromContext(ctx) != nil && nextAgent.Name != "" {
-				ctx2, hs, _ := tracing.StartHandoffSpan(ctx, currentAgent.Name, nextAgent.Name, "")
-				hs.End(ctx2)
-			}
-			currentAgent = nextAgent
-		}
-
-		step.Duration = time.Since(stepStart)
-		steps = append(steps, step)
-
-		if agentSpan != nil {
-			agentSpan.End(ctx)
-		}
-	}
-
-	// Extract final output
-	finalOutput := extractFinalOutput(lastMessage)
-
-	return &Result{
-		Messages:    history,
-		Agent:       currentAgent,
-		Usage:       usage,
-		Steps:       steps,
-		FinalOutput: finalOutput,
-	}, nil
+	return r.executeAgentLoopResume(
+		ctx,
+		agent,
+		messages,
+		contextParams,
+		config,
+		executor,
+		0,
+		approvalHandler,
+	)
 }
 
 // checkToolApprovals evaluates whether any tool calls require approval.
@@ -648,31 +536,51 @@ func (r *Runner) executeAgentLoopResume(
 			return nil, err
 		}
 
+		model, err := r.resolveModel(currentAgent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve model: %w", err)
+		}
+
+		// Resolve prompt if configured
+		resolvedPrompt, err := currentAgent.GetPrompt(contextParams)
+		if err != nil {
+			return nil, fmt.Errorf("prompt resolution failed: %w", err)
+		}
+
 		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
 
-		completion, err := r.Client.Chat.Completions.New(ctxGen, req)
+		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{Prompt: resolvedPrompt})
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)
 			return nil, fmt.Errorf("LLM call failed: %w", err)
 		}
 
+		// Validate response
+		if resp == nil || resp.Completion == nil || len(resp.Completion.Choices) == 0 {
+			genSpan.RecordError(ErrEmptyModelResponse)
+			genSpan.End(ctxGen)
+			return nil, ErrEmptyModelResponse
+		}
+
+		completion := resp.Completion
+
 		genSpan.SetAttributes(map[string]any{
 			"request":  req,
 			"response": completion,
 			"usage": &schema.Usage{
-				PromptTokens:     int(completion.Usage.PromptTokens),
-				CompletionTokens: int(completion.Usage.CompletionTokens),
-				TotalTokens:      int(completion.Usage.TotalTokens),
+				PromptTokens:     resp.Usage.PromptTokens,
+				CompletionTokens: resp.Usage.CompletionTokens,
+				TotalTokens:      resp.Usage.TotalTokens,
 			},
 		})
 		genSpan.End(ctxGen)
 
-		if completion.Usage.PromptTokens > 0 {
+		if resp.Usage.PromptTokens > 0 || resp.Usage.CompletionTokens > 0 || resp.Usage.TotalTokens > 0 {
 			usage.Add(Usage{
-				PromptTokens:     int(completion.Usage.PromptTokens),
-				CompletionTokens: int(completion.Usage.CompletionTokens),
-				TotalTokens:      int(completion.Usage.TotalTokens),
+				PromptTokens:     resp.Usage.PromptTokens,
+				CompletionTokens: resp.Usage.CompletionTokens,
+				TotalTokens:      resp.Usage.TotalTokens,
 			})
 		}
 
