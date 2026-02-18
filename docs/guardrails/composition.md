@@ -1,6 +1,6 @@
 # Guardrail Composition
 
-Since v0.3.0, you can compose complex guardrail logic using chains.
+Compose complex guardrail logic using chains to create sophisticated validation workflows.
 
 ## Chaining Strategies
 
@@ -27,7 +27,7 @@ runner.Run(..., agents.WithGuardrails([]agents.Guardrail{chain}))
 
 ## Async & Timeouts
 
-Apply timeouts to guardrails (v0.3.0):
+Apply timeouts to guardrails to prevent slow validation from blocking execution:
 
 ```go
 // Timeout after 500ms
@@ -39,7 +39,7 @@ gracefulGuard := guardrail.WithTimeoutGraceful(slowGuardrail, 500*time.Milliseco
 
 ## Metrics
 
-Track guardrail performance (v0.3.0):
+Track guardrail performance with built-in metrics collection:
 
 ```go
 metrics := guardrail.NewInMemoryMetrics()

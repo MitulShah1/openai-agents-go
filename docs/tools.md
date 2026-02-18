@@ -49,7 +49,7 @@ import "github.com/MitulShah1/openai-agents-go/handoff"
 transferTool := handoff.New(specialistAgent).ToTool()
 ```
 
-### Multimodal Tool (New in v0.3.0)
+### Multimodal Tool
 
 Return rich content like images and files that multimodal models (e.g., GPT-4o) can process:
 

@@ -1,246 +1,274 @@
 # OpenAI Agents Go SDK - Development Roadmap
 
-> A comprehensive plan to build a robust, production-ready Go SDK for OpenAI Agents with feature parity to the official [Python SDK](https://github.com/openai/openai-agents-python).
+> Building a robust, production-ready Go SDK for OpenAI Agents with comprehensive features and excellent developer experience.
 
 ---
 
 ## Vision
 
-Build a Go SDK that provides:
-- **Zero-dependency core** for easy adoption
-- **Production-ready features** (guardrails, sessions, tracing)
-- **Idiomatic Go** patterns and best practices
-- **Feature parity** with Python SDK
-- **Excellent documentation** and examples
+Provide a Go SDK that delivers:
+- **Security First**: Comprehensive guardrails with PII detection and content moderation
+- **Production Ready**: Battle-tested features for enterprise deployment
+- **Zero-Dependency Core**: Easy adoption with minimal external dependencies
+- **Idiomatic Go**: Clean patterns following Go best practices
+- **Type Safety**: Compile-time guarantees reducing runtime errors
+- **Excellent Documentation**: Comprehensive guides and 25+ working examples
 
 ---
 
-## Timeline Overview
+## Current Status
 
-```
-Week 1-2  │ v0.1.0 - Core Foundation ✅
-Week 3-4  │ v0.2.0 - Guardrails & Sessions ✅
-Week 4-5  │ v0.2.3 - Enhanced Guardrails & Error Handling ✅
-Week 6-9  │ v0.3.0 - DB Backends, Tracing & Composition ✅
-Week 13-14│ v0.5.2 - P0 Bug Fixes ✅
-Week 15-16│ v0.6.0 - Tool Approvals (Runner Integration) ✅
-Week 17-18│ v0.7.0 - Model Abstraction & Prompts API ✅
-Week 19-20│ v1.0.0 - Stable Release 🚀
-Future    │ v1.1.0+ - Advanced Integrations
-```
+The SDK is **production-ready** with all core features implemented and tested.
+
+### ✅ Core Features (Complete)
+
+**Agent Framework**
+- Multi-agent workflows and orchestration
+- Tool integration with Go functions
+- Runtime agent skills (reusable capability bundles)
+- Agent handoffs with input filtering and history nesting
+- Structured outputs with schema validation
+- Lifecycle hooks for custom logic
+- Context variables for state management
+- Usage tracking and cost monitoring
+
+**Security & Safety** 
+- **PII Detection**: 10+ detector types (SSN, credit cards, emails, phones, etc.)
+- **9+ Guardrails**: Rate limiting, profanity filtering, prompt injection detection
+- **Content Moderation**: OpenAI Moderation API (13 categories)
+- **Guardrail Composition**: Sequential and parallel execution chains
+- **Tool Approvals**: Human-in-the-loop safety workflows
+- **Custom Validation**: Regex patterns and custom logic
+
+**Session Management**
+- Multiple backends (memory, file, SQLite, PostgreSQL, Redis, cloud)
+- Conversation persistence and history
+- Session encryption and compression
+- Message compaction for cost optimization
+- Thread-safe concurrent access
+
+**Performance & Scalability**
+- Streaming (token-by-token and event-based)
+- Parallel tool execution with goroutines
+- OpenTelemetry tracing and observability
+- Efficient message handling
+- Connection pooling for databases
+
+**Advanced Integrations**
+- Model provider abstraction (pluggable LLM backends)
+- Prompts API (static and dynamic prompts)
+- MCP (Model Context Protocol) support
+- Computer Use interface for automation
+- Diff tool for structured code changes
+- Multimodal support (images, files, rich content)
 
 ---
 
-## Version Roadmap
+## Completed Milestones
 
-### Completed Releases ✅
+### Foundation (Q4 2025 - Q1 2026)
 
-For detailed release notes, see [CHANGELOG.md](./CHANGELOG.md).
-
-#### v0.6.0 - Tool Approvals Runner Integration (2026-02-09) ✅
-- **Tool Approvals**: Full human-in-the-loop approval workflow integrated into all runner paths
-  - `Run()`, `Stream()`, and `StreamWithResult()` check approvals before tool execution
-  - Pause/resume via `ToolApprovalRequiredError` + `RunState` + `Runner.Resume()`
-  - Inline approval via `WithApprovalHandler()` run option
-  - Streaming support with `StreamEventApprovalRequired` and `ApprovalRequiredEvent`
-  - Parallel batch safety (no partial execution)
-
-#### v0.5.2 - P0 Bug Fixes (2026-02-07) ✅
-- **Streaming CPU Fix**: Removed spin loop in streaming result iterator
-- **History Fix**: Prevented exponential message duplication in sessions
-- **Tracing Fix**: Explicitly ended spans in loops to avoid memory leak
-- **Concurrency Fix**: Resolved map data race in parallel tool calls
-- **Config Fix**: Correctly respect `MaxToolConcurrency` in all paths
-- **Streaming Parity**: Fixed default parallel tool calls in streaming
-- **Guardrail Fix**: Proper text extraction for input guardrails
-
-#### v0.5.1 - Cleanup & Restructure (2026-02-06) ✅
-- **Package Cleanup**: Removed bloat outside agent SDK scope
-  - Removed `pkg/embeddings/`, `pkg/files/`, `pkg/vectorstore/`
-  - Users should use `openai-go` directly for these features
-- **Package Restructure**: Better API design matching Python SDK
-  - Moved `pkg/mcp/` → `mcp/`, `pkg/computer/` → `computer/`, `pkg/diff/` → `diff/`
-  - Top-level packages for core features
-- **Plugin Simplification**: Build tag approach for optional backends
-  - Merged `plugins/postgres/` and `plugins/redis/` into `session/` package
-  - PostgreSQL backend: `session.NewPostgresSession()` (build tag: `-tags postgres`)
-  - Redis backend: `session.NewRedisSession()` (build tag: `-tags redis`)
-
-#### v0.5.0 - MCP, Computer Use & Extensions (2026-02-05) ✅
-- **MCP Support**: Model Context Protocol integration ✅
-- **Computer Use Interface**: Browser/desktop automation ✅
-- **Diff Application**: Structured code changes ✅
-- **Session Enhancements**: Message compaction, Redis backend ✅
-
-#### v0.4.0 - Tracing, Streaming & Performance (2026-01-23) ✅
-- **Parallel Tools**: Idiomatic goroutine-based parallel execution
-- **Tracing**: OpenTelemetry support for agents, tools, and sessions
-- **Streaming**: Token-by-token and object-based streaming
-- **Plugins**: Redis and PostgreSQL backends
-
-#### v0.3.5 - Handoff Parity & Idiomatic Go (2026-01-22) ✅
-- **Handoff Parity**: Full feature parity with Python SDK
-  - Input filtering, history nesting, dynamic enablement
-- **Refactoring**: 
-  - Implementation of Idiomatic Go patterns
-  - Improved type safety and error handling
-  - Removal of legacy retry logic in favor of robust error types
-
-#### v0.3.0 - Database Backends, Tracing & Composition (2026-01-20) ✅
-- **Multimodal Tool Outputs**: Rich responses (text, images, files)
-- **Guardrail Composition**: Chain builder with seq/parallel execution
-- **Database Sessions**: SQLite backend with connection pooling
-- **Metrics Collection**: Guardrail telemetry (P95/P99)
-
-#### v0.2.3 - Enhanced Guardrails & Error Handling (2026-01-19) ✅
-- 9+ production-ready guardrails (PII, Moderation, Rate Limiting, Profanity, Secrets, Prompt Injection, etc.)
-- Production-grade error handling with 4 retry strategies
-- 98.1% test coverage on guardrails
-
-#### v0.2.2 - Conversations API (2026-01-16) ✅
-- Cloud-based session persistence via OpenAI Conversations API
-
-#### v0.2.1 - Moderation Guardrail (2026-01-13) ✅
-- OpenAI Moderation API integration (13 categories)
-
-#### v0.2.0 - Guardrails & Sessions (2026-01-16) ✅
-- Guardrail framework with PII, URL filtering, custom regex
-- Session framework with in-memory, file-based, and cloud backends
-
-#### v0.1.0 - Core Foundation (2026-01-12) ✅
-- Agent, Runner, Tool abstractions
+**Core Agent System**
+- Agent, Runner, and Tool abstractions
 - Structured outputs with JSON schema builder
 - Multi-agent workflows and handoffs
+- Basic error handling and logging
+
+**Guardrails & Sessions**
+- Guardrail framework with extensible interface
+- PII detection and URL filtering
+- Custom regex validation
+- Session framework with multiple backends
+- In-memory, file-based, and cloud storage
+
+**Enhanced Safety**
+- OpenAI Moderation API integration
+- Profanity filtering with custom word lists
+- Prompt injection detection
+- Secrets scanning (API keys, tokens)
+- Guardrail composition and metrics
+
+**Production Features**
+- Database sessions (SQLite, PostgreSQL, Redis)
+- Session encryption and compression
+- Multimodal tool outputs
+- Enhanced error handling with retry strategies
+- Handoff feature parity with Python SDK
+
+**Performance & Observability**
+- Parallel tool execution with goroutines
+- OpenTelemetry tracing integration
+- Token-by-token streaming
+- Object-based streaming with semantic events
+- Performance benchmarks
+
+**Advanced Capabilities**
+- MCP support for external context
+- Computer Use interface
+- Diff application tool
+- Session message compaction
+- Tool approval workflows (pause/resume, inline handlers)
+- Model provider abstraction
+- Prompts API integration
 
 ---
 
+## Current Focus: Stable Release
 
+### Goals for Stable Release
+
+1. **API Stability**
+   - Lock public API surface
+   - Semantic versioning guarantees
+   - No breaking changes without major version bump
+
+2. **Documentation Excellence**
+   - ✅ Comprehensive README with security focus
+   - ✅ 25+ working examples
+   - ✅ Complete documentation site
+   - User guides for all features
+   - Migration and upgrade guides
+   - API reference documentation
+
+3. **Quality Assurance**
+   - Maintain >85% test coverage
+   - Performance benchmarks published
+   - Security audit of guardrails
+   - Integration testing with real API
+   - Fuzz testing for critical parsers
+
+4. **Developer Experience**
+   - Clear error messages
+   - Helpful debugging tools
+   - Troubleshooting guides
+   - Community support channels
+   - Quick response to issues
 
 ---
 
-#### v0.7.0 - Model Abstraction & Prompts API (2026-02-14) ✅
-- **Model Provider Abstraction**: Pluggable LLM backends via `models.Model` and `models.ModelProvider` interfaces
-  - `OpenAIProvider` built-in implementation
-  - `MultiProvider` for prefix-based routing to multiple providers
-  - `ModelSettings` with `Resolve()` merge logic
-  - 3-tier resolution: Agent.ModelProvider → Runner.ModelProvider → Runner.Client
-  - `NewRunnerWithProvider()` constructor for explicit control
-- **Prompts API**: Dynamic prompt configuration via `Agent.Prompt` field
-  - `prompts.Prompt` for static prompts
-  - `prompts.DynamicPromptFunc` for runtime-resolved prompts
-  - Runner integration in all execution paths
-- **Examples**: `24_prompts_demo/`, `25_multi_provider/`
-- **Documentation**: `docs/models.md`, `docs/prompts.md`
+## Future Enhancements
 
----
+### Advanced Integrations
 
-### v1.0.0 - Stable Release 🎯
-**Timeline**: Q2 2026
-**Status**: Planned
+**Audio & Voice**
+- Audio transcription (speech-to-text)
+- Audio translation (multilingual)
+- Text-to-speech capabilities
+- Voice agent workflows
+- Realtime API (WebSocket-based sessions)
 
-#### Goals
-- ✅ API stability guarantees
-- ✅ 90%+ test coverage
-- ✅ Performance benchmarks published
-- ✅ Migration guides for all versions
-
----
-
-### v1.1.0+ - Advanced Integrations 🔮
-**Timeline**: Post-v1.0
-**Status**: Future Planning
-
-#### Planned Features
-
-**Audio & Voice APIs**:
-- Audio Transcriptions (speech-to-text)
-- Audio Translations (multilingual audio)
-- Audio Speech (text-to-speech)
-- Voice agent capabilities
-- Realtime API (WebSocket-based voice/text sessions)
-
-**Batch Processing**:
-- Batch API for cost-effective bulk operations (50% cost savings)
+**Batch Processing**
+- Batch API integration for cost savings
 - Asynchronous agent processing
 - Bulk evaluations and testing
+- Queue-based job processing
 
-**Images & Video**:
-- DALL-E image generation tool
+**Images & Video**
+- DALL-E image generation
 - Image editing and variations
-- Video processing API (when stable)
+- Video processing capabilities
+- Advanced multimodal workflows
 
-**Advanced Integrations**:
-- Beta Assistants API (alternative agent backend)
-- Fine-Tuning API (custom agent models)
-- Webhooks (event-driven architectures)
-- Containers API (sandboxed code execution)
+**Enterprise Features**
+- Fine-tuning API integration
+- Custom model support
+- Advanced webhooks
+- Containers API for sandboxed execution
+- Graders API for evaluation
 
-**Other Features**:
-- Advanced MCP integrations
-- Graders API (agent evaluation)
+**Other**
+- Enhanced MCP integrations
+- Beta Assistants API support
+- Advanced caching strategies
+- Distributed agent orchestration
 
 ---
 
-## Development Guidelines
+## Development Principles
 
-### Code Quality Standards
-- Test coverage: >85%
-- All public APIs must have godoc comments
+### Code Quality
+- Test coverage >85%
+- All public APIs documented with godoc
 - Follow Go best practices and idioms
-- Use semantic versioning strictly
 - Comprehensive error handling
+- Clean, maintainable code
 
 ### Testing Strategy
 - Unit tests for all core functionality
 - Integration tests with real API (opt-in)
 - Benchmark tests for performance tracking
 - Fuzz tests for critical parsers
+- Example tests ensuring they run
 
-### Documentation Requirements
+### Documentation
 - API documentation (godoc)
-- Migration guides for breaking changes
-- Examples for all major features
-- Architecture decision records (ADRs)
+- Concept guides for major features
+- Working examples for all capabilities
 - Troubleshooting guides
+- Migration guides for breaking changes
+
+### Security
+- Regular security audits
+- Vulnerability scanning
+- PII detection testing
+- Guardrail effectiveness validation
+- Secure coding practices
 
 ---
 
 ## Contributing
 
 We welcome contributions! Please:
+
 1. Check open issues for tasks
-2. Read [CONTRIBUTING.md](./CONTRIBUTING.md) (coming in v0.3.0)
+2. Read CONTRIBUTING.md (if available)
 3. Submit PRs with tests and documentation
 4. Follow Go best practices
 5. Ensure `make check` passes
-
----
-
-## Questions?
-
-- **Why start with zero dependencies?** Easy adoption, no build complexity, works everywhere Go works
-- **Why not implement Batch/Realtime/Voice in v1.0?** Focus on stable core first, advanced features follow based on demand
-- **Can I use SQLite from day one?** Use file-based sessions (zero deps) now, or wait for v0.3.0 for full database support
-- **Will there be breaking changes?** Minimal after v1.0. We use semantic versioning and provide migration guides
-- **How does this compare to Python SDK?** We aim for feature parity with unique Go advantages (type safety, performance, zero deps)
+6. Update documentation for new features
 
 ---
 
 ## Success Metrics
 
-### Technical Metrics
+### Technical Excellence
 - **Test Coverage**: >85% across all packages
 - **Performance**: <100ms streaming latency, <1s tool execution
 - **Reliability**: <0.1% error rate in production scenarios
-- **API Stability**: Zero breaking changes after v1.0
+- **API Stability**: No breaking changes in stable releases
 
-### Community Metrics
-- **Adoption**: 500+ GitHub stars by v1.0
-- **Engagement**: <48h issue response time
+### Community Engagement
+- **Adoption**: Growing usage and GitHub stars
+- **Support**: <48h issue response time
 - **Quality**: >95% example success rate
-- **Documentation**: <5% documentation-related issues
+- **Documentation**: Minimal documentation-related issues
+
+### Production Readiness
+- **Security**: Regular audits and updates
+- **Observability**: Comprehensive tracing and metrics
+- **Scalability**: Tested under load
+- **Maintainability**: Clean, well-documented code
 
 ---
 
-**Last Updated**: 2026-02-14  
-**Current Version**: v0.7.0
+## Frequently Asked Questions
+
+**Why zero dependencies for core?**
+Easy adoption, no build complexity, works everywhere Go works. Optional features use build tags.
+
+**Can I use this in production?**
+Yes! The SDK is production-ready with comprehensive testing, guardrails, and observability features.
+
+**How does this compare to Python/JavaScript SDKs?**
+We aim for feature parity with unique Go advantages: type safety, performance, and zero-dependency core.
+
+**Will there be breaking changes?**
+Minimal after stable release. We use semantic versioning and provide migration guides.
+
+**What about performance?**
+Native Go performance with goroutines for parallel execution and efficient resource management.
+
+---
+
+**Last Updated**: 2026-02-17  
+**Status**: Production Ready - Preparing Stable Release
