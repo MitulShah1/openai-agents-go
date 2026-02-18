@@ -220,17 +220,13 @@ The SDK minimizes dependencies:
 
 ### Optional
 - None for core functionality
-- Database drivers for future session backends (v0.3.0+)
+- Database drivers for optional session backends (build tags)
 
 ## Version Compatibility
 
-| SDK Version | Go Version | OpenAI SDK |
-|-------------|------------|------------|
-| v0.3.5 | 1.24+ | v3.16.0+ |
-| v0.3.0 | 1.24+ | v3.16.0+ |
-| v0.2.3 | 1.24+ | v3.16.0+ |
-| v0.2.0 | 1.24+ | v3.16.0+ |
-| v0.1.0 | 1.24+ | v3.16.0+ |
+| Go Version | OpenAI SDK |
+|------------|------------|
+| 1.24+ | Latest (v3.16.0+) |
 
 ## See Also
 

@@ -12,14 +12,14 @@ The session framework enables:
 
 ## Available Backends
 
-| Backend | Use Case | Dependencies | Version |
-|---------|----------|--------------|---------|
-| Memory | Testing, development | None | v0.2.0 |
-| File | Single-server production | None | v0.2.0 |
-| Conversations API | Cloud, distributed | OpenAI API key | v0.2.2 |
-| SQLite | Single-server persistence | None (pure Go) | v0.3.0 |
-| Redis | Scalable/Distributed | Build tag: `-tags redis` | v0.5.1 |
-| PostgreSQL | Enterprise/Compliance | Build tag: `-tags postgres` | v0.5.1 |
+| Backend | Use Case | Dependencies |
+|---------|----------|--------------|
+| Memory | Testing, development | None |
+| File | Single-server production | None |
+| Conversations API | Cloud, distributed | OpenAI API key |
+| SQLite | Single-server persistence | None (pure Go) |
+| Redis | Scalable/Distributed | Build tag: `-tags redis` |
+| PostgreSQL | Enterprise/Compliance | Build tag: `-tags postgres` |
 
 ## Quick Start
 
@@ -94,7 +94,7 @@ if err != nil {
 // Automatic synchronization
 ```
 
-### SQLite Session (New in v0.3.0)
+### SQLite Session
 
 Best for robust single-server persistence without external database servers:
 
@@ -161,7 +161,7 @@ if err != nil {
 // Built-in replication support
 ```
 
-**Note**: Redis and PostgreSQL backends were merged into the `session` package in v0.5.1. Use build tags to enable optional dependencies:
+**Note**: Redis and PostgreSQL backends use build tags to enable optional dependencies:
 
 ```bash
 # Build with Redis support
@@ -317,7 +317,7 @@ if err != nil {
 }
 ```
 
-## Session Utilities (New in v0.3.0)
+## Session Utilities
 
 Enhance any session backend with transparent compression and encryption.
 
@@ -376,10 +376,10 @@ err = sess.Append(context.Background(), "user-123", []openai.ChatCompletionMessa
 
 ### Session Migration
 
-Coming in v0.3.0: Migrate between backends
+Migrate sessions between different backends:
 
 ```go
-// Future API (v0.3.0)
+// Example API for migrating sessions
 err := session.Migrate(fileSession, redisSession, "user-123")
 ```
 

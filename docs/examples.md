@@ -13,7 +13,7 @@ Explore these practical examples to learn how to build AI agents with the Go SDK
 | [Complex Schema](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/07_complex_schema) | Handling complex nested data structures in outputs. |
 | [Guardrails Demo](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/08_guardrails_demo) | Implementing safety guardrails for production agents. |
 | [Sessions Demo](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/09_sessions_demo) | Maintaining conversation state across multiple turns. |
-| [Advanced Features](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/10_advanced_v02) | Showcase of v0.2.0 features working together. |
+| [Advanced Features](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/10_advanced_v02) | Showcase of multiple features working together. |
 | [Conversations API](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/11_conversations_session) | Using the new Conversations API for session management. |
 | [Error Handling](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/14_error_handling) | Robust error handling strategies. |
 | [Session Backends](https://github.com/MitulShah1/openai-agents-go/tree/main/examples/15_session_backends) | Using SQLite and custom session storage. |
