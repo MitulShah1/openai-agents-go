@@ -1,6 +1,6 @@
 # OpenAI Agents Go - Examples
 
-This directory contains **25+ comprehensive examples** demonstrating all features of the OpenAI Agents Go SDK. Each example is a complete, runnable Go program showcasing specific capabilities.
+This directory contains **26+ comprehensive examples** demonstrating all features of the OpenAI Agents Go SDK. Each example is a complete, runnable Go program showcasing specific capabilities.
 
 ## Prerequisites
 
@@ -39,6 +39,7 @@ go run main.go
 - [19_streaming_basic](#19_streaming_basic---streaming-responses) - Real-time streaming
 - [22_parallel_tools](#22_parallel_tools---parallel-execution) - Concurrent tool calls
 - [16_tracing](#16_tracing---observability) - OpenTelemetry integration
+- [26_multi_agent_trace](#26_multi_agent_trace---shared-trace-context) - **Multi-agent handoffs with shared trace**
 
 ### 🏭 Production Ready
 - [17_production_chatbot](#17_production_chatbot---complete-chatbot) - **Full-featured chatbot**
@@ -525,6 +526,25 @@ cd examples/25_multi_provider && go run main.go
 - Mixing multiple LLM providers
 
 **Use Case:** Cost optimization, feature access, vendor diversification
+
+---
+
+### 26_multi_agent_trace - Shared Trace Context
+
+**Multi-agent handoffs with a single trace** - All agents in a handoff chain appear under one trace ID in your observability dashboard.
+
+```bash
+cd examples/26_multi_agent_trace && go run main.go
+```
+
+**Demonstrates:**
+- Starting a shared trace before the first `runner.Run` call
+- Carrying the trace through triage → billing / technical handoffs
+- Custom workflow-level spans that wrap multiple agent runs
+- Summary spans for recording cross-run metadata
+- How the runner reuses an existing trace from context (no duplicate traces)
+
+**Use Case:** Customer support pipelines, multi-step workflows, production observability
 
 ---
 
