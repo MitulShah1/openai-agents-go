@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.7.1] - 2026-02-20
+
+### Fixed
+
+- **Tracing API 400 Bad Request Errors**: Updated `AgentSpanData`, `GenerationSpanData`, and `FunctionSpanData` structs and serialization logic to conform strictly to the OpenAI Traces schema. Fixed issues where fields like `request`, `response`, `model`, and `total_tokens` were causing ingestion errors on the OpenAI Dashboard.
+
 ## [v0.7.0] - 2026-02-15
 
 ### Added
@@ -534,6 +540,7 @@ conditionalTool := tools.Tool{
 
 ## Version Links
 
+- [v0.7.1](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.7.1)
 - [v0.7.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.7.0)
 - [v0.6.1](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.6.1)
 - [v0.6.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.6.0)

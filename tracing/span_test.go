@@ -193,8 +193,11 @@ func TestSpanToSpanData(t *testing.T) {
 	// Test Agent span data
 	ctx, agentSpan, _ := trace.StartSpan(ctx, schema.SpanTypeAgent,
 		WithSpanName("agent"),
-		WithModel("gpt-4"),
-		WithInstructions("test instructions"),
+		WithAttributes(map[string]any{
+			"handoffs":    []string{"agent_b"},
+			"tools":       []string{"get_weather"},
+			"output_type": "text",
+		}),
 	)
 	agentSpan.End(ctx)
 
@@ -210,7 +213,13 @@ func TestSpanToSpanData(t *testing.T) {
 	if agentData.Name != "agent" {
 		t.Errorf("Expected name 'agent', got %q", agentData.Name)
 	}
-	if agentData.Model != "gpt-4" {
-		t.Errorf("Expected model 'gpt-4', got %q", agentData.Model)
+	if len(agentData.Handoffs) != 1 || agentData.Handoffs[0] != "agent_b" {
+		t.Errorf("Expected handoffs ['agent_b'], got %v", agentData.Handoffs)
+	}
+	if len(agentData.Tools) != 1 || agentData.Tools[0] != "get_weather" {
+		t.Errorf("Expected tools ['get_weather'], got %v", agentData.Tools)
+	}
+	if agentData.OutputType != "text" {
+		t.Errorf("Expected output_type 'text', got %q", agentData.OutputType)
 	}
 }

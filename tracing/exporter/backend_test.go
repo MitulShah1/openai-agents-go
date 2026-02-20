@@ -2,6 +2,8 @@ package exporter
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -250,5 +252,50 @@ func TestEstimatePayloadSize(t *testing.T) {
 	expected := 25480
 	if size != expected {
 		t.Errorf("Expected payload size %d, got %d", expected, size)
+	}
+}
+
+func TestBackendExporterPayloadUsesDataKey(t *testing.T) {
+	var capturedBody []byte
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	exporter := NewBackendExporter(WithEndpoint(server.URL))
+
+	traces := []schema.TraceExport{
+		{Object: "trace", ID: "trace_1", WorkflowName: "wf"},
+	}
+	spans := []schema.SpanExport{
+		{Object: "trace.span", ID: "span_1", TraceID: "trace_1"},
+	}
+
+	if err := exporter.Export(context.Background(), "test-key", traces, spans); err != nil {
+		t.Fatalf("Export failed: %v", err)
+	}
+
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(capturedBody, &payload); err != nil {
+		t.Fatalf("Failed to parse request body: %v", err)
+	}
+
+	if _, ok := payload["data"]; !ok {
+		t.Error("Expected top-level 'data' key in ingest payload, but it was missing")
+	}
+	if _, ok := payload["traces"]; ok {
+		t.Error("Unexpected 'traces' key in ingest payload; data should be in 'data'")
+	}
+	if _, ok := payload["spans"]; ok {
+		t.Error("Unexpected 'spans' key in ingest payload; data should be in 'data'")
+	}
+
+	var items []json.RawMessage
+	if err := json.Unmarshal(payload["data"], &items); err != nil {
+		t.Fatalf("Failed to parse 'data' array: %v", err)
+	}
+	if len(items) != 2 {
+		t.Errorf("Expected 2 items in 'data', got %d", len(items))
 	}
 }

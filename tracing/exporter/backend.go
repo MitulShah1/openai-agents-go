@@ -98,7 +98,14 @@ func (e *BackendExporter) Export(ctx context.Context, apiKey string, traces []sc
 		return fmt.Errorf("tracing export requires api key")
 	}
 
-	payload := schema.IngestPayload{Traces: traces, Spans: spans}
+	data := make([]any, len(traces)+len(spans))
+	for i, t := range traces {
+		data[i] = t
+	}
+	for i, s := range spans {
+		data[len(traces)+i] = s
+	}
+	payload := schema.IngestPayload{Data: data}
 
 	// Use streaming encoder for better performance
 	var buf bytes.Buffer

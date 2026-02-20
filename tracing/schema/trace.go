@@ -1,9 +1,10 @@
 package schema
 
 // IngestPayload represents the payload sent to the OpenAI Traces ingest API.
+// The API expects a top-level "data" array containing both traces and spans,
+// matching the Python SDK's payload = {"data": data} format.
 type IngestPayload struct {
-	Traces []TraceExport `json:"traces,omitempty"`
-	Spans  []SpanExport  `json:"spans,omitempty"`
+	Data []any `json:"data"`
 }
 
 // TraceExport represents a trace in the OpenAI Traces export format.

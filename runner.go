@@ -547,12 +547,25 @@ func (r *Runner) executeAgentLoopResume(
 			return nil, fmt.Errorf("prompt resolution failed: %w", err)
 		}
 
-		ctxGen, genSpan, _ := tracing.StartGenerationSpan(ctx, tracing.WithModel(currentAgent.Model))
+		// Start an agent span for this turn (matches Python SDK span hierarchy: agent > generation).
+		var agentSpan tracing.Span
+		agentCtx := ctx
+		if !tracing.IsTracingDisabled() {
+			agentCtx, agentSpan, _ = tracing.StartAgentSpan(ctx, currentAgent.Name,
+				tracing.WithModel(currentAgent.Model),
+				tracing.WithInstructions(currentAgent.GetInstructions(ctx)))
+		}
+
+		ctxGen, genSpan, _ := tracing.StartGenerationSpan(agentCtx, tracing.WithModel(currentAgent.Model))
 
 		resp, err := model.GetResponse(ctxGen, req, models.ModelSettings{Prompt: resolvedPrompt})
 		if err != nil {
 			genSpan.RecordError(err)
 			genSpan.End(ctxGen)
+			if agentSpan != nil {
+				agentSpan.RecordError(err)
+				agentSpan.End(agentCtx)
+			}
 			return nil, fmt.Errorf("LLM call failed: %w", err)
 		}
 
@@ -560,14 +573,18 @@ func (r *Runner) executeAgentLoopResume(
 		if resp == nil || resp.Completion == nil || len(resp.Completion.Choices) == 0 {
 			genSpan.RecordError(ErrEmptyModelResponse)
 			genSpan.End(ctxGen)
+			if agentSpan != nil {
+				agentSpan.RecordError(ErrEmptyModelResponse)
+				agentSpan.End(agentCtx)
+			}
 			return nil, ErrEmptyModelResponse
 		}
 
 		completion := resp.Completion
 
 		genSpan.SetAttributes(map[string]any{
-			"request":  req,
-			"response": completion,
+			"request":  req.Messages,
+			"response": completion.Choices,
 			"usage": &schema.Usage{
 				PromptTokens:     resp.Usage.PromptTokens,
 				CompletionTokens: resp.Usage.CompletionTokens,
@@ -575,6 +592,9 @@ func (r *Runner) executeAgentLoopResume(
 			},
 		})
 		genSpan.End(ctxGen)
+		if agentSpan != nil {
+			agentSpan.End(agentCtx)
+		}
 
 		if resp.Usage.PromptTokens > 0 || resp.Usage.CompletionTokens > 0 || resp.Usage.TotalTokens > 0 {
 			usage.Add(Usage{

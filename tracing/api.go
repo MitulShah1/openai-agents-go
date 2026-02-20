@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	"context"
+
 	"github.com/MitulShah1/openai-agents-go/tracing/exporter"
 	"github.com/MitulShah1/openai-agents-go/tracing/processor"
 )
@@ -59,4 +61,19 @@ func SetTracingDisabled(disabled bool) {
 		proc := processor.NewBatch(exp)
 		SetProvider(NewProvider(proc))
 	}
+}
+
+// Shutdown flushes all pending traces and shuts down the global trace provider.
+// This is important for short-lived programs (CLIs, scripts) to ensure all
+// buffered traces are sent before the process exits.
+//
+// Recommended usage:
+//
+//	func main() {
+//	    ctx := context.Background()
+//	    defer tracing.Shutdown(ctx)
+//	    // ... rest of your program
+//	}
+func Shutdown(ctx context.Context) error {
+	return GetProvider().Shutdown(ctx)
 }
