@@ -20,31 +20,32 @@ type SpanData interface {
 
 // AgentSpanData represents data for an agent span.
 type AgentSpanData struct {
-	Type         string `json:"type"` // "agent"
-	Name         string `json:"name,omitempty"`
-	Model        string `json:"model,omitempty"`
-	Instructions string `json:"instructions,omitempty"`
+	Type       string   `json:"type"` // "agent"
+	Name       string   `json:"name,omitempty"`
+	Handoffs   []string `json:"handoffs,omitempty"`
+	Tools      []string `json:"tools,omitempty"`
+	OutputType string   `json:"output_type,omitempty"`
 }
 
 func (AgentSpanData) isSpanData() {}
 
 // GenerationSpanData represents data for a generation span.
 type GenerationSpanData struct {
-	Type     string `json:"type"` // "generation"
-	Model    string `json:"model,omitempty"`
-	Request  any    `json:"request,omitempty"`
-	Response any    `json:"response,omitempty"`
-	Usage    *Usage `json:"usage,omitempty"`
+	Type   string `json:"type"` // "generation"
+	Model  string `json:"model,omitempty"`
+	Input  any    `json:"input,omitempty"`
+	Output any    `json:"output,omitempty"`
+	Usage  *Usage `json:"usage,omitempty"`
 }
 
 func (GenerationSpanData) isSpanData() {}
 
 // FunctionSpanData represents data for a function/tool span.
 type FunctionSpanData struct {
-	Type      string `json:"type"` // "function"
-	Name      string `json:"name,omitempty"`
-	Arguments any    `json:"arguments,omitempty"`
-	Output    any    `json:"output,omitempty"`
+	Type   string `json:"type"` // "function"
+	Name   string `json:"name,omitempty"`
+	Input  any    `json:"input,omitempty"`
+	Output any    `json:"output,omitempty"`
 }
 
 func (FunctionSpanData) isSpanData() {}

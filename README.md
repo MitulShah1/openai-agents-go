@@ -553,6 +553,8 @@ result := streamResult.Result()
 
 ## 🔍 Observability & Tracing
 
+![Tracing Dashboard](./docs/assets/tracing.png)
+
 Monitor agent behavior with OpenTelemetry integration.
 
 ```go

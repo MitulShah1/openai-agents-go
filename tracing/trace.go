@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -231,26 +232,45 @@ func (s *span) toSpanData() schema.SpanData {
 
 	switch s.spanType {
 	case schema.SpanTypeAgent:
+		var handoffs []string
+		if hm, ok := attrs["handoffs"].([]string); ok {
+			handoffs = hm
+		}
+		var tools []string
+		if tm, ok := attrs["tools"].([]string); ok {
+			tools = tm
+		}
+
 		return schema.AgentSpanData{
-			Type:         string(schema.SpanTypeAgent),
-			Name:         s.name,
-			Model:        getString(attrs, "model"),
-			Instructions: getString(attrs, "instructions"),
+			Type:       string(schema.SpanTypeAgent),
+			Name:       s.name,
+			Handoffs:   handoffs,
+			Tools:      tools,
+			OutputType: getString(attrs, "output_type"),
 		}
 	case schema.SpanTypeGeneration:
 		return schema.GenerationSpanData{
-			Type:     string(schema.SpanTypeGeneration),
-			Model:    getString(attrs, "model"),
-			Request:  internal.RedactSensitive(attrs["request"], includeSensitive),
-			Response: internal.RedactSensitive(attrs["response"], includeSensitive),
-			Usage:    getUsage(attrs, "usage"),
+			Type:   string(schema.SpanTypeGeneration),
+			Model:  getString(attrs, "model"),
+			Input:  internal.RedactSensitive(attrs["request"], includeSensitive),
+			Output: internal.RedactSensitive(attrs["response"], includeSensitive),
+			Usage:  getUsage(attrs, "usage"),
 		}
 	case schema.SpanTypeFunction:
+		var outStr any
+		if funcOut := internal.RedactSensitive(attrs["output"], includeSensitive); funcOut != nil {
+			if _, ok := funcOut.(string); ok {
+				outStr = funcOut
+			} else {
+				outStr = fmt.Sprintf("%v", funcOut)
+			}
+		}
+
 		return schema.FunctionSpanData{
-			Type:      string(schema.SpanTypeFunction),
-			Name:      s.name,
-			Arguments: internal.RedactSensitive(attrs["arguments"], includeSensitive),
-			Output:    internal.RedactSensitive(attrs["output"], includeSensitive),
+			Type:   string(schema.SpanTypeFunction),
+			Name:   s.name,
+			Input:  internal.RedactSensitive(attrs["arguments"], includeSensitive),
+			Output: outStr,
 		}
 	case schema.SpanTypeGuardrail:
 		var tripwire *bool

@@ -1,5 +1,7 @@
 # Tracing
 
+![Tracing Dashboard](./assets/tracing.png)
+
 This SDK supports **OpenAI Traces (traces=v1)** compatible tracing.
 
 ## Defaults

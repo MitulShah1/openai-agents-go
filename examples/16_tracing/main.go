@@ -1,4 +1,6 @@
 // Package main demonstrates the usage of tracing in the openai-agents-go SDK.
+// This example specifically showcases how complex agent interactions, such as
+// multi-agent handoffs and tool executions, are captured in the OpenAI Tracing Dashboard.
 package main
 
 import (
@@ -6,38 +8,73 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 
 	agents "github.com/MitulShah1/openai-agents-go"
+	"github.com/MitulShah1/openai-agents-go/handoff"
 	"github.com/MitulShah1/openai-agents-go/tools"
 	"github.com/MitulShah1/openai-agents-go/tracing"
 	"github.com/MitulShah1/openai-agents-go/tracing/exporter"
 	"github.com/MitulShah1/openai-agents-go/tracing/processor"
 )
 
-func main() {
-	// Create OpenAI client
-	apiKey := os.Getenv("OPENAI_API_KEY")
+func tracingPreflight() string {
+	apiKey := strings.TrimSpace(os.Getenv("OPENAI_API_KEY"))
 	if apiKey == "" {
-		log.Fatal("OPENAI_API_KEY environment variable is required")
+		log.Fatal("missing required env: OPENAI_API_KEY")
 	}
+
+	org := strings.TrimSpace(os.Getenv("OPENAI_ORG_ID"))
+	project := strings.TrimSpace(os.Getenv("OPENAI_PROJECT_ID"))
+
+	fmt.Println("=== Tracing Requirements Preflight ===")
+	fmt.Printf("OPENAI_API_KEY: set (required)\n")
+
+	if org == "" {
+		fmt.Println("OPENAI_ORG_ID: not set (optional)")
+	} else {
+		fmt.Println("OPENAI_ORG_ID: set (optional)")
+	}
+
+	if project == "" {
+		fmt.Println("OPENAI_PROJECT_ID: not set (optional)")
+	} else {
+		fmt.Println("OPENAI_PROJECT_ID: set (optional)")
+	}
+
+	fmt.Println("Exporter mode: backend (sends traces to OpenAI dashboard)")
+	fmt.Println()
+
+	return apiKey
+}
+
+func main() {
+
+	// Create OpenAI client
+	apiKey := tracingPreflight()
 
 	client := openai.NewClient(option.WithAPIKey(apiKey))
 	runner := agents.NewRunner(&client)
 
-	// Configure tracing with console exporter
-	// This will print trace information to stdout
-	exp := exporter.NewConsoleExporter()
+	// Configure tracing with backend exporter (sends to OpenAI dashboard)
+	// We use the backend exporter so that you can view the execution paths natively
+	// in the OpenAI platform under the Observability -> Traces tab.
+	exp := exporter.NewBackendExporter()
 	proc := processor.NewBatch(exp)
 	provider := tracing.NewProvider(proc)
 	tracing.SetProvider(provider)
+	ctx := context.Background()
 
-	// Create a simple agent with a tool
-	agent := &agents.Agent{
-		Name:         "Calculator Agent",
-		Instructions: "You are a helpful calculator assistant.",
+	// IMPORTANT: Deferred shutdown to flush pending traces before process exit
+	defer func() { _ = tracing.Shutdown(ctx) }()
+
+	// Create the math agent which contains a math tool
+	mathAgent := &agents.Agent{
+		Name:         "Math Agent",
+		Instructions: "You are a helpful calculator assistant. If someone asks a math question, use your tools to solve it.",
 		Model:        "gpt-4o-mini",
 		Tools: []tools.Tool{
 			{
@@ -54,78 +91,48 @@ func main() {
 				Callback: func(args map[string]any, _ tools.ContextVariables) (any, error) {
 					a := args["a"].(float64)
 					b := args["b"].(float64)
+					fmt.Printf("[Math Agent] -> Tool 'add' executed: %v + %v\n", a, b)
 					return a + b, nil
 				},
 			},
 		},
 	}
 
-	// Example 1: Basic run with default tracing
-	fmt.Println("=== Example 1: Basic Run with Default Tracing ===")
-
-	ctx := context.Background()
-	messages := []openai.ChatCompletionMessageParamUnion{
-		openai.UserMessage("What is 15 + 27?"),
-	}
-
-	result, err := runner.Run(ctx, agent, messages)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Final output: %s\n\n", result.FinalOutput)
-
-	// Example 2: Custom trace configuration
-	fmt.Println("=== Example 2: Custom Trace Configuration ===")
-
-	customConfig := &agents.RunConfig{
-		MaxTurns:          5,
-		TraceWorkflowName: "Calculator Workflow",
-		TraceGroupID:      "example-group-1",
-		TraceMetadata: map[string]any{
-			"user_id":    "user-123",
-			"session_id": "session-456",
+	// Create a triage agent that acts as a router
+	triageAgent := &agents.Agent{
+		Name:         "Triage Agent",
+		Instructions: "You are a customer service router. If the user asks a math question, you must IMMEDIATELY hand off to the Math Agent.",
+		Model:        "gpt-4o-mini",
+		Tools: []tools.Tool{
+			handoff.New(mathAgent, handoff.WithDescription("Transfer the user to the Math Agent for any calculation queries.")).ToTool(),
 		},
 	}
 
-	messages = []openai.ChatCompletionMessageParamUnion{
-		openai.UserMessage("Calculate 42 + 58"),
+	// Example: Visualizing Handoffs and Tools in the Dashboard
+	fmt.Println("=== Example: Tracking Handoffs and Tool Calls ===")
+	fmt.Println("This run starts with the Triage Agent.")
+	fmt.Println("The output trace will show a nested hierarchy: Workflow -> Triage Agent -> Handoff -> Math Agent -> Tool -> Generation")
+	fmt.Println()
+
+	customConfig := &agents.RunConfig{
+		MaxTurns:          5,
+		TraceWorkflowName: "Multi-Agent Math Support",
+		TraceMetadata: map[string]any{
+			"example_type": "handoffs_and_tools",
+		},
 	}
 
-	result, err = runner.Run(ctx, agent, messages,
-		agents.WithConfig(customConfig),
-	)
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.UserMessage("Can you help me? I need to know what 244 + 511 is."),
+	}
+
+	result, err := runner.Run(ctx, triageAgent, messages, agents.WithConfig(customConfig))
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Final output: %s\n\n", result.FinalOutput)
-
-	// Example 3: Disabling tracing
-	fmt.Println("=== Example 3: Tracing Disabled ===")
-
-	tracingDisabled := false
-	disabledConfig := &agents.RunConfig{
-		MaxTurns:     5,
-		TraceEnabled: &tracingDisabled,
-	}
-
-	messages = []openai.ChatCompletionMessageParamUnion{
-		openai.UserMessage("What is 10 + 20?"),
-	}
-
-	result, err = runner.Run(ctx, agent, messages,
-		agents.WithConfig(disabledConfig),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Final output: %s\n", result.FinalOutput)
-	fmt.Println("(No trace output expected)")
-
-	// Shutdown tracing provider to flush remaining spans
-	if err := provider.Shutdown(ctx); err != nil {
-		log.Printf("Error shutting down tracing: %v", err)
+		log.Printf("Runner error: %v", err)
+	} else {
+		fmt.Printf("\nFinal output: %s\n\n", result.FinalOutput)
+		fmt.Println("Traces are now being flushed to the OpenAI Dashboard...")
+		fmt.Println("Check the OpenAI platform under Observability -> Traces to view.")
+		fmt.Println("Note: It may take up to 60 seconds for traces to appear on the server.")
 	}
 }

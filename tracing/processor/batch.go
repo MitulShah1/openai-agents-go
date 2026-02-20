@@ -170,7 +170,6 @@ func (p *BatchProcessor) flushWorker() {
 
 func (p *BatchProcessor) addToBatch(item batchItem) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	q := p.byKey[item.apiKey]
 	if q == nil {
@@ -188,8 +187,16 @@ func (p *BatchProcessor) addToBatch(item batchItem) {
 		q.spans = append(q.spans, *item.span)
 	}
 
+	// Build a batch to export while holding the lock, then export outside the lock.
+	// This avoids the fragile unlock-inside-lock pattern.
+	var toFlush *batch
 	if len(q.traces)+len(q.spans) >= p.maxBatchSize {
-		p.flushKey(context.Background(), item.apiKey, q)
+		toFlush = p.createBatch(item.apiKey, q)
+	}
+	p.mu.Unlock()
+
+	if toFlush != nil {
+		p.exportBatch(context.Background(), toFlush)
 	}
 }
 
@@ -225,16 +232,6 @@ func (p *BatchProcessor) flushAll(ctx context.Context) {
 	for _, b := range batches {
 		p.exportBatch(ctx, b)
 	}
-}
-
-func (p *BatchProcessor) flushKey(ctx context.Context, apiKey string, q *keyQueue) {
-	if len(q.traces) == 0 && len(q.spans) == 0 {
-		return
-	}
-	b := p.createBatch(apiKey, q)
-	p.mu.Unlock() // Unlock for export
-	p.exportBatch(ctx, b)
-	p.mu.Lock() // Re-lock
 }
 
 func (p *BatchProcessor) createBatch(apiKey string, q *keyQueue) *batch {
