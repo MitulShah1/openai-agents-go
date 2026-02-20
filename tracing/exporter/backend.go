@@ -134,6 +134,7 @@ func (e *BackendExporter) Export(ctx context.Context, apiKey string, traces []sc
 		req.Header.Set("OpenAI-Project", e.Project)
 	}
 
+	//nolint:gosec // e.Endpoint is trusted from config/env
 	resp, err := e.Client.Do(req)
 	if err != nil {
 		// Determine if network error is retryable

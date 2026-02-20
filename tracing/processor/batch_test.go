@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -116,10 +117,9 @@ func TestBatchProcessorBatchSizeTrigger(t *testing.T) {
 	)
 	defer func() { _ = processor.Shutdown(context.Background()) }()
 
-	// Send exactly batchSize events
 	for i := 0; i < batchSize; i++ {
 		span := schema.SpanExport{
-			ID:      "span_" + string(rune(i)),
+			ID:      fmt.Sprintf("span_%d", i),
 			TraceID: "trace_123",
 		}
 		processor.OnSpanEnd(span, "test-key")
@@ -138,10 +138,9 @@ func TestBatchProcessorShutdown(t *testing.T) {
 	exporter := &mockExporter{}
 	processor := NewBatch(exporter)
 
-	// Add some events
 	for i := 0; i < 3; i++ {
 		span := schema.SpanExport{
-			ID:      "span_" + string(rune(i)),
+			ID:      fmt.Sprintf("span_%d", i),
 			TraceID: "trace_123",
 		}
 		processor.OnSpanEnd(span, "test-key")
@@ -198,7 +197,7 @@ func TestBatchProcessorConcurrent(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(id int) {
 			span := schema.SpanExport{
-				ID:      "span_" + string(rune(id)),
+				ID:      fmt.Sprintf("span_%d", id),
 				TraceID: "trace_123",
 			}
 			processor.OnSpanEnd(span, "test-key")

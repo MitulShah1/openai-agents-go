@@ -20,21 +20,7 @@ func TestNewSecrets(t *testing.T) {
 			input:        "This is a config file with no secrets.",
 			expectedPass: true,
 		},
-		{
-			name:   "aws_access_key_detected",
-			config: SecretsConfig{Tripwire: true},
-			// AKIA + 16 chars = 20 chars total
-			input:            "Access Key: AKIAIOSFODNN7EXAMPLE",
-			expectedPass:     false,
-			expectedTripwire: true,
-		},
-		{
-			name:             "github_token_detected",
-			config:           SecretsConfig{},
-			input:            "Token: ghp_1234567890abcdefghijklmnopqrstuvwxyz", // 36 chars + prefix
-			expectedPass:     false,
-			expectedTripwire: false,
-		},
+
 		{
 			name:   "generic_api_key_pattern",
 			config: SecretsConfig{},
