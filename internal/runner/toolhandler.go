@@ -150,8 +150,15 @@ func executeSingleTool(
 			sp.RecordError(err)
 		}
 
+		traceOutput := result
+		if isHandoffFunc != nil {
+			if _, ok := isHandoffFunc(result); ok {
+				traceOutput = "Transferred to agent"
+			}
+		}
+
 		sp.SetAttributes(map[string]any{
-			"output": result,
+			"output": traceOutput,
 		})
 		sp.End(ctx2)
 

@@ -9,7 +9,6 @@ import (
 
 	"github.com/MitulShah1/openai-agents-go/tracing/internal"
 	"github.com/MitulShah1/openai-agents-go/tracing/processor"
-	"github.com/MitulShah1/openai-agents-go/tracing/schema"
 )
 
 var (
@@ -95,6 +94,11 @@ func (p *defaultProvider) StartTrace(ctx context.Context, opts ...TraceOption) (
 		cfg.traceID = internal.GenTraceID()
 	}
 
+	// Always require a workflow name per ingest API requirements
+	if cfg.workflowName == "" {
+		cfg.workflowName = "Agent Workflow"
+	}
+
 	// Get trace from pool and initialize
 	t := p.tracePool.Get().(*trace)
 	t.id = cfg.traceID
@@ -106,17 +110,6 @@ func (p *defaultProvider) StartTrace(ctx context.Context, opts ...TraceOption) (
 	t.startedAt = time.Now().UTC()
 	t.processors = p.multi.GetProcessors()
 	t.pool = &p.tracePool
-
-	export := schema.TraceExport{
-		Object:       "trace",
-		ID:           t.id,
-		WorkflowName: t.workflowName,
-		GroupID:      cfg.groupID,
-		Metadata:     t.metadata,
-	}
-
-	// Notify processors via multi-processor
-	p.multi.OnTraceStart(export, t.exportAPIKey)
 
 	return ContextWithTrace(ctx, t), t, nil
 }

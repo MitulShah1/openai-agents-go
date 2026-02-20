@@ -20,9 +20,9 @@ const (
 
 // Usage represents token usage for generation spans.
 type Usage struct {
-	PromptTokens     int `json:"prompt_tokens,omitempty"`
-	CompletionTokens int `json:"completion_tokens,omitempty"`
-	TotalTokens      int `json:"total_tokens,omitempty"`
+	PromptTokens     int `json:"input_tokens,omitempty"`
+	CompletionTokens int `json:"output_tokens,omitempty"`
+	TotalTokens      int `json:"-"`
 }
 
 // SpanError represents an error that occurred during span execution.

@@ -24,10 +24,8 @@ func newRecordingProcessor() *recordingProcessor {
 	return &recordingProcessor{done: make(chan struct{})}
 }
 
-func (p *recordingProcessor) OnTraceStart(trace schema.TraceExport, _ string) {
-	p.mu.Lock()
-	p.traces = append(p.traces, trace)
-	p.mu.Unlock()
+func (p *recordingProcessor) OnTraceStart(_ schema.TraceExport, _ string) {
+	// Traces are no longer emitted on start
 }
 
 func (p *recordingProcessor) OnSpanEnd(span schema.SpanExport, _ string) {
@@ -36,7 +34,11 @@ func (p *recordingProcessor) OnSpanEnd(span schema.SpanExport, _ string) {
 	p.mu.Unlock()
 }
 
-func (p *recordingProcessor) OnTraceEnd(_ schema.TraceExport, _ string) {
+func (p *recordingProcessor) OnTraceEnd(trace schema.TraceExport, _ string) {
+	p.mu.Lock()
+	p.traces = append(p.traces, trace)
+	p.mu.Unlock()
+
 	select {
 	case <-p.done:
 	default:

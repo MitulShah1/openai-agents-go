@@ -82,14 +82,43 @@ func TestProviderStartTrace(t *testing.T) {
 		t.Errorf("Expected workflow name 'test-workflow', got %q", trace.WorkflowName())
 	}
 
-	// Verify processor was called
-	if len(mock.traceStarts) != 1 {
-		t.Errorf("Expected 1 trace start, got %d", len(mock.traceStarts))
+	// Verify processor was NOT called on start (traces are sent on End only)
+	if len(mock.traceStarts) != 0 {
+		t.Errorf("Expected 0 trace starts (traces sent on End only), got %d", len(mock.traceStarts))
 	}
 
 	// Verify trace is in context
 	if FromContext(ctx) != trace {
 		t.Error("Trace not found in context")
+	}
+}
+
+// TestProviderTraceOnlySentOnEnd verifies Bug 1 fix: traces should only be sent
+// to processors once, when End() is called, not when StartTrace is called.
+// (The Python SDK behaves the same way.)
+func TestProviderTraceOnlySentOnEnd(t *testing.T) {
+	mock := &mockProcessor{}
+	provider := NewProvider(mock)
+	ctx := context.Background()
+
+	ctx, trace, _ := provider.StartTrace(ctx, WithWorkflowName("test"))
+
+	// Before End(): no events should have been sent.
+	if len(mock.traceStarts) != 0 {
+		t.Errorf("Expected 0 trace starts before End, got %d", len(mock.traceStarts))
+	}
+	if len(mock.traceEnds) != 0 {
+		t.Errorf("Expected 0 trace ends before End, got %d", len(mock.traceEnds))
+	}
+
+	trace.End(ctx)
+
+	// After End(): exactly one event via OnTraceEnd, zero via OnTraceStart.
+	if len(mock.traceStarts) != 0 {
+		t.Errorf("Expected 0 trace starts (no duplicate), got %d", len(mock.traceStarts))
+	}
+	if len(mock.traceEnds) != 1 {
+		t.Errorf("Expected exactly 1 trace end, got %d", len(mock.traceEnds))
 	}
 }
 
@@ -180,12 +209,12 @@ func TestProviderAddProcessor(t *testing.T) {
 	ctx, trace, _ := provider.StartTrace(ctx, WithWorkflowName("test"))
 	trace.End(ctx)
 
-	// Both processors should receive events
-	if len(mock1.traceStarts) != 1 {
-		t.Errorf("mock1: expected 1 trace start, got %d", len(mock1.traceStarts))
+	// Both processors should receive trace end events.
+	if len(mock1.traceEnds) != 1 {
+		t.Errorf("mock1: expected 1 trace end, got %d", len(mock1.traceEnds))
 	}
-	if len(mock2.traceStarts) != 1 {
-		t.Errorf("mock2: expected 1 trace start, got %d", len(mock2.traceStarts))
+	if len(mock2.traceEnds) != 1 {
+		t.Errorf("mock2: expected 1 trace end, got %d", len(mock2.traceEnds))
 	}
 }
 
@@ -201,15 +230,16 @@ func TestProviderSetProcessors(t *testing.T) {
 	ctx, trace, _ := provider.StartTrace(ctx, WithWorkflowName("test"))
 	trace.End(ctx)
 
-	// Only mock2 and mock3 should receive events
-	if len(mock1.traceStarts) != 0 {
-		t.Errorf("mock1: expected 0 trace starts, got %d", len(mock1.traceStarts))
+	// mock1 should receive no events (replaced by mock2+mock3).
+	// mock2 and mock3 should receive trace end events.
+	if len(mock1.traceEnds) != 0 {
+		t.Errorf("mock1: expected 0 trace ends, got %d", len(mock1.traceEnds))
 	}
-	if len(mock2.traceStarts) != 1 {
-		t.Errorf("mock2: expected 1 trace start, got %d", len(mock2.traceStarts))
+	if len(mock2.traceEnds) != 1 {
+		t.Errorf("mock2: expected 1 trace end, got %d", len(mock2.traceEnds))
 	}
-	if len(mock3.traceStarts) != 1 {
-		t.Errorf("mock3: expected 1 trace start, got %d", len(mock3.traceStarts))
+	if len(mock3.traceEnds) != 1 {
+		t.Errorf("mock3: expected 1 trace end, got %d", len(mock3.traceEnds))
 	}
 }
 
@@ -224,9 +254,9 @@ func TestProviderTracePooling(t *testing.T) {
 		trace.End(ctx)
 	}
 
-	// Verify all traces were created and ended
-	if len(mock.traceStarts) != 10 {
-		t.Errorf("Expected 10 trace starts, got %d", len(mock.traceStarts))
+	// Verify all traces were created and ended (only via traceEnds, no traceStarts).
+	if len(mock.traceStarts) != 0 {
+		t.Errorf("Expected 0 trace starts (no OnTraceStart calls), got %d", len(mock.traceStarts))
 	}
 	if len(mock.traceEnds) != 10 {
 		t.Errorf("Expected 10 trace ends, got %d", len(mock.traceEnds))
@@ -257,7 +287,10 @@ func TestProviderConcurrentTraceCreation(t *testing.T) {
 		<-done
 	}
 
-	if len(mock.traceStarts) != numGoroutines {
-		t.Errorf("Expected %d trace starts, got %d", numGoroutines, len(mock.traceStarts))
+	if len(mock.traceStarts) != 0 {
+		t.Errorf("Expected 0 trace starts (traces sent on End only), got %d", len(mock.traceStarts))
+	}
+	if len(mock.traceEnds) != numGoroutines {
+		t.Errorf("Expected %d trace ends, got %d", numGoroutines, len(mock.traceEnds))
 	}
 }
