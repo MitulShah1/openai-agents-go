@@ -8,7 +8,7 @@ require (
 	github.com/mark3labs/mcp-go v0.44.0
 	github.com/openai/openai-go/v3 v3.22.0
 	github.com/redis/go-redis/v9 v9.18.0
-	modernc.org/sqlite v1.45.0
+	modernc.org/sqlite v1.46.1
 )
 
 require (
