@@ -1,10 +1,10 @@
 module github.com/MitulShah1/openai-agents-go
 
-go 1.24.11
+go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jackc/pgx/v5 v5.9.1
 	github.com/mark3labs/mcp-go v0.47.1
 	github.com/openai/openai-go/v3 v3.22.0
 	github.com/redis/go-redis/v9 v9.18.0
