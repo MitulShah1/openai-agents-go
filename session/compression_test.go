@@ -130,7 +130,10 @@ func TestCombinedUtilities(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	encrypted := WithEncryption(mem, key)
+	encrypted, err := WithEncryption(mem, key)
+	if err != nil {
+		t.Fatal(err)
+	}
 	compressed := WithCompression(encrypted)
 
 	sessionID := "combined-session"

@@ -24,22 +24,22 @@ type encryptedSession struct {
 
 // WithEncryption wraps a session backend with AES-GCM encryption.
 // The key must be 16, 24, or 32 bytes for AES-128, AES-192, or AES-256.
-// Panics if the key is invalid or cipher block cannot be created.
-func WithEncryption(s Session, key []byte) Session {
+// Returns an error if the key is invalid or cipher block cannot be created.
+func WithEncryption(s Session, key []byte) (Session, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create cipher: %v", err))
+		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(fmt.Sprintf("failed to create GCM: %v", err))
+		return nil, fmt.Errorf("failed to create GCM: %w", err)
 	}
 
 	return &encryptedSession{
 		inner: s,
 		gcm:   gcm,
-	}
+	}, nil
 }
 
 func (s *encryptedSession) Get(ctx context.Context, sessionID string) ([]openai.ChatCompletionMessageParamUnion, error) {
