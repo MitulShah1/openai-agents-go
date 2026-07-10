@@ -18,7 +18,10 @@ func TestWithEncryption(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	encrypted := WithEncryption(mem, key)
+	encrypted, err := WithEncryption(mem, key)
+	if err != nil {
+		t.Fatal(err)
+	}
 	sessionID := "enc-session"
 
 	t.Run("basic append and get", func(t *testing.T) {
@@ -54,14 +57,11 @@ func TestWithEncryption(t *testing.T) {
 	})
 
 	t.Run("invalid key length", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Error("Expected panic for invalid key length, got none")
-			}
-		}()
 		// Key must be 16, 24, or 32 bytes
 		badKey := make([]byte, 10)
-		WithEncryption(mem, badKey)
+		if _, err := WithEncryption(mem, badKey); err == nil {
+			t.Error("Expected error for invalid key length, got nil")
+		}
 	})
 
 	t.Run("mixed content handling", func(t *testing.T) {

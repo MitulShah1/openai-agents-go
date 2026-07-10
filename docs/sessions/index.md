@@ -337,7 +337,10 @@ Secure your conversation history with AES-GCM encryption.
 ```go
 key := []byte("your-32-byte-secret-key-12345678")
 // Wrap session with encryption (requires 16, 24, or 32 byte key)
-sess = session.WithEncryption(baseSession, key)
+sess, err = session.WithEncryption(baseSession, key)
+if err != nil {
+    return err
+}
 ```
 
 ### Composition
@@ -349,7 +352,10 @@ Utilities can be composed. For "Compress then Encrypt" strategy (recommended):
 store, _ := session.NewSQLite("chats.db")
 
 // 1. Encryption wraps the store (Inner)
-encrypted := session.WithEncryption(store, key)
+encrypted, err := session.WithEncryption(store, key)
+if err != nil {
+    return err
+}
 
 // 2. Compression wraps the encrypted session (Outer)
 finalSession := session.WithCompression(encrypted)
