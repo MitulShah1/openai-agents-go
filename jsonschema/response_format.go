@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+const typeJSONSchema = "json_schema"
+
 // ResponseFormat defines how the LLM should structure its response.
 type ResponseFormat struct {
 	// Type is either "text" or "json_schema"
@@ -40,7 +42,7 @@ func Text() *ResponseFormat {
 // JSONSchema creates a structured JSON response format.
 func JSONSchema(name string, schema *Schema) *ResponseFormat {
 	return &ResponseFormat{
-		Type: "json_schema",
+		Type: typeJSONSchema,
 		JSONSchema: &JSONSchemaFormat{
 			Name:   name,
 			Schema: schema,
@@ -67,11 +69,11 @@ func (r *ResponseFormat) WithStrict(strict bool) *ResponseFormat {
 
 // Validate checks if the response format is valid.
 func (r *ResponseFormat) Validate() error {
-	if r.Type != "text" && r.Type != "json_schema" {
+	if r.Type != "text" && r.Type != typeJSONSchema {
 		return fmt.Errorf("invalid response format type: %s (must be 'text' or 'json_schema')", r.Type)
 	}
 
-	if r.Type == "json_schema" {
+	if r.Type == typeJSONSchema {
 		if r.JSONSchema == nil {
 			return fmt.Errorf("json_schema type requires JSONSchema to be set")
 		}
@@ -108,8 +110,8 @@ func (r *ResponseFormat) ToOpenAIParam() (any, error) {
 	}
 
 	result := map[string]any{
-		"type": "json_schema",
-		"json_schema": map[string]any{
+		"type": typeJSONSchema,
+		typeJSONSchema: map[string]any{
 			"name":   r.JSONSchema.Name,
 			"schema": schemaMap,
 			"strict": r.JSONSchema.Strict,
@@ -117,7 +119,7 @@ func (r *ResponseFormat) ToOpenAIParam() (any, error) {
 	}
 
 	if r.JSONSchema.Description != "" {
-		result["json_schema"].(map[string]any)["description"] = r.JSONSchema.Description
+		result[typeJSONSchema].(map[string]any)["description"] = r.JSONSchema.Description
 	}
 
 	return result, nil

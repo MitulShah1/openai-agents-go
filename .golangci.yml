@@ -18,6 +18,11 @@ linters:
     - staticcheck
     - unused
 
+  exclusions:
+    rules:
+      - linters: [goconst]
+        path: examples/
+
   settings:
     goconst:
       min-occurrences: 5

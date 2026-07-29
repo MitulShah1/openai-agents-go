@@ -19,6 +19,12 @@ const (
 	StopOnFirstPass
 )
 
+// Metadata map keys used across chain results.
+const (
+	keyStrategy = "strategy"
+	keyResults  = "results"
+)
+
 // String returns the string representation of the Strategy.
 func (s Strategy) String() string {
 	switch s {
@@ -131,8 +137,8 @@ func (c *Chain) executeSequential(ctx context.Context, input string) (*Result, e
 				Message:           fmt.Sprintf("guardrail %s failed: %s", g.Name, result.Message),
 				Metadata: map[string]any{
 					"failed_guardrail": g.Name,
-					"strategy":         "Sequential",
-					"results":          results,
+					keyStrategy:        "Sequential",
+					keyResults:         results,
 				},
 			}, nil
 		}
@@ -144,8 +150,8 @@ func (c *Chain) executeSequential(ctx context.Context, input string) (*Result, e
 		TripwireTriggered: false,
 		Message:           fmt.Sprintf("all %d guardrails passed", len(c.guardrails)),
 		Metadata: map[string]any{
-			"strategy": "Sequential",
-			"results":  results,
+			keyStrategy: "Sequential",
+			keyResults:  results,
 		},
 	}, nil
 }
@@ -211,10 +217,10 @@ func (c *Chain) executeParallel(ctx context.Context, input string) (*Result, err
 			TripwireTriggered: hasTripwire,
 			Message:           fmt.Sprintf("%d/%d guardrails failed: %v", len(failures), len(c.guardrails), failures),
 			Metadata: map[string]any{
-				"strategy":          "Parallel",
+				keyStrategy:         "Parallel",
 				"failed_count":      len(failures),
 				"failed_guardrails": failures,
-				"results":           results,
+				keyResults:          results,
 			},
 		}, nil
 	}
@@ -224,8 +230,8 @@ func (c *Chain) executeParallel(ctx context.Context, input string) (*Result, err
 		TripwireTriggered: false,
 		Message:           fmt.Sprintf("all %d guardrails passed", len(c.guardrails)),
 		Metadata: map[string]any{
-			"strategy": "Parallel",
-			"results":  results,
+			keyStrategy: "Parallel",
+			keyResults:  results,
 		},
 	}, nil
 }
@@ -249,9 +255,9 @@ func (c *Chain) executeStopOnFirstPass(ctx context.Context, input string) (*Resu
 				TripwireTriggered: false,
 				Message:           fmt.Sprintf("guardrail %s passed", g.Name),
 				Metadata: map[string]any{
-					"strategy":         "StopOnFirstPass",
+					keyStrategy:        "StopOnFirstPass",
 					"passed_guardrail": g.Name,
-					"results":          results,
+					keyResults:         results,
 				},
 			}, nil
 		}
@@ -263,8 +269,8 @@ func (c *Chain) executeStopOnFirstPass(ctx context.Context, input string) (*Resu
 		TripwireTriggered: false,
 		Message:           fmt.Sprintf("all %d guardrails failed", len(c.guardrails)),
 		Metadata: map[string]any{
-			"strategy": "StopOnFirstPass",
-			"results":  results,
+			keyStrategy: "StopOnFirstPass",
+			keyResults:  results,
 		},
 	}, nil
 }
