@@ -264,7 +264,7 @@ func (s *ConversationsSession) convertItemsToMessages(items []conversations.Conv
 					// Type elided (defaults to function)
 					Function: openai.ChatCompletionMessageFunctionToolCallFunctionParam{
 						Name:      "unknown",
-						Arguments: item.Arguments,
+						Arguments: item.Arguments.OfString,
 					},
 				},
 			}
