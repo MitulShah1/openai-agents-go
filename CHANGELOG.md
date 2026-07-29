@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.7.2] - 2026-07-29
+
+### Changed
+
+- **Go minimum version**: Bumped to Go 1.25.5 (required by mcp-go v0.52.0)
+- **CI**: Upgraded test/lint/build matrix to Go 1.25.x, golangci-lint v2.12.2
+
+### Updated Dependencies
+
+**GitHub Actions:**
+- actions/upload-pages-artifact 4 → 5
+- codecov/codecov-action 6 → 7
+- actions/checkout 6 → 7
+- actions/cache 5 → 6
+
+**Go Modules:**
+- github.com/jackc/pgx/v5 5.8.0 → 5.9.2
+- github.com/redis/go-redis/v9 9.18.0 → 9.19.0
+- modernc.org/sqlite 1.46.1 → 1.50.1
+- github.com/openai/openai-go/v3 3.22.0 → 3.35.0
+- github.com/mark3labs/mcp-go 0.47.1 → 0.52.0
+
+### Fixed
+
+- **openai-go v3.35.0 breaking change**: `ConversationItemUnionArguments` changed from `string` to a union struct; adapted to use `.OfString`
+
 ## [v0.7.1] - 2026-02-20
 
 ### Fixed
@@ -540,6 +566,7 @@ conditionalTool := tools.Tool{
 
 ## Version Links
 
+- [v0.7.2](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.7.2)
 - [v0.7.1](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.7.1)
 - [v0.7.0](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.7.0)
 - [v0.6.1](https://github.com/MitulShah1/openai-agents-go/releases/tag/v0.6.1)
