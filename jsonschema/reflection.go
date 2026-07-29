@@ -13,7 +13,7 @@ import (
 // - required: Mark field as required (true/false) - defaults to false unless "required" is present in json tag or pointer is nil
 func GenerateSchema(v any) *Schema {
 	t := reflect.TypeOf(v)
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
@@ -88,11 +88,11 @@ func generateStructSchema(t reflect.Type) *Schema {
 		}
 
 		// If NOT a pointer and omitempty NOT found, assume required
-		if field.Type.Kind() != reflect.Ptr && jsonTag != "" {
+		if field.Type.Kind() != reflect.Pointer && jsonTag != "" {
 			if !strings.Contains(jsonTag, "omitempty") {
 				required = true
 			}
-		} else if field.Type.Kind() != reflect.Ptr {
+		} else if field.Type.Kind() != reflect.Pointer {
 			// No json tag, default required
 			required = true
 		}

@@ -19,5 +19,8 @@ linters:
     - unused
 
   settings:
+    goconst:
+      min-occurrences: 5
+      ignore-tests: true
     gocyclo:
       min-complexity: 30
