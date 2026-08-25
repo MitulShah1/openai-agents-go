@@ -7,7 +7,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mark3labs/mcp-go v0.52.0
 	github.com/openai/openai-go/v3 v3.35.0
-	github.com/redis/go-redis/v9 v9.21.0
+	github.com/redis/go-redis/v9 v9.22.0
 	modernc.org/sqlite v1.50.1
 )
 
