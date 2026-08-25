@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mark3labs/mcp-go v0.52.0
 	github.com/openai/openai-go/v3 v3.35.0
 	github.com/redis/go-redis/v9 v9.21.0
